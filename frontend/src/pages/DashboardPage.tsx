@@ -2,21 +2,59 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMyReferrals } from '../services/referrals'
-import('../services/Investments')
 import { useNotify } from '../hooks/useNotify'
-import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import api from '../services/api'
+import logo from '../img/logo.png'
+import propos1 from '../img/propos 1.jpeg'
+import propos2 from '../img/propos 2.jpeg'
+import chatIcon from '../img/chat.png'
+import aproposIcon from '../img/a-propos.png'
+import reseauxIcon from '../img/resaux.png'
+import androidIcon from '../img/icons-android.png'
+import appleIcon from '../img/icons-Apple.png'
+import whatsappIcon from '../img/icons-whatsapp.png'
+import telegramIcon from '../img/icons-télégramme.png'
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [wallet, setWallet] = useState<any>(null)
   const notify = useNotify()
-  const navigate = useNavigate()
+
+  const [wallet, setWallet] = useState<any>(null)
+  const [investments, setInvestments] = useState<any[]>([])
+
+  const [showInvestModal, setShowInvestModal] = useState(false)
+  const [showOfferDetails, setShowOfferDetails] = useState<any>(null)
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false)
+  const [showAboutModal, setShowAboutModal] = useState(false)
+
+  const [showIOSModal, setShowIOSModal] = useState(false)
+
+  // Floating buttons modals
+  const [showChatModal, setShowChatModal] = useState(false)
+  const [showSocialModal, setShowSocialModal] = useState(false)
+
+  // Chat
+  const [chatMessage, setChatMessage] = useState('')
+  const [loadingChat, setLoadingChat] = useState(false)
+
+  // PROFIL
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [editProfile, setEditProfile] = useState(false)
+  const [showCompleteAccount, setShowCompleteAccount] = useState(false)
+
+  // Edit profile form
+  const [editForm, setEditForm] = useState({
+    first_name: user?.first_name || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
+    password: '',
+    confirmPassword: ''
+  })
+  const [loadingEdit, setLoadingEdit] = useState(false)
 
   const { data } = useQuery(['my_referrals'], fetchMyReferrals)
-
   const code = data?.code?.code
   const stats = data?.stats || {}
 
@@ -26,236 +64,235 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let mounted = true
+
     import('../services/Investments').then(({ fetchWallets }) => {
       fetchWallets().then((data: any) => {
-        if (!mounted) return
-        if (Array.isArray(data) && data.length > 0) setWallet(data[0])
-      }).catch(() => {})
-      // fetch user's investments as well
-      api.get('/investments').then((res: any) => {
-        if (!mounted) return
-        // API returns list of investments
-        setInvestments(res.data || [])
-      }).catch(() => {})
+        if (mounted && Array.isArray(data)) setWallet(data[0])
+      })
     })
+
+    api.get('/investments').then(res => {
+      if (mounted) setInvestments(res.data || [])
+    })
+
     return () => { mounted = false }
   }, [])
 
-  /* ================= STATES ================= */
-  const [showCompleteModal, setShowCompleteModal] = useState(false)
-  const [showInvestModal, setShowInvestModal] = useState(false)
-  const [showVipModal, setShowVipModal] = useState(false)
-  const [investments, setInvestments] = useState<any[]>([])
-
-  const [loadingComplete, setLoadingComplete] = useState(false)
-
-  /* ================= ACTIONS ================= */
-  async function onCopy() {
-    if (!inviteLink) {
-      notify.error('Aucun code disponible')
-      return
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        first_name: user.first_name || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        password: '',
+        confirmPassword: ''
+      })
     }
+  }, [user])
+
+  const canHarvest = (date: string) =>
+    Date.now() - new Date(date).getTime() >= 24 * 60 * 60 * 1000
+
+  async function onCopy() {
+    if (!inviteLink) return
     await navigator.clipboard.writeText(inviteLink)
     notify.success('Code copié')
   }
 
   async function onShare() {
-    if (!inviteLink) {
-      notify.error('Aucun code disponible')
-      return
-    }
-
+    if (!inviteLink) return
     if (navigator.share) {
-      await navigator.share({
-        title: 'Invitation',
-        text: 'Rejoins-moi avec ce lien',
-        url: inviteLink,
-      })
+      await navigator.share({ url: inviteLink })
     } else {
       await navigator.clipboard.writeText(inviteLink)
-      notify.success('Lien copié pour partage')
+      notify.success('Lien copié')
+    }
+  }
+
+  async function handleEditProfile() {
+    if (editForm.password !== editForm.confirmPassword) {
+      notify.error('Les mots de passe ne correspondent pas')
+      return
+    }
+    setLoadingEdit(true)
+    try {
+      const updateData: any = {
+        first_name: editForm.first_name,
+        phone: editForm.phone,
+        email: editForm.email
+      }
+      if (editForm.password) {
+        updateData.password = editForm.password
+      }
+      await api.put('/user', updateData)
+      notify.success('Profil mis à jour')
+      setEditProfile(false)
+      // Optionally refetch user
+    } catch (e: any) {
+      notify.error(e?.response?.data?.message || 'Erreur lors de la mise à jour')
+    } finally {
+      setLoadingEdit(false)
+    }
+  }
+
+  async function handleSendChat() {
+    if (!chatMessage.trim()) return
+    setLoadingChat(true)
+    try {
+      // Assume there's an API for chat, or just notify
+      await api.post('/chat', { message: chatMessage })
+      notify.success('Message envoyé')
+      setChatMessage('')
+      setShowChatModal(false)
+    } catch (e: any) {
+      notify.error('Erreur envoi message')
+    } finally {
+      setLoadingChat(false)
     }
   }
 
   return (
-    <div className="max-w-md mx-auto px-5 py-6">
+    <div className="relative mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gray-300 rounded-full" />
-          <span className="font-semibold">Logo</span>
-        </div>
-        <h1 className="font-semibold text-lg">Profil</h1>
+      <div className="flex justify-between items-center mb-6">
+        <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gray-800 p-1" />
+        <h1 className="font-semibold text-lg md:text-xl lg:text-2xl">Profil</h1>
         <HeaderActions />
       </div>
 
       {/* PROFIL */}
-      <div className="bg-white rounded-2xl p-5 shadow mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">👤</div>
+      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl md:text-2xl">👤</div>
           <div className="flex-1">
-            <div className="font-semibold">{user?.first_name || user?.username}</div>
-            <div className="text-sm text-gray-500">{user?.phone ?? '+243 *********'} </div>
-            <div className="text-sm text-gray-500">{user?.email}</div>
-            <div className="text-sm text-gray-600 mt-2">
-              <div>
-                Total investi: <strong>{Number(user?.total_invested || 0).toLocaleString()} {wallet?.currency || 'USDT'}</strong>
-              </div>
-              {wallet && (
-                <div>Solde investi: <strong>{Number(wallet.invested || 0).toLocaleString()} {wallet.currency}</strong></div>
-              )}
-            </div>
+            <div className="font-semibold text-base md:text-lg">{user?.first_name || user?.username}</div>
+            <div className="text-sm md:text-base text-gray-500">{user?.phone}</div>
+            <div className="text-sm md:text-base text-gray-500">{user?.email}</div>
           </div>
-          <button
-            onClick={() => setShowVipModal(true)}
-            className="px-3 py-1 text-xs rounded-full bg-purple-600 text-white"
-          >
-            Niveau {user?.vip_level ?? 1}
-          </button>
         </div>
-      </div>
-
-      {/* COMPLETER INFOS */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-6">
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-yellow-800 font-medium">
-            Veuillez compléter les informations de votre compte
-          </p>
-          <button
-            onClick={() => setShowCompleteModal(true)}
-            className="px-4 py-1.5 text-sm rounded-lg bg-yellow-500 text-white"
-          >
-            Complétez
-          </button>
-        </div>
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg text-sm md:text-base font-medium w-fit"
+        >
+          Gérer votre profil
+        </button>
       </div>
 
       {/* MES INVESTISSEMENTS */}
-      <div className="bg-white rounded-2xl p-5 shadow mb-6">
-        <div className="flex justify-between items-center">
-          <h2 className="font-semibold">Mes Investissements</h2>
+      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <h2 className="font-semibold text-lg md:text-xl mb-2 sm:mb-0">Mes investissements</h2>
           <button
             onClick={() => setShowInvestModal(true)}
-            className="text-sm text-purple-600 hover:underline"
+            className="text-sm md:text-base text-purple-600"
           >
             Voir →
           </button>
         </div>
-        <p className="text-sm text-gray-500 mt-2">
-          Consultez les investissements auxquels vous avez adhéré.
-        </p>
       </div>
 
       {/* CODE PARRAINAGE */}
-      <div className="bg-white rounded-2xl p-5 shadow mb-6">
-        <div className="text-sm text-gray-500 mb-2">Code Parrainage</div>
-        <div className="flex justify-between items-center">
-          <span className="font-bold text-lg">{code ?? '—'}</span>
+      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
+        <div className="text-sm md:text-base text-gray-500 mb-2">Code Parrainage</div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <span className="font-bold text-lg md:text-xl">{code ?? '—'}</span>
           <div className="flex gap-2">
-            <button onClick={onCopy} className="px-3 py-1 border rounded-lg text-sm">Copier</button>
-            <button onClick={onShare} className="px-3 py-1 border rounded-lg text-sm">Partager</button>
+            <button onClick={onCopy} className="border px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base">Copier</button>
+            <button onClick={onShare} className="border px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base">Partager</button>
           </div>
         </div>
       </div>
 
       {/* MON EQUIPE */}
-      <div className="bg-white rounded-2xl p-5 shadow mb-6">
-        <h2 className="font-semibold mb-3">Mon équipe</h2>
-          <div className="space-y-2 text-sm">
+      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
+        <h2 className="font-semibold text-lg md:text-xl mb-3">Mon équipe</h2>
+        <div className="text-sm md:text-base space-y-2">
           <div className="flex justify-between"><span>Niveau 7</span><span>{stats.vip7 ?? 0}</span></div>
           <div className="flex justify-between"><span>Niveau 5</span><span>{stats.vip5 ?? 0}</span></div>
         </div>
       </div>
 
-      {/* ================= MODALS ================= */}
+      {/* TELECHARGEMENT */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-24">
+        <h2 className="font-semibold text-lg md:text-xl mb-3">Téléchargement de l’application</h2>
+        <div className="flex flex-row gap-3">
+          <a href="/app/app-release.apk" download className="flex-1 bg-green-600 text-white py-3 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2">
+            <img src={androidIcon} alt="Android" className="w-5 h-5" />
+            Android
+          </a>
+          <button
+            onClick={() => setShowIOSModal(true)}
+            className="flex-1 bg-black text-white py-3 rounded-xl text-base md:text-lg flex items-center justify-center gap-2"
+          >
+            <img src={appleIcon} alt="Apple" className="w-5 h-5" />
+            Apple
+          </button>
+        </div>
+      </div>
 
-      {/* MODAL COMPLETER */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-3">
-            <h2 className="font-semibold text-lg">Compléter les informations</h2>
+      {/* ================= MODAL INVEST ================= */}
+      {showInvestModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4">
+          <div className="
+            bg-white rounded-2xl
+            w-full max-w-sm sm:max-w-md md:max-w-lg
+            max-h-[85vh] overflow-y-auto
+            p-4 sm:p-5 md:p-6 space-y-4
+          ">
+            <h2 className="font-semibold text-lg md:text-xl">Mes investissements</h2>
 
-            <select className="w-full border rounded-lg p-2">
-              <option>Votre banque</option>
-              <option>Orange Money</option>
-              <option>M-Pesa</option>
-              <option>Airtel Money</option>
-            </select>
+            {investments.length === 0 && (
+              <p className="text-sm md:text-base text-gray-500">
+                Aucun investissement pour le moment.
+              </p>
+            )}
 
-            <input className="w-full border rounded-lg p-2" placeholder="Numéro de compte" />
-            <input className="w-full border rounded-lg p-2" placeholder="Nom enregistré au compte" />
+            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+              {investments.map(inv => {
+                const daily = Math.round(inv.amount * inv.daily_rate)
+                const canCollect = canHarvest(inv.last_collected_at)
 
-            <div className="bg-yellow-50 text-sm text-yellow-800 p-3 rounded-lg">
-              Ces informations sont nécessaires pour vos retraits.
+                return (
+                  <div key={inv.id} className="border rounded-xl p-3 sm:p-4">
+                    <div className="flex justify-between">
+                      <div>
+                        <div className="font-semibold">{inv.title}</div>
+                        <div className="text-xs sm:text-sm text-gray-500">
+                          Gain journalier :{' '}
+                          <strong>
+                            {daily} {wallet?.currency ?? 'USDT'}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="font-medium text-sm">
+                        {inv.amount} {wallet?.currency ?? 'USDT'}
+                      </div>
+                    </div>
+
+                    <button
+                      disabled={!canCollect}
+                      className={`mt-2 w-full py-2 rounded-lg text-white text-sm ${
+                        canCollect ? 'bg-green-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      Je perçois mes gains
+                    </button>
+
+                    <button
+                      onClick={() => setShowOfferDetails(inv)}
+                      className="mt-1 text-xs text-purple-600 underline"
+                    >
+                      À propos de l’offre
+                    </button>
+                  </div>
+                )
+              })}
             </div>
 
             <button
-              disabled={loadingComplete}
-              onClick={async () => {
-                setLoadingComplete(true)
-                await new Promise(res => setTimeout(res, 2000))
-                setLoadingComplete(false)
-                setShowCompleteModal(false)
-                notify.success('Informations complétées')
-              }}
-              className={`w-full py-2 rounded-lg text-white
-                ${loadingComplete ? 'bg-yellow-300' : 'bg-yellow-500 hover:bg-yellow-600'}`}
-            >
-              {loadingComplete ? 'Traitement...' : 'Je complète'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL INVESTISSEMENTS */}
-      {showInvestModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Mes investissements</h2>
-
-            {investments.length > 0 ? (
-              investments.map((inv: any) => {
-                const amt = Number(inv.amount || 0)
-                const rate = Number(inv.daily_rate != null ? inv.daily_rate : (user?.vip_level ? 0.025 * Number(user.vip_level) : 0))
-                const daily = Math.round((amt * rate) * 100) / 100
-                return (
-                  <div key={inv.id} className="border p-3 rounded-lg mb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-semibold">{inv.title || 'Investissement'}</div>
-                        <div className="text-sm text-gray-500">Investissement sécurisé</div>
-                        <div className="text-sm text-yellow-600">★★★★☆</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{new Intl.NumberFormat('fr-FR').format(amt)} {wallet?.currency || 'USDT'}</div>
-                        <div className="text-sm text-gray-500">Taux: {(rate * 100).toFixed(2)}%</div>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-sm text-gray-700">Gain journalier : <strong>{daily.toLocaleString()} {wallet?.currency || 'USDT'}</strong></div>
-                      <div className="text-sm text-green-700">Gains disponibles : <strong>{Number(inv.accrued || 0).toLocaleString()} {wallet?.currency || 'USDT'}</strong></div>
-                      <div className="text-xs text-gray-500 mt-1">Les gains sont transférés automatiquement vers le solde principal après 24h.</div>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="border p-3 rounded-lg">
-                <div className="font-semibold">Plan Croissance Or</div>
-                <div className="text-sm text-gray-500">Gain journalier : — {wallet?.currency || 'USDT'}</div>
-                <button
-                  onClick={() => { window.location.href = '/deposits' }}
-                  className="mt-2 text-sm text-green-600 underline"
-                >
-                  J'investis
-                </button>
-              </div>
-            )}
-
-            <button
               onClick={() => setShowInvestModal(false)}
-              className="w-full py-2 bg-purple-600 text-white rounded-lg"
+              className="w-full py-2 bg-purple-600 text-white rounded-lg text-base md:text-lg"
             >
               Fermer
             </button>
@@ -263,54 +300,281 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Encash removed: transfers happen automatically after 24h */}
-
-      {/* MODAL NIVEAUX */}
-      {showVipModal && (
+      
+      {/* ================= MODAL OFFRE ================= */}
+      {showOfferDetails && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-3">
-            <h2 className="font-semibold text-lg">Niveaux</h2>
-            {/* helper: first threshold and doubling each level */}
-            {(() => {
-              const FIRST = 25000 // must match backend VIP_FIRST_THRESHOLD default
-              const fmt = (v: number) => new Intl.NumberFormat('fr-FR').format(v)
-              return [...Array(10)].map((_, i) => {
-                const level = i + 1
-                const amount = FIRST * Math.pow(2, i)
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      // navigate to deposits page with prefilled amount
-                      try {
-                        // close modal then navigate
-                        // use window.location to preserve simple behavior
-                        window.location.href = `/deposits?amount=${amount}`
-                      } catch (e) {
-                        // fallback
-                        window.location.href = `/deposits?amount=${amount}`
-                      }
-                    }}
-                    className="w-full text-left flex justify-between items-center py-2 border-b last:border-b-0"
-                  >
-                    <div className="font-medium">Niveau {level}</div>
-                    <div className="text-sm text-gray-600">{fmt(amount)} {wallet?.currency || 'USDT'}</div>
-                  </button>
-                )
-              })
-            })()}
-            <div className="text-sm text-gray-500">Avantages progressifs</div>
+          <div className="bg-white rounded-2xl p-4 md:p-6 w-full max-w-sm md:max-w-md">
+            <h3 className="font-semibold text-lg md:text-xl mb-3">
+              {showOfferDetails.title}
+            </h3>
+            <p className="text-sm md:text-base text-gray-600 whitespace-pre-line">
+              {showOfferDetails.description || 'Aucune description disponible.'}
+            </p>
             <button
-              onClick={() => setShowVipModal(false)}
-              className="w-full py-2 bg-purple-600 text-white rounded-lg"
+              onClick={() => setShowOfferDetails(null)}
+              className="mt-4 w-full py-2 bg-purple-600 text-white rounded-lg text-base md:text-lg"
             >
               Fermer
             </button>
           </div>
         </div>
       )}
+
+      {/* MODAL PROFIL */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md space-y-3">
+            <h3 className="font-semibold text-lg md:text-xl">Profil utilisateur</h3>
+
+            <div className="text-sm md:text-base">Nom : {user?.first_name}</div>
+            <div className="text-sm md:text-base">Téléphone : {user?.phone}</div>
+            <div className="text-sm md:text-base">Email : {user?.email}</div>
+
+            <button
+              onClick={() => setEditProfile(true)}
+              className="text-purple-600 text-sm md:text-base underline"
+            >
+              Modifier vos informations
+            </button>
+
+            <button
+              onClick={() => setShowCompleteAccount(true)}
+              className="text-purple-600 text-sm md:text-base underline"
+            >
+              Complétez votre compte
+            </button>
+
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="w-full border py-2 rounded-lg text-base md:text-lg"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COMPLETER COMPTE */}
+      {showCompleteAccount && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md space-y-3">
+            <h3 className="font-semibold text-lg md:text-xl">Complétez votre compte</h3>
+            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Moyen de dépôt" />
+            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Moyen de retrait" />
+            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Banque utilisée" />
+            <button className="w-full bg-purple-600 text-white py-2 md:py-3 rounded-lg text-base md:text-lg">
+              Enregistrer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITER PROFIL */}
+      {editProfile && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md space-y-3">
+            <h3 className="font-semibold text-lg md:text-xl">Modifier vos informations</h3>
+            <input
+              type="text"
+              placeholder="Nom"
+              value={editForm.first_name}
+              onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base"
+            />
+            <input
+              type="tel"
+              placeholder="Téléphone"
+              value={editForm.phone}
+              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={editForm.email}
+              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base"
+            />
+            <input
+              type="password"
+              placeholder="Nouveau mot de passe (optionnel)"
+              value={editForm.password}
+              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base"
+            />
+            <input
+              type="password"
+              placeholder="Confirmer le mot de passe"
+              value={editForm.confirmPassword}
+              onChange={(e) => setEditForm({ ...editForm, confirmPassword: e.target.value })}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base"
+            />
+            <button
+              onClick={handleEditProfile}
+              disabled={loadingEdit}
+              className="w-full bg-purple-600 text-white py-2 md:py-3 rounded-lg text-base md:text-lg disabled:opacity-50"
+            >
+              {loadingEdit ? 'Mise à jour...' : 'Enregistrer'}
+            </button>
+            <button
+              onClick={() => setEditProfile(false)}
+              className="w-full border py-2 rounded-lg text-base md:text-lg"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+      {/* ================= MODAL IOS ================= */}
+      {showIOSModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-4 md:p-5 w-full max-w-sm md:max-w-md space-y-4">
+            <h3 className="font-semibold text-lg md:text-xl">Installer sur iPhone</h3>
+            <ol className="list-decimal list-inside text-sm md:text-base text-gray-600 space-y-2">
+              <li>Ouvre l’application dans <strong>Safari</strong></li>
+              <li>Appuie sur <strong>Partager</strong> (icône en haut à droite)</li>
+              <li>Sélectionne <strong>Ajouter à l’écran d’accueil</strong></li>
+              <li>Confirme avec <strong>Ajouter</strong></li>
+            </ol>
+            <button onClick={() => setShowIOSModal(false)} className="w-full py-2 border rounded-lg text-base md:text-lg">
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BOTTOM NAV */}
 
       <BottomNav />
+
+      {/* FLOATING BUTTONS */}
+      <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
+        <button
+          onClick={() => setShowChatModal(true)}
+          className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+          title="Chat avec l'admin"
+        >
+          <img src={chatIcon} alt="Chat" className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => setShowSocialModal(true)}
+          className="w-12 h-12 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+          title="Réseaux sociaux"
+        >
+          <img src={reseauxIcon} alt="Réseaux sociaux" className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => setShowAboutModal(true)}
+          className="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
+          title="À propos"
+        >
+          <img src={aproposIcon} alt="À propos" className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* MODAL CHAT ADMIN */}
+      {showChatModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
+            <h3 className="font-semibold text-lg md:text-xl mb-3">Chat avec l'administrateur</h3>
+            <textarea
+              placeholder="Tapez votre message..."
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              className="w-full border p-2 md:p-3 rounded text-sm md:text-base h-24 resize-none"
+            />
+            <div className="flex gap-3 mt-3">
+              <button
+                onClick={() => setShowChatModal(false)}
+                className="flex-1 border py-2 rounded-lg text-sm md:text-base"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSendChat}
+                disabled={loadingChat || !chatMessage.trim()}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm md:text-base disabled:opacity-50"
+              >
+                {loadingChat ? 'Envoi...' : 'Envoyer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RESEAUX SOCIAUX */}
+      {showSocialModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
+            <h3 className="font-semibold text-lg md:text-xl mb-4">Nos réseaux sociaux</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.open('https://wa.me/group/example', '_blank')}
+                className="w-full bg-green-600 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
+              >
+                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                Groupe WhatsApp
+              </button>
+              <button
+                onClick={() => window.open('https://wa.me/channel/example', '_blank')}
+                className="w-full bg-green-500 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
+              >
+                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                Canal WhatsApp
+              </button>
+              <button
+                onClick={() => window.open('https://t.me/example', '_blank')}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
+              >
+                <img src={telegramIcon} alt="Telegram" className="w-5 h-5" />
+                Canal Télégram
+              </button>
+            </div>
+            <button
+              onClick={() => setShowSocialModal(false)}
+              className="w-full border py-2 rounded-lg text-sm md:text-base mt-4"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL A PROPOS */}
+      {showAboutModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-semibold text-lg md:text-xl mb-4 text-center">À propos de nous</h3>
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <img src={propos1} alt="À propos 1" className="w-full md:w-1/2 h-48 object-cover rounded-lg" />
+                <img src={propos2} alt="À propos 2" className="w-full md:w-1/2 h-48 object-cover rounded-lg" />
+              </div>
+              <div className="text-sm md:text-base text-gray-700 space-y-3">
+                <p>
+                  <strong>Notre histoire commence en 2020,</strong> lorsque notre équipe visionnaire a identifié une opportunité unique dans le domaine des investissements numériques. Face à la volatilité des marchés traditionnels, nous avons décidé de créer une plateforme qui démocratise l'accès aux investissements rentables pour tous.
+                </p>
+                <p>
+                  <strong>Avec plus de 3 ans d'expérience,</strong> nous avons aidé des milliers d'utilisateurs à atteindre leurs objectifs financiers grâce à nos stratégies d'investissement éprouvées et notre approche transparente. Notre plateforme offre des rendements stables de 5% par jour sur 180 jours, garantissant sécurité et fiabilité.
+                </p>
+                <p>
+                  <strong>Notre mission :</strong> Rendre l'investissement accessible à tous, en éliminant les barrières financières et techniques. Nous croyons que chacun mérite la chance de construire un avenir prospère, et nous nous engageons à fournir les outils et le support nécessaires pour y parvenir.
+                </p>
+                <p>
+                  <strong>Rejoignez notre communauté</strong> et commencez votre voyage vers la liberté financière dès aujourd'hui !
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAboutModal(false)}
+              className="w-full border py-2 rounded-lg text-sm md:text-base mt-4"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

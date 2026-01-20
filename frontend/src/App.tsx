@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
@@ -24,8 +24,13 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
 export default function App() {
   const { user } = useAuth()
+  const location = useLocation()
   // Initialize notifications socket when user is logged in
-  useNotificationsSocket({ token: (user as any)?.token })
+  // Always call the hook to avoid violating Rules of Hooks
+  useNotificationsSocket(user ? { token: (user as any)?.token } : undefined)
+
+  // Don't show footer on login and register pages
+  const showFooter = !['/login', '/register'].includes(location.pathname)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -78,7 +83,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      <Footer />
+      {showFooter && <Footer />}
     </div>
   )
 }

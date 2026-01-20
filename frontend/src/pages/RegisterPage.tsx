@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { authService } from '../services/auth'
 import { useAuth } from '../hooks/useAuth'
+import logo from '../img/logo.png'
 
 /* -------------------- PAYS -------------------- */
 const COUNTRIES = [
@@ -66,26 +67,29 @@ export default function RegisterPage() {
         referralCode: rest.referralCode || refFromUrl
       }
 
-      const res = await authService.register(payload)
-      setUser(res.user)
-      navigate('/dashboard')
+      await authService.register(payload)
+      // Rediriger vers la page de connexion au lieu de connecter automatiquement
+      navigate('/login')
     } catch {
       alert(t('register.failed'))
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4">
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-[32px] p-8 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8">
+      <div className="w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-[32px] p-6 sm:p-8 shadow-lg">
 
         {/* Header */}
-        <div className="flex flex-col items-center gap-3 mb-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
-            <span className="text-sm font-semibold">Logo</span>
+        <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 text-center">
+          <img src={logo} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-gray-800 p-1" />
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
+              {t('register.title')}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Créez votre compte en quelques étapes
+            </p>
           </div>
-          <h1 className="text-xl font-semibold text-gray-800">
-            {t('register.title')}
-          </h1>
         </div>
 
         {/* Form */}
@@ -98,7 +102,8 @@ export default function RegisterPage() {
             </label>
             <input
               {...register('name', { required: 'Le nom est obligatoire' })}
-              className={`w-full rounded-full px-4 py-3 text-sm bg-gray-100 outline-none
+              placeholder="Votre nom complet"
+              className={`w-full rounded-xl sm:rounded-full px-4 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 outline-none
                 ${errors.name ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
               `}
             />
@@ -120,7 +125,8 @@ export default function RegisterPage() {
                   message: 'Adresse e-mail invalide'
                 }
               })}
-              className={`w-full rounded-full px-4 py-3 text-sm bg-gray-100 outline-none
+              placeholder="votre.email@exemple.com"
+              className={`w-full rounded-xl sm:rounded-full px-4 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 outline-none
                 ${errors.email ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
               `}
             />
@@ -136,7 +142,7 @@ export default function RegisterPage() {
               {/* Select pays réduit */}
               <select
                 {...register('countryCode', { required: 'Choisissez un pays' })}
-                className={`w-[90px] rounded-full bg-gray-100 px-2 py-2 text-sm outline-none text-center
+                className={`w-[80px] sm:w-[90px] rounded-xl sm:rounded-full bg-gray-100 px-2 py-3 sm:py-2 text-xs sm:text-sm outline-none text-center
                   ${errors.countryCode ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
                 `}
               >
@@ -157,8 +163,8 @@ export default function RegisterPage() {
                     message: 'Numéro invalide'
                   }
                 })}
-                placeholder="Numéro"
-                className={`flex-1 rounded-full bg-gray-100 px-4 py-3 text-sm outline-none
+                placeholder="Numéro de téléphone"
+                className={`flex-1 rounded-xl sm:rounded-full bg-gray-100 px-4 py-3 sm:py-4 text-sm sm:text-base outline-none
                   ${errors.phone ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
                 `}
               />
@@ -178,8 +184,8 @@ export default function RegisterPage() {
             </label>
             <input
               {...register('referralCode')}
-              placeholder="Ex: INV12345"
-              className="w-full rounded-full bg-gray-100 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-400"
+              placeholder="Ex: INV12345 (optionnel)"
+              className="w-full rounded-xl sm:rounded-full bg-gray-100 px-4 py-3 sm:py-4 text-sm sm:text-base outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
 
@@ -194,7 +200,8 @@ export default function RegisterPage() {
                 required: 'Mot de passe obligatoire',
                 minLength: { value: 8, message: 'Minimum 8 caractères' }
               })}
-              className={`w-full rounded-full px-4 py-3 text-sm bg-gray-100 outline-none
+              placeholder="••••••••"
+              className={`w-full rounded-xl sm:rounded-full px-4 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 outline-none
                 ${errors.password ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
               `}
             />
@@ -211,7 +218,8 @@ export default function RegisterPage() {
                 required: 'Confirmation requise',
                 validate: v => v === password || 'Les mots de passe ne correspondent pas'
               })}
-              className={`w-full rounded-full px-4 py-3 text-sm bg-gray-100 outline-none
+              placeholder="••••••••"
+              className={`w-full rounded-xl sm:rounded-full px-4 py-3 sm:py-4 text-sm sm:text-base bg-gray-100 outline-none
                 ${errors.confirmPassword ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-violet-400'}
               `}
             />
@@ -220,14 +228,14 @@ export default function RegisterPage() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full mt-2 bg-violet-500 hover:bg-violet-600 text-white py-3 rounded-full font-medium transition"
+            className="w-full mt-4 sm:mt-2 bg-violet-500 hover:bg-violet-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-full font-medium text-sm sm:text-base transition"
           >
             {t('register.submit')}
           </button>
         </form>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-gray-500">
           Déjà un compte ?{' '}
           <button
             onClick={() => navigate('/login')}

@@ -14,11 +14,13 @@ export default function HeaderActions() {
 
   return (
     <div className="flex items-center gap-4 relative">
+      {/* Container arrondi noir pour les boutons */}
+      <div className="flex items-center gap-2 bg-black rounded-full px-3 py-2">
 
       {/* Notifications */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative"
+        className="relative text-white hover:text-gray-300"
         aria-label="Notifications"
       >
         <Bell size={22} />
@@ -28,6 +30,16 @@ export default function HeaderActions() {
           </span>
         )}
       </button>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className="text-white hover:text-gray-300"
+          aria-label="Déconnexion"
+        >
+          <LogOut size={22} />
+        </button>
+      </div>
 
       {/* Dropdown */}
       {open && (
@@ -69,15 +81,6 @@ export default function HeaderActions() {
           </div>
         </div>
       )}
-
-      {/* Logout */}
-      <button
-        onClick={logout}
-        className="text-gray-600 hover:text-red-500"
-        aria-label="Déconnexion"
-      >
-        <LogOut size={22} />
-      </button>
     </div>
   )
 }

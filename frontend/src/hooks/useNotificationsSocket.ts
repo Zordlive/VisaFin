@@ -7,6 +7,11 @@ export function useNotificationsSocket(opts?: { url?: string; token?: string }) 
   const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
+    // Only connect if we have options (user is logged in)
+    if (!opts?.token) {
+      return
+    }
+
     // default WS URL should point to backend dev server on same host (port 8000)
     const host = window.location.hostname || 'localhost'
     const defaultUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${host}:8000/ws/notifications`
