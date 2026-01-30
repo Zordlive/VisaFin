@@ -1,7 +1,12 @@
 import React, { useState } from 'react'
 import BottomNav from '../components/BottomNav'
+import HeaderActions from '../components/HeaderActions'
+import { useNotify } from '../hooks/useNotify'
+import api from '../services/api'
+import logo from '../img/logo.png'
 
 export default function WithdrawPage() {
+  const notify = useNotify()
   const [bank, setBank] = useState('')
   const [account, setAccount] = useState('')
   const [amount, setAmount] = useState('')
@@ -16,82 +21,96 @@ export default function WithdrawPage() {
     setError(null)
 
     try {
-      // simulation API
-      await new Promise((res) => setTimeout(res, 2000))
-      alert('Retrait effectué avec succès')
+      await api.post('/withdrawals/create', {
+        amount: Number(amount),
+        bank,
+        account
+      })
+      notify.success('Demande de retrait effectuée avec succès')
       setAccount('')
       setAmount('')
       setBank('')
-    } catch {
-      setError('Erreur lors du retrait')
+    } catch (e: any) {
+      const errorMsg = e?.response?.data?.message || 'Erreur lors du retrait'
+      setError(errorMsg)
+      notify.error(errorMsg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold text-center mb-8">Retrait des fonds</h1>
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-24">
+      {/* HEADER */}
+      <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gray-800 p-1" />
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Retrait des fonds</h1>
+          </div>
+          <HeaderActions />
+        </div>
 
-      <div className="bg-white rounded-xl shadow p-6 max-w-xl mx-auto">
-        <div className="space-y-4">
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium mb-1">Banque</label>
+            <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">Banque/Opérateur</label>
             <select
               value={bank}
               onChange={(e) => setBank(e.target.value)}
-              className="w-full border rounded-lg p-2"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 md:py-3 text-sm md:text-base outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="">-- Sélectionner --</option>
-              <option>Orange Monnaie</option>
-              <option>M-pesa</option>
-              <option>Airtel Money</option>
-              <option>Afri-money</option>
+              <option value="">-- Sélectionner une banque --</option>
+              <option value="orange">Orange Monnaie</option>
+              <option value="mpesa">M-pesa</option>
+              <option value="airtel">Airtel Money</option>
+              <option value="afrimoney">Afri-money</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Numéro de compte</label>
+            <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">Numéro de compte</label>
             <input
+              type="tel"
               value={account}
               onChange={(e) => setAccount(e.target.value)}
-              className="w-full border rounded-lg p-2"
               placeholder="Ex: 097xxxxxxx"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 md:py-3 text-sm md:text-base outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Montant à retirer</label>
+            <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">Montant à retirer</label>
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border rounded-lg p-2"
               placeholder="Ex: 5000"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 md:py-3 text-sm md:text-base outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && <p className="text-red-600 text-sm md:text-base font-medium">{error}</p>}
 
           <button
             onClick={handleWithdraw}
             disabled={!isValid || loading}
-            className={`w-full py-2 rounded-lg font-semibold text-white transition
-              ${loading || !isValid
-                ? 'bg-red-300 cursor-not-allowed'
-                : 'bg-red-600 hover:bg-red-700'}`}
+            className={`w-full py-2 md:py-3 rounded-xl font-semibold text-sm md:text-base transition ${
+              loading || !isValid
+                ? 'bg-red-300 text-gray-600 cursor-not-allowed'
+                : 'bg-red-600 hover:bg-red-700 text-white'
+            }`}
           >
             {loading ? 'Traitement...' : 'Effectuer le retrait'}
           </button>
         </div>
-      </div>
 
-      <div className="mt-8 bg-white rounded-xl shadow p-6 max-w-xl mx-auto">
-        <h2 className="font-semibold mb-2">Notice de retrait</h2>
-        <p className="text-sm text-gray-600">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-          Le retrait peut prendre quelques minutes selon l’opérateur.
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm">
+        <h2 className="text-base md:text-lg font-semibold mb-3 text-gray-800">Notice de retrait</h2>
+        <p className="text-sm md:text-base text-gray-600">
+          Le retrait peut prendre quelques minutes selon l'opérateur sélectionné. 
+          Assurez-vous que votre numéro de compte est correct avant de confirmer.
         </p>
+      </div>
       </div>
       <BottomNav />
     </div>

@@ -10,12 +10,9 @@ class MarketOffer(models.Model):
         ('expired', 'Expiré'),
     )
 
-    seller = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='vendeur', on_delete=models.CASCADE, related_name='market_offers', null=True, blank=True)
     title = models.CharField('titre', max_length=200, blank=True)
     description = models.TextField('description', blank=True)
-    amount_requested = models.DecimalField('montant demandé', max_digits=20, decimal_places=2)
     price_offered = models.DecimalField('prix offert', max_digits=20, decimal_places=2)
-    surplus = models.DecimalField('surplus', max_digits=20, decimal_places=2, default=0)
     source = models.CharField('source', max_length=32, default='virtual')
     status = models.CharField('statut', max_length=32, choices=STATUS_CHOICES, default='open')
     expires_at = models.DateTimeField('expire à', null=True, blank=True)

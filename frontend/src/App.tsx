@@ -5,7 +5,7 @@ import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import WalletsPage from './pages/WalletsPage'
 import MarketPage from './pages/InvestPage'
-//import InvitePage from './pages/InvitePage'
+import MesInvestissementsPage from './pages/MesinvestissementsPage'
 import DepositsPage from './pages/DepositsPage'
 import WithdrawPage from './pages/WithdrawPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -62,7 +62,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        
+        <Route
+          path="/investments"
+          element={
+            <ProtectedRoute>
+              <MesInvestissementsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/deposits"
           element={

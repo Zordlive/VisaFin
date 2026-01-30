@@ -5,7 +5,7 @@ from .models import ReferralCode, Referral
 
 @admin.register(MarketOffer)
 class MarketOfferAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'amount_requested', 'price_offered', 'surplus', 'status', 'created_at')
+    list_display = ('title', 'price_offered', 'status', 'created_at')
 
 
 @admin.register(Wallet)
