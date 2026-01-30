@@ -5,15 +5,12 @@ from django.conf import settings
 class MarketOffer(models.Model):
     STATUS_CHOICES = (
         ('open', 'Ouvert'),
-        ('accepted', 'Accepté'),
-        ('cancelled', 'Annulé'),
-        ('expired', 'Expiré'),
+        ('close', 'fermé'),
     )
 
     title = models.CharField('titre', max_length=200, blank=True)
     description = models.TextField('description', blank=True)
     price_offered = models.DecimalField('prix offert', max_digits=20, decimal_places=2)
-    source = models.CharField('source', max_length=32, default='virtual')
     status = models.CharField('statut', max_length=32, choices=STATUS_CHOICES, default='open')
     expires_at = models.DateTimeField('expire à', null=True, blank=True)
     created_at = models.DateTimeField('date de création', auto_now_add=True)
