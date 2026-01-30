@@ -128,8 +128,11 @@ export default function InvestPage() {
 
   if (offersLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-24 flex items-center justify-center">
-        <p className="text-gray-600">Chargement des offres...</p>
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Chargement des offres...</p>
+        </div>
       </div>
     )
   }

@@ -182,10 +182,23 @@ export default function PortefeuillePage() {
   const totalInvested = wallets.reduce((a: number, w: any) => a + Number(w.invested || 0), 0)
 
   if (isLoading)
-    return <div className="h-40 flex items-center justify-center">Chargement…</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Chargement de votre portefeuille...</p>
+        </div>
+      </div>
+    )
 
   if (error)
-    return <div className="h-40 flex items-center justify-center text-red-500">Erreur</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-sm sm:text-base text-red-600 font-semibold">Erreur de chargement</p>
+        </div>
+      </div>
+    )
 
   /* ===================== ACTIONS ===================== */
   const handleTransfer = async () => {

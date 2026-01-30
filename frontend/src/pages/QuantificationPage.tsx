@@ -14,6 +14,7 @@ export default function QuantificationPage() {
   const [claimingGains, setClaimingGains] = useState(false)
   const [canClaim, setCanClaim] = useState(true)
   const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<string>('')
+  const [pageLoading, setPageLoading] = useState(true)
 
   // Countdown timer
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function QuantificationPage() {
   // Check if user can claim gains
   useEffect(() => {
     checkClaimAvailability()
+    setPageLoading(false)
     // Update timer every second
     const timer = setInterval(() => {
       checkClaimAvailability()
@@ -109,6 +111,17 @@ export default function QuantificationPage() {
     } finally {
       setClaimingGains(false)
     }
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Chargement de vos gains...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

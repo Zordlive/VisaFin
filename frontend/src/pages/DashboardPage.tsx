@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [investments, setInvestments] = useState<any[]>([])
   const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
+  const [pageLoading, setPageLoading] = useState(true)
   const maxVIPLevel = vipSubscriptions.length > 0 
     ? Math.max(...vipSubscriptions.map((s: any) => s.vip_level?.level || 0))
     : 0
@@ -68,21 +69,22 @@ export default function DashboardPage() {
   useEffect(() => {
     let mounted = true
 
-    import('../services/Investments').then(({ fetchWallets }) => {
-      fetchWallets().then((data: any) => {
-        if (mounted && Array.isArray(data)) setWallet(data[0])
+    Promise.all([
+      import('../services/Investments').then(({ fetchWallets }) => {
+        return fetchWallets().then((data: any) => {
+          if (mounted && Array.isArray(data)) setWallet(data[0])
+        })
+      }),
+      api.get('/investments').then(res => {
+        if (mounted) setInvestments(res.data || [])
+      }),
+      import('../services/vip').then(({ fetchUserVIPSubscriptions }) => {
+        return fetchUserVIPSubscriptions().then((data: any) => {
+          if (mounted) setVipSubscriptions(Array.isArray(data) ? data : [])
+        }).catch(() => {})
       })
-    })
-
-    api.get('/investments').then(res => {
-      if (mounted) setInvestments(res.data || [])
-    })
-
-    // Fetch VIP subscriptions
-    import('../services/vip').then(({ fetchUserVIPSubscriptions }) => {
-      fetchUserVIPSubscriptions().then((data: any) => {
-        if (mounted) setVipSubscriptions(Array.isArray(data) ? data : [])
-      }).catch(() => {})
+    ]).finally(() => {
+      if (mounted) setPageLoading(false)
     })
 
     return () => { mounted = false }
@@ -159,6 +161,17 @@ export default function DashboardPage() {
     } finally {
       setLoadingChat(false)
     }
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+        <div className="text-center px-4">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Chargement de votre tableau de bord...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
