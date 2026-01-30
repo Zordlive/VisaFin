@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur
 
 User = get_user_model()
 
@@ -173,3 +173,8 @@ class UserVIPSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserVIPSubscription
         fields = ('id', 'vip_level', 'purchased_at', 'active')
+
+class OperateurSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Operateur
+        fields = ('id', 'numero_agent', 'nom_agent', 'operateur', 'created_at')

@@ -252,3 +252,24 @@ class UserVIPSubscription(models.Model):
 
     def __str__(self):
         return f"{self.user} - Niveau {self.vip_level.level}"
+
+class Operateur(models.Model):
+    OPERATOR_CHOICES = (
+        ('orange', 'Orange'),
+        ('airtel', 'Airtel'),
+        ('mpesa', 'M-Pesa'),
+    )
+
+    numero_agent = models.CharField('numéro de l\'agent', max_length=20, unique=True)
+    nom_agent = models.CharField('nom de l\'agent', max_length=100)
+    operateur = models.CharField('opérateur', max_length=20, choices=OPERATOR_CHOICES)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de mise à jour', auto_now=True)
+
+    class Meta:
+        verbose_name = 'opérateur'
+        verbose_name_plural = 'opérateurs'
+        unique_together = ('numero_agent', 'operateur')
+
+    def __str__(self):
+        return f"{self.get_operateur_display()} - {self.nom_agent} ({self.numero_agent})"

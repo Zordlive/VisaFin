@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
-from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription
+from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur
 
 
 @admin.register(MarketOffer)
@@ -52,3 +52,12 @@ class UserVIPSubscriptionAdmin(admin.ModelAdmin):
     list_filter = ('active', 'vip_level')
     search_fields = ('user__username', 'user__email')
     raw_id_fields = ('user', 'vip_level')
+
+
+@admin.register(Operateur)
+class OperateurAdmin(admin.ModelAdmin):
+    list_display = ('id', 'operateur', 'nom_agent', 'numero_agent', 'created_at')
+    list_filter = ('operateur',)
+    search_fields = ('nom_agent', 'numero_agent')
+    ordering = ('operateur', 'nom_agent')
+

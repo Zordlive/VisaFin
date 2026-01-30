@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -56,6 +56,7 @@ from .serializers import (
     InvestmentSerializer,
     VIPLevelSerializer,
     UserVIPSubscriptionSerializer,
+    OperateurSerializer,
 )
 
 User = get_user_model()
@@ -201,6 +202,18 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
             tx = Transaction.objects.create(wallet=wallet, amount=amount, type='trade')
             return Response(TransactionSerializer(tx).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['delete'], url_path='clear', permission_classes=[IsAuthenticated])
+    def clear_history(self, request):
+        """Delete all transactions for the current user's wallets"""
+        try:
+            deleted_count = Transaction.objects.filter(wallet__user=request.user).delete()[0]
+            return Response({
+                'message': f'{deleted_count} transaction(s) supprimée(s)',
+                'deleted_count': deleted_count
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -768,6 +781,21 @@ class VIPLevelViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = VIPLevel.objects.all()
     serializer_class = VIPLevelSerializer
     permission_classes = [AllowAny]
+
+
+class OperateurViewSet(viewsets.ReadOnlyModelViewSet):
+    """List and retrieve operators."""
+    queryset = Operateur.objects.all()
+    serializer_class = OperateurSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        """Filter by operateur if provided."""
+        queryset = Operateur.objects.all()
+        operateur = self.request.query_params.get('operateur')
+        if operateur:
+            queryset = queryset.filter(operateur=operateur)
+        return queryset
 
 
 class UserVIPSubscriptionsView(APIView):
