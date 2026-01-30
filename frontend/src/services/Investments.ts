@@ -11,3 +11,8 @@ export async function fetchWallets() {
   const res = await api.get('/wallets')
   return res.data
 }
+
+export async function fetchMarketOffers() {
+  const res = await api.get('/market/offers')
+  return res.data
+}

@@ -4,44 +4,24 @@ import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import logo from '../img/logo.png'
 
-/* =====================
-   OFFRE (future Admin)
-===================== */
-const INVEST_OFFER = {
-  id: 1,
-  title: 'Plan Rendement Stable',
-  price: 10000,
-  description: `
-Avec cet investissement, vous bénéficiez d’un rendement de
-+5% toutes les 24 heures pendant une durée totale de 180 jours.
-
-Les gains sont crédités automatiquement.
-Vous pouvez réinvestir ou retirer vos bénéfices à tout moment
-après validation de l’investissement.
-`,
-  durationDays: 180,
-}
-
-// durée de disponibilité (exemple : 7 jours)
-const OFFER_END_DATE = new Date(
-  Date.now() + 7 * 24 * 60 * 60 * 1000
-)
-
 export default function InvestPage() {
   const notify = useNotify()
 
   const [wallet, setWallet] = useState<any>(null)
+  const [offers, setOffers] = useState<any[]>([])
+  const [selectedOffer, setSelectedOffer] = useState<any>(null)
   const [selected, setSelected] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [timeLeft, setTimeLeft] = useState('')
+  const [offersLoading, setOffersLoading] = useState(true)
 
   /* =====================
-     FETCH WALLET
+     FETCH WALLET & OFFERS
   ===================== */
   useEffect(() => {
     let mounted = true
-    import('../services/Investments').then(({ fetchWallets }) => {
+    import('../services/Investments').then(({ fetchWallets, fetchMarketOffers }) => {
+      // Fetch wallet
       fetchWallets()
         .then((data: any) => {
           if (!mounted) return
@@ -50,6 +30,33 @@ export default function InvestPage() {
           }
         })
         .catch(() => {})
+
+      // Fetch market offers
+      fetchMarketOffers()
+        .then((data: any) => {
+          if (!mounted) return
+          if (Array.isArray(data)) {
+            // Filter open offers and map to compatible format
+            const openOffers = data
+              .filter((offer: any) => offer.status === 'open')
+              .map((offer: any) => ({
+                id: offer.id,
+                title: offer.title,
+                price_offered: offer.price_offered,
+                description: offer.description,
+                created_at: offer.created_at,
+                expires_at: offer.expires_at,
+              }))
+            setOffers(openOffers)
+            if (openOffers.length > 0) {
+              setSelectedOffer(openOffers[0])
+            }
+          }
+          setOffersLoading(false)
+        })
+        .catch(() => {
+          setOffersLoading(false)
+        })
     })
     return () => {
       mounted = false
@@ -57,40 +64,50 @@ export default function InvestPage() {
   }, [])
 
   /* =====================
-     COUNTDOWN
+     CALCULATE DURATION DAYS
   ===================== */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const diff = OFFER_END_DATE.getTime() - Date.now()
+  const calculateDurationDays = (createdAt: string): number => {
+    // Default to 180 days if not calculable
+    if (!createdAt) return 180
+    try {
+      // Assuming a standard 180 day duration or calculate from created_at
+      return 180
+    } catch {
+      return 180
+    }
+  }
 
-      if (diff <= 0) {
-        setTimeLeft('Offre expirée')
-        clearInterval(interval)
-        return
-      }
+  /* =====================
+     GET TIME LEFT FOR OFFER
+  ===================== */
+  const getTimeLeft = (expiresAt: string | null): string => {
+    if (!expiresAt) return 'Durée indéfinie'
+    try {
+      const diff = new Date(expiresAt).getTime() - Date.now()
+      if (diff <= 0) return 'Offre expirée'
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24))
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
       const minutes = Math.floor((diff / (1000 * 60)) % 60)
 
-      setTimeLeft(`${days}j ${hours}h ${minutes}min`)
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
+      return `${days}j ${hours}h ${minutes}min`
+    } catch {
+      return 'Durée indéfinie'
+    }
+  }
 
   /* =====================
      CONFIRM INVEST
   ===================== */
   async function confirmInvestment() {
-    if (loading) return
+    if (loading || !selectedOffer) return
     setLoading(true)
 
     try {
       const { createInvestment, fetchWallets } =
         await import('../services/Investments')
 
-      await createInvestment(INVEST_OFFER.price)
+      await createInvestment(Number(selectedOffer.price_offered))
 
       const data = await fetchWallets()
       if (Array.isArray(data) && data.length > 0) {
@@ -102,16 +119,23 @@ export default function InvestPage() {
     } catch (e: any) {
       notify.error(
         e?.response?.data?.message ||
-          'Erreur lors de l’investissement'
+          'Erreur lors de l\'investissement'
       )
     } finally {
       setLoading(false)
     }
   }
 
+  if (offersLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-24 flex items-center justify-center">
+        <p className="text-gray-600">Chargement des offres...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-24">
-
       {/* HEADER */}
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
         <div className="flex items-center justify-between mb-4">
@@ -139,70 +163,93 @@ export default function InvestPage() {
           </p>
         )}
 
-        {/* CARD COMPACTE */}
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1">
-            <p className="font-medium text-gray-800 text-base md:text-lg">
-              {INVEST_OFFER.title}
-            </p>
-            <p className="text-sm md:text-base text-gray-500">
-              ⏳ {INVEST_OFFER.durationDays} jours
-            </p>
-
-            <button
-              onClick={() => setShowDetails(true)}
-              className="text-xs md:text-sm text-violet-600 mt-1 hover:underline"
-            >
-              Détails
-            </button>
+        {/* OFFERS LIST */}
+        {offers.length === 0 ? (
+          <div className="bg-white rounded-2xl p-6 text-center">
+            <p className="text-gray-600">Aucune offre d'investissement disponible</p>
           </div>
+        ) : (
+          <div className="space-y-4">
+            {offers.map((offer) => (
+              <div
+                key={offer.id}
+                className="bg-white rounded-2xl p-4 md:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:shadow-md transition"
+                onClick={() => setSelectedOffer(offer)}
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800 text-base md:text-lg">
+                    {offer.title}
+                  </p>
+                  <p className="text-sm md:text-base text-gray-500">
+                    ⏳ {calculateDurationDays(offer.created_at)} jours
+                  </p>
 
-          <div className="text-right w-full sm:w-auto">
-            <p className="text-lg md:text-xl font-bold text-gray-800">
-              {INVEST_OFFER.price.toLocaleString()}{' '}
-              {wallet?.currency || 'USDT'}
-            </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedOffer(offer)
+                      setShowDetails(true)
+                    }}
+                    className="text-xs md:text-sm text-violet-600 mt-1 hover:underline"
+                  >
+                    Détails
+                  </button>
+                </div>
 
-            <button
-              onClick={() => setSelected(true)}
-              className="mt-2 px-4 py-1.5 md:px-6 md:py-2 rounded-full text-sm md:text-base font-medium
-                bg-violet-500 text-white hover:bg-violet-600"
-            >
-              J’investis
-            </button>
-           
+                <div className="text-right w-full sm:w-auto">
+                  <p className="text-lg md:text-xl font-bold text-gray-800">
+                    {Number(offer.price_offered).toLocaleString()}{' '}
+                    {wallet?.currency || 'USDT'}
+                  </p>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedOffer(offer)
+                      setSelected(true)
+                    }}
+                    className="mt-2 px-4 py-1.5 md:px-6 md:py-2 rounded-full text-sm md:text-base font-medium
+                      bg-violet-500 text-white hover:bg-violet-600"
+                  >
+                    J'investis
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* COUNTDOWN */}
+            {selectedOffer && (
+              <p className="text-center text-sm md:text-base text-red-600 font-medium">
+                ⏰ Offre disponible : {getTimeLeft(selectedOffer.expires_at)}
+              </p>
+            )}
           </div>
-         
-        </div>
-         {/* COUNTDOWN */}
-        <p className="text-center text-sm md:text-base text-red-600 font-medium mt-3">
-          ⏰ Offre disponible : {timeLeft}
-        </p>
+        )}
       </div>
 
       {/* MODAL DETAILS */}
-      {showDetails && (
+      {showDetails && selectedOffer && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-4 md:p-6 w-full max-w-sm md:max-w-md lg:max-w-lg">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold text-lg md:text-xl">
-                {INVEST_OFFER.title}
+                {selectedOffer.title}
               </h3>
               <button onClick={() => setShowDetails(false)} className="text-xl md:text-2xl">✕</button>
             </div>
 
             <p className="text-sm md:text-base text-gray-600 whitespace-pre-line mb-4">
-              {INVEST_OFFER.description}
+              {selectedOffer.description}
             </p>
 
             <div className="grid grid-cols-2 gap-3 text-sm md:text-base mb-4">
               <div className="bg-gray-100 rounded-xl p-3 text-center">
-                📈 <br />
-                <b>+5% / 24h</b>
+                💰 <br />
+                <b>{Number(selectedOffer.price_offered).toLocaleString()} {wallet?.currency || 'USDT'}</b>
               </div>
               <div className="bg-gray-100 rounded-xl p-3 text-center">
                 ⏳ <br />
-                <b>{INVEST_OFFER.durationDays} jours</b>
+                <b>{calculateDurationDays(selectedOffer.created_at)} jours</b>
               </div>
             </div>
 
@@ -220,19 +267,20 @@ export default function InvestPage() {
       )}
 
       {/* MODAL CONFIRM */}
-      {selected && (
+      {selected && selectedOffer && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-4 md:p-6 w-full max-w-sm md:max-w-md">
             <h3 className="font-semibold text-lg md:text-xl mb-3">
-              Confirmation d’investissement
+              Confirmation d'investissement
             </h3>
 
             <p className="text-sm md:text-base text-gray-600 mb-4">
-              Vous êtes sur le point d’investir{' '}
+              Vous êtes sur le point d'investir{' '}
               <b>
-                {INVEST_OFFER.price.toLocaleString()}{' '}
+                {Number(selectedOffer.price_offered).toLocaleString()}{' '}
                 {wallet?.currency || 'USDT'}
               </b>
+              {' '}dans <b>{selectedOffer.title}</b>
             </p>
 
             <div className="flex flex-col sm:flex-row justify-end gap-3">
