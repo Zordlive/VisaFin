@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
-from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur
+from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
 
 
 @admin.register(MarketOffer)
@@ -60,4 +60,13 @@ class OperateurAdmin(admin.ModelAdmin):
     list_filter = ('operateur',)
     search_fields = ('nom_agent', 'numero_agent')
     ordering = ('operateur', 'nom_agent')
+
+
+@admin.register(UserBankAccount)
+class UserBankAccountAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'account_type', 'account_holder_name', 'account_number', 'is_default', 'is_active', 'created_at')
+    list_filter = ('account_type', 'is_active', 'is_default')
+    search_fields = ('user__username', 'user__email', 'account_holder_name', 'account_number', 'bank_name', 'operator_name')
+    raw_id_fields = ('user',)
+    ordering = ('-is_default', '-created_at')
 

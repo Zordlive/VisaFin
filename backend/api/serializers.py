@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
 
 User = get_user_model()
 
@@ -178,3 +178,21 @@ class OperateurSerializer(serializers.ModelSerializer):
     class Meta:
         model = Operateur
         fields = ('id', 'numero_agent', 'nom_agent', 'operateur', 'created_at')
+
+
+class UserBankAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserBankAccount
+        fields = ('id', 'account_type', 'bank_name', 'operator_name', 'account_number', 'account_holder_name', 'is_active', 'is_default', 'created_at')
+        read_only_fields = ('created_at',)
+
+    def validate(self, data):
+        # Validation: si account_type est 'bank', bank_name est requis
+        if data.get('account_type') == 'bank' and not data.get('bank_name'):
+            raise serializers.ValidationError({'bank_name': 'Le nom de la banque est requis pour un compte bancaire.'})
+        
+        # Validation: si account_type est 'operator', operator_name est requis
+        if data.get('account_type') == 'operator' and not data.get('operator_name'):
+            raise serializers.ValidationError({'operator_name': 'Le nom de l\'opérateur est requis pour un compte opérateur.'})
+        
+        return data

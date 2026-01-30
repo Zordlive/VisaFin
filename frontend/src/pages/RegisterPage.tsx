@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { authService } from '../services/auth'
 import { useAuth } from '../hooks/useAuth'
+import LoadingScreen from '../components/LoadingScreen'
 import logo from '../img/logo.png'
 
 /* -------------------- PAYS -------------------- */
@@ -52,10 +53,12 @@ export default function RegisterPage() {
   const location = useLocation()
   const { setUser } = useAuth()
   const { t } = useTranslation()
+  const [loading, setLoading] = useState(false)
 
   const password = watch('password')
 
   async function onSubmit(data: FormData) {
+    setLoading(true)
     try {
       const { confirmPassword, ...rest } = data
 
@@ -68,15 +71,21 @@ export default function RegisterPage() {
       }
 
       await authService.register(payload)
+      setLoading(false)
       // Rediriger vers la page de connexion au lieu de connecter automatiquement
       navigate('/login')
     } catch {
+      setLoading(false)
       alert(t('register.failed'))
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8">
+    <>
+      {/* Loading Screen Modal */}
+      {loading && <LoadingScreen isModal={true} />}
+
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8">
       <div className="w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-[32px] p-6 sm:p-8 shadow-lg">
 
         {/* Header */}
@@ -246,5 +255,6 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+    </>
   )
 }

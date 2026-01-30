@@ -16,6 +16,8 @@ import androidIcon from '../img/icons-android.png'
 import appleIcon from '../img/icons-Apple.png'
 import whatsappIcon from '../img/icons-whatsapp.png'
 import telegramIcon from '../img/icons-télégramme.png'
+import { fetchBankAccounts, createBankAccount, deleteBankAccount, setDefaultAccount, type BankAccount } from '../services/bankAccounts'
+import { fetchOperateurs } from '../services/operateurs'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -47,6 +49,32 @@ export default function DashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
   const [showCompleteAccount, setShowCompleteAccount] = useState(false)
+
+  // COMPTES BANCAIRES
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+  const [showBankList, setShowBankList] = useState(false)
+  const [showOperatorList, setShowOperatorList] = useState(false)
+  const [accountType, setAccountType] = useState<'bank' | 'operator'>('bank')
+  const [selectedBank, setSelectedBank] = useState('')
+  const [selectedOperator, setSelectedOperator] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [accountHolderName, setAccountHolderName] = useState('')
+  const [operateurs, setOperateurs] = useState<any[]>([])
+  const [savingAccount, setSavingAccount] = useState(false)
+
+  // Liste des banques disponibles
+  const banks = [
+    'TRC-20',
+    'BEP-20',
+    'BNB',
+  ]
+
+  const operators = [
+    { id: 'Orange', name: 'Orange Money' },
+    { id: 'Airtel', name: 'Airtel Money' },
+    { id: 'M-Pesa', name: 'Vodacom M-Pesa' },
+  ]
 
   // Edit profile form
   const [editForm, setEditForm] = useState({
@@ -101,6 +129,30 @@ export default function DashboardPage() {
       })
     }
   }, [user])
+
+  // Charger les comptes bancaires et opérateurs
+  useEffect(() => {
+    loadBankAccounts()
+    loadOperateurs()
+  }, [])
+
+  async function loadBankAccounts() {
+    try {
+      const accounts = await fetchBankAccounts()
+      setBankAccounts(accounts)
+    } catch (e) {
+      console.error('Error loading bank accounts:', e)
+    }
+  }
+
+  async function loadOperateurs() {
+    try {
+      const ops = await fetchOperateurs()
+      setOperateurs(Array.isArray(ops) ? ops : [])
+    } catch (e) {
+      console.error('Error loading operateurs:', e)
+    }
+  }
 
   const canHarvest = (date: string) =>
     Date.now() - new Date(date).getTime() >= 24 * 60 * 60 * 1000
@@ -160,6 +212,74 @@ export default function DashboardPage() {
       notify.error('Erreur envoi message')
     } finally {
       setLoadingChat(false)
+    }
+  }
+
+  async function handleSaveBankAccount() {
+    if (!accountNumber.trim() || !accountHolderName.trim()) {
+      notify.error('Veuillez remplir tous les champs')
+      return
+    }
+
+    if (accountType === 'bank' && !selectedBank) {
+      notify.error('Veuillez sélectionner une banque')
+      return
+    }
+
+    if (accountType === 'operator' && !selectedOperator) {
+      notify.error('Veuillez sélectionner un opérateur')
+      return
+    }
+
+    setSavingAccount(true)
+    try {
+      await createBankAccount({
+        account_type: accountType,
+        bank_name: accountType === 'bank' ? selectedBank : undefined,
+        operator_name: accountType === 'operator' ? selectedOperator : undefined,
+        account_number: accountNumber,
+        account_holder_name: accountHolderName,
+        is_default: bankAccounts.length === 0
+      })
+
+      notify.success('Compte ajouté avec succès')
+      await loadBankAccounts()
+      
+      // Reset form
+      setAccountNumber('')
+      setAccountHolderName('')
+      setSelectedBank('')
+      setSelectedOperator('')
+      setAccountType('bank')
+      setShowCompleteAccount(false)
+    } catch (e: any) {
+      notify.error(e?.response?.data?.message || 'Erreur lors de l\'ajout du compte')
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  async function handleDeleteAccount(id: number) {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce compte ?')) {
+      return
+    }
+
+    try {
+      await deleteBankAccount(id)
+      notify.success('Compte supprimé')
+      await loadBankAccounts()
+    } catch (e: any) {
+      notify.error('Erreur lors de la suppression')
+    }
+  }
+
+  async function handleSetDefaultAccount(id: number) {
+    try {
+      await setDefaultAccount(id)
+      notify.success('Compte défini comme défaut')
+      await loadBankAccounts()
+    } catch (e: any) {
+      notify.error('Erreur lors de la mise à jour')
     }
   }
 
@@ -323,15 +443,200 @@ export default function DashboardPage() {
 
       {/* MODAL COMPLETER COMPTE */}
       {showCompleteAccount && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4">
-          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md space-y-3">
-            <h3 className="font-semibold text-lg md:text-xl">Complétez votre compte</h3>
-            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Moyen de dépôt" />
-            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Moyen de retrait" />
-            <input className="w-full border p-2 md:p-3 rounded text-sm md:text-base" placeholder="Banque utilisée" />
-            <button className="w-full bg-purple-600 text-white py-2 md:py-3 rounded-lg text-base md:text-lg">
-              Enregistrer
-            </button>
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4 overflow-y-auto">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-2xl my-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg md:text-xl">Gérer vos comptes</h3>
+              <button onClick={() => setShowCompleteAccount(false)} className="text-2xl text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+
+            {/* Liste des comptes existants */}
+            {bankAccounts.length > 0 && (
+              <div className="mb-6">
+                <h4 className="font-semibold text-base mb-3">Vos comptes enregistrés</h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {bankAccounts.map((account) => (
+                    <div key={account.id} className="bg-gray-50 p-3 rounded-lg flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm md:text-base">
+                            {account.account_type === 'bank' ? account.bank_name : account.operator_name}
+                          </span>
+                          {account.is_default && (
+                            <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded">Par défaut</span>
+                          )}
+                        </div>
+                        <div className="text-xs md:text-sm text-gray-600">{account.account_holder_name}</div>
+                        <div className="text-xs md:text-sm text-gray-500">{account.account_number}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        {!account.is_default && (
+                          <button
+                            onClick={() => handleSetDefaultAccount(account.id)}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Défaut
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteAccount(account.id)}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold text-base mb-3">Ajouter un nouveau compte</h4>
+
+              {/* Type de compte */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Type de compte</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setAccountType('bank')}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition ${
+                      accountType === 'bank'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🏦 Banque
+                  </button>
+                  <button
+                    onClick={() => setAccountType('operator')}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition ${
+                      accountType === 'operator'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    📱 Opérateur
+                  </button>
+                </div>
+              </div>
+
+              {/* Sélection banque ou opérateur */}
+              {accountType === 'bank' ? (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Sélectionnez votre banque</label>
+                  <button
+                    onClick={() => setShowBankList(true)}
+                    className="w-full border border-gray-300 p-3 rounded-lg text-left text-sm md:text-base hover:bg-gray-50"
+                  >
+                    {selectedBank || 'Choisir une banque...'}
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Sélectionnez votre opérateur</label>
+                  <button
+                    onClick={() => setShowOperatorList(true)}
+                    className="w-full border border-gray-300 p-3 rounded-lg text-left text-sm md:text-base hover:bg-gray-50"
+                  >
+                    {selectedOperator || 'Choisir un opérateur...'}
+                  </button>
+                </div>
+              )}
+
+              {/* Numéro de compte */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Numéro de compte</label>
+                <input
+                  type="text"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  className="w-full border border-gray-300 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
+                  placeholder={accountType === 'bank' ? 'Ex: 0123456789' : 'Ex: +243 XXX XXX XXX'}
+                />
+              </div>
+
+              {/* Nom du titulaire */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Nom du titulaire</label>
+                <input
+                  type="text"
+                  value={accountHolderName}
+                  onChange={(e) => setAccountHolderName(e.target.value)}
+                  className="w-full border border-gray-300 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
+                  placeholder="Nom complet tel qu'enregistré"
+                />
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCompleteAccount(false)}
+                  className="flex-1 border border-gray-300 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveBankAccount}
+                  disabled={savingAccount}
+                  className="flex-1 bg-violet-600 text-white py-2.5 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-violet-700 disabled:opacity-50"
+                >
+                  {savingAccount ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LISTE DES BANQUES */}
+      {showBankList && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex justify-center items-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg">Sélectionnez une banque</h3>
+              <button onClick={() => setShowBankList(false)} className="text-2xl text-gray-500">✕</button>
+            </div>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {banks.map((bank) => (
+                <button
+                  key={bank}
+                  onClick={() => {
+                    setSelectedBank(bank)
+                    setShowBankList(false)
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition text-sm md:text-base"
+                >
+                  {bank}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LISTE DES OPERATEURS */}
+      {showOperatorList && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex justify-center items-center px-4">
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg">Sélectionnez un opérateur</h3>
+              <button onClick={() => setShowOperatorList(false)} className="text-2xl text-gray-500">✕</button>
+            </div>
+            <div className="space-y-2">
+              {operators.map((op) => (
+                <button
+                  key={op.id}
+                  onClick={() => {
+                    setSelectedOperator(op.id)
+                    setShowOperatorList(false)
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition text-sm md:text-base"
+                >
+                  {op.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

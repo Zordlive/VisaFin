@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -57,6 +57,7 @@ from .serializers import (
     VIPLevelSerializer,
     UserVIPSubscriptionSerializer,
     OperateurSerializer,
+    UserBankAccountSerializer,
 )
 
 User = get_user_model()
@@ -798,6 +799,29 @@ class OperateurViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
 
+class UserBankAccountViewSet(viewsets.ModelViewSet):
+    """Manage user bank accounts and operator accounts."""
+    serializer_class = UserBankAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return UserBankAccount.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        """Set an account as default."""
+        account = self.get_object()
+        # Désactiver tous les autres comptes par défaut
+        UserBankAccount.objects.filter(user=request.user, is_default=True).update(is_default=False)
+        # Activer celui-ci
+        account.is_default = True
+        account.save()
+        return Response({'status': 'Compte défini comme défaut'})
+
+
 class UserVIPSubscriptionsView(APIView):
     """Get user's VIP subscriptions."""
     permission_classes = [IsAuthenticated]
@@ -870,14 +894,19 @@ class QuantificationGainsView(APIView):
     def get(self, request):
         vip_gains = {}
         investment_gains = {}
-        
-        # Calculate VIP gains
-        subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True)
-        for sub in subscriptions:
-            vip_gains[f"VIP_Level_{sub.vip_level.level}"] = float(sub.vip_level.daily_gains)
 
-        # Calculate investment gains
-        investments = Investment.objects.filter(user=request.user, active=True)
+        # Calculate VIP gains: only highest active level counts
+        subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True)
+        highest_level = subscriptions.aggregate(max_level=Max('vip_level__level')).get('max_level')
+        if highest_level:
+            highest_sub = subscriptions.filter(vip_level__level=highest_level).select_related('vip_level').first()
+            if highest_sub:
+                vip_gains[f"VIP_Level_{highest_sub.vip_level.level}"] = float(highest_sub.vip_level.daily_gains)
+
+        # Calculate investment gains: available only after 24 hours from creation
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(hours=24)
+        investments = Investment.objects.filter(user=request.user, active=True, created_at__lte=cutoff)
         total_investment_gains = 0
         for inv in investments:
             daily = float(inv.amount * inv.daily_rate)
@@ -906,15 +935,20 @@ class ClaimGainsView(APIView):
                 if not wallet:
                     return Response({'message': 'Portefeuille non trouvé'}, status=status.HTTP_404_NOT_FOUND)
 
-                # Collect VIP gains
+                # Collect VIP gains: only highest active level counts
                 vip_gains = Decimal('0')
                 subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True)
-                for sub in subscriptions:
-                    vip_gains += sub.vip_level.daily_gains
+                highest_level = subscriptions.aggregate(max_level=Max('vip_level__level')).get('max_level')
+                if highest_level:
+                    highest_sub = subscriptions.filter(vip_level__level=highest_level).select_related('vip_level').first()
+                    if highest_sub:
+                        vip_gains += highest_sub.vip_level.daily_gains
 
-                # Collect investment gains
+                # Collect investment gains: available only after 24 hours from creation
+                from datetime import timedelta
+                cutoff = timezone.now() - timedelta(hours=24)
                 investment_gains = Decimal('0')
-                investments = Investment.objects.filter(user=request.user, active=True)
+                investments = Investment.objects.filter(user=request.user, active=True, created_at__lte=cutoff)
                 for inv in investments:
                     daily = inv.amount * inv.daily_rate
                     investment_gains += daily

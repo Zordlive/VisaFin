@@ -273,3 +273,46 @@ class Operateur(models.Model):
 
     def __str__(self):
         return f"{self.get_operateur_display()} - {self.nom_agent} ({self.numero_agent})"
+
+
+class UserBankAccount(models.Model):
+    ACCOUNT_TYPE_CHOICES = (
+        ('bank', 'Banque'),
+        ('operator', 'Opérateur'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='bank_accounts')
+    account_type = models.CharField('type de compte', max_length=20, choices=ACCOUNT_TYPE_CHOICES)
+    
+    # Pour les banques
+    bank_name = models.CharField('nom de la banque', max_length=100, blank=True, null=True)
+    
+    # Pour les opérateurs (Orange, Airtel, M-Pesa)
+    operator_name = models.CharField('nom de l\'opérateur', max_length=50, blank=True, null=True)
+    
+    # Informations communes
+    account_number = models.CharField('numéro de compte', max_length=100)
+    account_holder_name = models.CharField('nom du titulaire', max_length=200)
+    
+    is_active = models.BooleanField('actif', default=True)
+    is_default = models.BooleanField('compte par défaut', default=False)
+    
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de mise à jour', auto_now=True)
+
+    class Meta:
+        verbose_name = 'compte bancaire utilisateur'
+        verbose_name_plural = 'comptes bancaires utilisateurs'
+        ordering = ['-is_default', '-created_at']
+
+    def __str__(self):
+        if self.account_type == 'bank':
+            return f"{self.bank_name} - {self.account_holder_name} ({self.account_number})"
+        else:
+            return f"{self.operator_name} - {self.account_holder_name} ({self.account_number})"
+
+    def save(self, *args, **kwargs):
+        # Si ce compte est défini comme par défaut, désactiver les autres comptes par défaut de l'utilisateur
+        if self.is_default:
+            UserBankAccount.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)

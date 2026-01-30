@@ -8,6 +8,7 @@ router.register(r'wallets', views.WalletViewSet, basename='wallet')
 router.register(r'transactions', views.TransactionViewSet, basename='transaction')
 router.register(r'vip-levels', views.VIPLevelViewSet, basename='vip-level')
 router.register(r'operateurs', views.OperateurViewSet, basename='operateur')
+router.register(r'bank-accounts', views.UserBankAccountViewSet, basename='bank-account')
 
 urlpatterns = [
     path('', include(router.urls)),
