@@ -6,6 +6,7 @@ from . import views
 router = routers.DefaultRouter()
 router.register(r'wallets', views.WalletViewSet, basename='wallet')
 router.register(r'transactions', views.TransactionViewSet, basename='transaction')
+router.register(r'vip-levels', views.VIPLevelViewSet, basename='vip-level')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -19,6 +20,12 @@ urlpatterns = [
     path('investments', views.InvestmentViewSet.as_view({'get': 'list', 'post': 'create'}), name='investments-list'),
     path('investments/<int:pk>/accrue', views.InvestmentViewSet.as_view({'post': 'accrue'}), name='investments-accrue'),
     path('investments/<int:pk>/encash', views.InvestmentViewSet.as_view({'post': 'encash'}), name='investments-encash'),
+
+    # VIP subscriptions
+    path('vip-subscriptions/me', views.UserVIPSubscriptionsView.as_view(), name='vip-subscriptions-me'),
+    path('vip-subscriptions/purchase', views.PurchaseVIPLevelView.as_view(), name='vip-purchase'),
+    path('quantification/gains', views.QuantificationGainsView.as_view(), name='quantification-gains'),
+    path('quantification/claim', views.ClaimGainsView.as_view(), name='quantification-claim'),
 
     # deposits
     path('deposits/initiate', views.DepositViewSet.as_view({'post': 'initiate'}), name='deposits-initiate'),

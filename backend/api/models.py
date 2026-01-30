@@ -20,7 +20,7 @@ class MarketOffer(models.Model):
         verbose_name_plural = 'offres de marché'
 
     def __str__(self):
-        return f"Offer {self.pk}: {self.amount_requested} -> {self.price_offered} ({self.status})"
+        return f"Offer {self.pk}: {self.title} -> {self.price_offered} ({self.status})"
 
 
 class Wallet(models.Model):
@@ -214,3 +214,41 @@ class HiddenOffer(models.Model):
 
     def __str__(self):
         return f"HiddenOffer offer={self.offer_id} user={self.user_id} until={self.hidden_until}"
+
+
+class VIPLevel(models.Model):
+    """VIP subscription levels (1 to 12) defined by admin."""
+    LEVEL_CHOICES = tuple((i, f"Niveau {i}") for i in range(1, 13))
+    
+    level = models.IntegerField('niveau', choices=LEVEL_CHOICES, unique=True)
+    title = models.CharField('titre', max_length=100, blank=True)
+    price = models.DecimalField('prix', max_digits=20, decimal_places=2)
+    percentage = models.DecimalField('pourcentage', max_digits=5, decimal_places=2, default=0)
+    daily_gains = models.DecimalField('gains quotidiens', max_digits=20, decimal_places=2, default=0)
+    delay_days = models.IntegerField('délai en jours', default=0)
+    description = models.TextField('description', blank=True)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'niveau VIP'
+        verbose_name_plural = 'niveaux VIP'
+        ordering = ['level']
+
+    def __str__(self):
+        return f"VIP Niveau {self.level} - {self.price}"
+
+
+class UserVIPSubscription(models.Model):
+    """Track which VIP levels a user has purchased."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='vip_subscriptions')
+    vip_level = models.ForeignKey(VIPLevel, verbose_name='niveau VIP', on_delete=models.CASCADE)
+    purchased_at = models.DateTimeField('acheté le', auto_now_add=True)
+    active = models.BooleanField('actif', default=True)
+
+    class Meta:
+        verbose_name = 'souscription VIP'
+        verbose_name_plural = 'souscriptions VIP'
+        unique_together = ('user', 'vip_level')
+
+    def __str__(self):
+        return f"{self.user} - Niveau {self.vip_level.level}"

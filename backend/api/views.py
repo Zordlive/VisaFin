@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -54,6 +54,8 @@ from .serializers import (
     DepositSerializer,
     UserSerializer,
     InvestmentSerializer,
+    VIPLevelSerializer,
+    UserVIPSubscriptionSerializer,
 )
 
 User = get_user_model()
@@ -67,44 +69,18 @@ class MarketOfferViewSet(viewsets.ModelViewSet):
         qs = MarketOffer.objects.all().order_by('-created_at')
         # optional filters via query params
         status = self.request.query_params.get('status')
-        source = self.request.query_params.get('source')
-        seller = self.request.query_params.get('seller')
         if status:
             qs = qs.filter(status=status)
-        if source:
-            qs = qs.filter(source=source)
-        if seller:
-            # allow numeric user id or username
-            if seller.isdigit():
-                qs = qs.filter(seller__id=int(seller))
-            else:
-                qs = qs.filter(seller__username__iexact=seller)
-        # If the request is authenticated, restrict visible offers by user's VIP level.
-        # Users can only see offers whose `amount_requested` is less than or equal
-        # to their VIP allowance. The allowance is computed from the base threshold
-        # (VIP_FIRST_THRESHOLD) doubled per level: allowance = base * (2 ** vip_level)
+        # exclude offers hidden for this user or globally until a future time
         try:
             user = getattr(self.request, 'user', None)
-            if user and user.is_authenticated:
-                vip_level = 0
-                try:
-                    vip_level = int(getattr(user.investor, 'vip_level', 0) or 0)
-                except Exception:
-                    vip_level = 0
-                from decimal import Decimal
-                base = Decimal(getattr(settings, 'VIP_FIRST_THRESHOLD', 25000))
-                # compute allowance; for vip_level 0 allow up to base
-                allowance = base * (Decimal(2) ** Decimal(vip_level))
-                qs = qs.filter(amount_requested__lte=allowance)
-                # exclude offers hidden for this user or globally until a future time
-                try:
-                    now = timezone.now()
-                    hidden_qs = HiddenOffer.objects.filter(hidden_until__gt=now).filter(Q(user__isnull=True) | Q(user=user))
-                    hidden_ids = list(hidden_qs.values_list('offer_id', flat=True))
-                    if hidden_ids:
-                        qs = qs.exclude(id__in=hidden_ids)
-                except Exception:
-                    pass
+            now = timezone.now()
+            hidden_qs = HiddenOffer.objects.filter(hidden_until__gt=now).filter(
+                Q(user__isnull=True) | Q(user=user)
+            )
+            hidden_ids = list(hidden_qs.values_list('offer_id', flat=True))
+            if hidden_ids:
+                qs = qs.exclude(id__in=hidden_ids)
         except Exception:
             # best-effort: if anything goes wrong, don't restrict results
             pass
@@ -785,3 +761,158 @@ class ReferralsMeView(APIView):
         }
 
         return Response({'code': code_data, 'referrals': referrals_data, 'stats': stats})
+
+
+class VIPLevelViewSet(viewsets.ReadOnlyModelViewSet):
+    """List and retrieve VIP levels."""
+    queryset = VIPLevel.objects.all()
+    serializer_class = VIPLevelSerializer
+    permission_classes = [AllowAny]
+
+
+class UserVIPSubscriptionsView(APIView):
+    """Get user's VIP subscriptions."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True).order_by('vip_level__level')
+        serializer = UserVIPSubscriptionSerializer(subscriptions, many=True)
+        return Response(serializer.data)
+
+
+class PurchaseVIPLevelView(APIView):
+    """Purchase a VIP level."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        level_id = request.data.get('level_id')
+        
+        if not level_id:
+            return Response({'message': 'level_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            vip_level = VIPLevel.objects.get(id=level_id)
+        except VIPLevel.DoesNotExist:
+            return Response({'message': 'Niveau VIP non trouvé'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if user already purchased this level
+        if UserVIPSubscription.objects.filter(user=request.user, vip_level=vip_level, active=True).exists():
+            return Response({'message': 'Vous avez déjà acheté ce niveau'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get or create wallet
+        wallet = Wallet.objects.filter(user=request.user).first()
+        if not wallet:
+            return Response({'message': 'Portefeuille non trouvé'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if user has enough balance
+        if wallet.available < vip_level.price:
+            return Response({'message': 'Solde insuffisant'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from django.db import transaction as db_transaction
+            with db_transaction.atomic():
+                # Deduct from wallet
+                wallet.available -= vip_level.price
+                wallet.save()
+
+                # Create transaction
+                Transaction.objects.create(
+                    wallet=wallet,
+                    amount=vip_level.price,
+                    type='transfer'
+                )
+
+                # Create VIP subscription
+                subscription = UserVIPSubscription.objects.create(
+                    user=request.user,
+                    vip_level=vip_level
+                )
+
+            serializer = UserVIPSubscriptionSerializer(subscription)
+            return Response({'message': 'Niveau VIP acheté avec succès', 'subscription': serializer.data})
+        except Exception as e:
+            logger.error(f'Error purchasing VIP level: {e}')
+            return Response({'message': 'Erreur lors de l\'achat'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class QuantificationGainsView(APIView):
+    """Get user's daily gains from VIP levels and investments."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        vip_gains = {}
+        investment_gains = {}
+        
+        # Calculate VIP gains
+        subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True)
+        for sub in subscriptions:
+            vip_gains[f"VIP_Level_{sub.vip_level.level}"] = float(sub.vip_level.daily_gains)
+
+        # Calculate investment gains
+        investments = Investment.objects.filter(user=request.user, active=True)
+        total_investment_gains = 0
+        for inv in investments:
+            daily = float(inv.amount * inv.daily_rate)
+            total_investment_gains += daily
+
+        investment_gains['total'] = total_investment_gains
+
+        return Response({
+            'vip_gains': vip_gains,
+            'investment_gains': investment_gains,
+            'total_gains': sum(vip_gains.values()) + total_investment_gains
+        })
+
+
+class ClaimGainsView(APIView):
+    """Claim all daily gains."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            from django.db import transaction as db_transaction
+            from decimal import Decimal
+
+            with db_transaction.atomic():
+                wallet = Wallet.objects.select_for_update().filter(user=request.user).first()
+                if not wallet:
+                    return Response({'message': 'Portefeuille non trouvé'}, status=status.HTTP_404_NOT_FOUND)
+
+                # Collect VIP gains
+                vip_gains = Decimal('0')
+                subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True)
+                for sub in subscriptions:
+                    vip_gains += sub.vip_level.daily_gains
+
+                # Collect investment gains
+                investment_gains = Decimal('0')
+                investments = Investment.objects.filter(user=request.user, active=True)
+                for inv in investments:
+                    daily = inv.amount * inv.daily_rate
+                    investment_gains += daily
+
+                total_gains = vip_gains + investment_gains
+
+                if total_gains > 0:
+                    wallet.gains = (wallet.gains + total_gains).quantize(Decimal('0.01'))
+                    wallet.save()
+
+                    # Create transaction record
+                    Transaction.objects.create(
+                        wallet=wallet,
+                        amount=total_gains,
+                        type='encash'
+                    )
+
+                    return Response({
+                        'message': 'Gains encaissés avec succès',
+                        'amount': float(total_gains),
+                        'vip_gains': float(vip_gains),
+                        'investment_gains': float(investment_gains)
+                    })
+                else:
+                    return Response({'message': 'Aucun gain disponible'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f'Error claiming gains: {e}')
+            return Response({'message': 'Erreur lors de l\'encaissement'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

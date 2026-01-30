@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription
 
 User = get_user_model()
 
@@ -43,12 +43,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class MarketOfferSerializer(serializers.ModelSerializer):
-    seller = UserSerializer(read_only=True)
-
     class Meta:
         model = MarketOffer
         fields = (
-            'id', 'seller', 'title', 'description', 'amount_requested', 'price_offered', 'surplus', 'source', 'status', 'expires_at', 'created_at'
+            'id', 'title', 'description', 'price_offered', 'status', 'expires_at', 'created_at'
         )
 
 
@@ -161,3 +159,17 @@ class SetPasswordSerializer(serializers.Serializer):
         user.is_active = True
         user.save()
         return user
+
+
+class VIPLevelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VIPLevel
+        fields = ('id', 'level', 'title', 'price', 'percentage', 'daily_gains', 'delay_days', 'description', 'created_at')
+
+
+class UserVIPSubscriptionSerializer(serializers.ModelSerializer):
+    vip_level = VIPLevelSerializer(read_only=True)
+
+    class Meta:
+        model = UserVIPSubscription
+        fields = ('id', 'vip_level', 'purchased_at', 'active')

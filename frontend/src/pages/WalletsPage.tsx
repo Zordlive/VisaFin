@@ -104,7 +104,7 @@ export default function PortefeuillePage() {
 
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
-  const totalSale = wallets.reduce((a: number, w: any) => a + Number(w.invested || 0), 0)
+  const totalInvested = wallets.reduce((a: number, w: any) => a + Number(w.invested || 0), 0)
 
   if (isLoading)
     return <div className="h-40 flex items-center justify-center">Chargement…</div>
@@ -196,7 +196,7 @@ export default function PortefeuillePage() {
             <div>
               <div className="text-gray-500">Solde investi</div>
               <div className="font-semibold">
-                {totalSale.toLocaleString()} {mainWallet?.currency || 'USDT'}
+                {totalInvested.toLocaleString()} {mainWallet?.currency || 'USDT'}
               </div>
             </div>
           </div>

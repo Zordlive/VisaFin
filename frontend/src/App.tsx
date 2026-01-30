@@ -4,7 +4,9 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import WalletsPage from './pages/WalletsPage'
-import MarketPage from './pages/InvestPage'
+import InvestPage from './pages/InvestPage'
+import VIPPage from './pages/VIPPage'
+import QuantificationPage from './pages/QuantificationPage'
 import MesInvestissementsPage from './pages/MesinvestissementsPage'
 import DepositsPage from './pages/DepositsPage'
 import WithdrawPage from './pages/WithdrawPage'
@@ -55,10 +57,34 @@ export default function App() {
           }
         />
         <Route
+          path="/invest"
+          element={
+            <ProtectedRoute>
+              <InvestPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vip"
+          element={
+            <ProtectedRoute>
+              <VIPPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quantification"
+          element={
+            <ProtectedRoute>
+              <QuantificationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/market"
           element={
             <ProtectedRoute>
-              <MarketPage />
+              <InvestPage />
             </ProtectedRoute>
           }
         />

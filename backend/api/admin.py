@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
-from .models import ReferralCode, Referral
+from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription
 
 
 @admin.register(MarketOffer)
@@ -36,3 +36,19 @@ class ReferralCodeAdmin(admin.ModelAdmin):
 @admin.register(Referral)
 class ReferralAdmin(admin.ModelAdmin):
     list_display = ('id', 'code', 'referred_user', 'status', 'created_at', 'used_at')
+
+
+@admin.register(VIPLevel)
+class VIPLevelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'level', 'title', 'price', 'percentage', 'daily_gains', 'delay_days', 'created_at')
+    list_filter = ('level',)
+    search_fields = ('title', 'description')
+    ordering = ('level',)
+
+
+@admin.register(UserVIPSubscription)
+class UserVIPSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'vip_level', 'purchased_at', 'active')
+    list_filter = ('active', 'vip_level')
+    search_fields = ('user__username', 'user__email')
+    raw_id_fields = ('user', 'vip_level')

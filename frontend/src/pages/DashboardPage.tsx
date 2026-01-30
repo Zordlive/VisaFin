@@ -23,8 +23,11 @@ export default function DashboardPage() {
 
   const [wallet, setWallet] = useState<any>(null)
   const [investments, setInvestments] = useState<any[]>([])
+  const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
+  const maxVIPLevel = vipSubscriptions.length > 0 
+    ? Math.max(...vipSubscriptions.map((s: any) => s.vip_level?.level || 0))
+    : 0
 
-  const [showInvestModal, setShowInvestModal] = useState(false)
   const [showOfferDetails, setShowOfferDetails] = useState<any>(null)
   const [showWhatsappModal, setShowWhatsappModal] = useState(false)
   const [showAboutModal, setShowAboutModal] = useState(false)
@@ -73,6 +76,13 @@ export default function DashboardPage() {
 
     api.get('/investments').then(res => {
       if (mounted) setInvestments(res.data || [])
+    })
+
+    // Fetch VIP subscriptions
+    import('../services/vip').then(({ fetchUserVIPSubscriptions }) => {
+      fetchUserVIPSubscriptions().then((data: any) => {
+        if (mounted) setVipSubscriptions(Array.isArray(data) ? data : [])
+      }).catch(() => {})
     })
 
     return () => { mounted = false }
@@ -164,11 +174,23 @@ export default function DashboardPage() {
       {/* PROFIL */}
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl md:text-2xl">👤</div>
+          <div className="relative">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl md:text-2xl">👤</div>
+            {maxVIPLevel > 0 && (
+              <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm font-bold border-2 border-white">
+                {maxVIPLevel}
+              </div>
+            )}
+          </div>
           <div className="flex-1">
             <div className="font-semibold text-base md:text-lg">{user?.first_name || user?.username}</div>
             <div className="text-sm md:text-base text-gray-500">{user?.phone}</div>
             <div className="text-sm md:text-base text-gray-500">{user?.email}</div>
+            {maxVIPLevel > 0 && (
+              <div className="text-sm md:text-base text-yellow-600 font-semibold mt-1">
+                👑 Niveau VIP {maxVIPLevel}
+              </div>
+            )}
           </div>
         </div>
         <button
@@ -182,13 +204,13 @@ export default function DashboardPage() {
       {/* MES INVESTISSEMENTS */}
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <h2 className="font-semibold text-lg md:text-xl mb-2 sm:mb-0">Mes investissements</h2>
-          <button
-            onClick={() => setShowInvestModal(true)}
-            className="text-sm md:text-base text-purple-600"
+          <h2 className="font-semibold text-lg md:text-xl mb-2 sm:mb-0">Mes gains quotidiens</h2>
+          <a
+            href="/quantification"
+            className="text-sm md:text-base text-purple-600 hover:underline"
           >
-            Voir →
-          </button>
+            Réclamer →
+          </a>
         </div>
       </div>
 
@@ -230,75 +252,6 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-
-      {/* ================= MODAL INVEST ================= */}
-      {showInvestModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4">
-          <div className="
-            bg-white rounded-2xl
-            w-full max-w-sm sm:max-w-md md:max-w-lg
-            max-h-[85vh] overflow-y-auto
-            p-4 sm:p-5 md:p-6 space-y-4
-          ">
-            <h2 className="font-semibold text-lg md:text-xl">Mes investissements</h2>
-
-            {investments.length === 0 && (
-              <p className="text-sm md:text-base text-gray-500">
-                Aucun investissement pour le moment.
-              </p>
-            )}
-
-            <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-              {investments.map(inv => {
-                const daily = Math.round(inv.amount * inv.daily_rate)
-                const canCollect = canHarvest(inv.last_collected_at)
-
-                return (
-                  <div key={inv.id} className="border rounded-xl p-3 sm:p-4">
-                    <div className="flex justify-between">
-                      <div>
-                        <div className="font-semibold">{inv.title}</div>
-                        <div className="text-xs sm:text-sm text-gray-500">
-                          Gain journalier :{' '}
-                          <strong>
-                            {daily} {wallet?.currency ?? 'USDT'}
-                          </strong>
-                        </div>
-                      </div>
-                      <div className="font-medium text-sm">
-                        {inv.amount} {wallet?.currency ?? 'USDT'}
-                      </div>
-                    </div>
-
-                    <button
-                      disabled={!canCollect}
-                      className={`mt-2 w-full py-2 rounded-lg text-white text-sm ${
-                        canCollect ? 'bg-green-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      Je perçois mes gains
-                    </button>
-
-                    <button
-                      onClick={() => setShowOfferDetails(inv)}
-                      className="mt-1 text-xs text-purple-600 underline"
-                    >
-                      À propos de l’offre
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-
-            <button
-              onClick={() => setShowInvestModal(false)}
-              className="w-full py-2 bg-purple-600 text-white rounded-lg text-base md:text-lg"
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
-      )}
 
       
       {/* ================= MODAL OFFRE ================= */}
