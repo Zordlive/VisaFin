@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -46,6 +46,7 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors }
   } = useForm<FormData>()
 
@@ -56,6 +57,15 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   const password = watch('password')
+
+  // Pré-remplir le code de parrainage depuis l'URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const refFromUrl = params.get('ref')
+    if (refFromUrl) {
+      setValue('referralCode', refFromUrl)
+    }
+  }, [location.search, setValue])
 
   async function onSubmit(data: FormData) {
     setLoading(true)

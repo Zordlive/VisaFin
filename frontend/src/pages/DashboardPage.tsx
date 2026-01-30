@@ -304,34 +304,113 @@ export default function DashboardPage() {
         <HeaderActions />
       </div>
 
-      {/* PROFIL */}
-      <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-full flex items-center justify-center text-xl md:text-2xl">👤</div>
-            {maxVIPLevel > 0 && (
-              <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-full w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-xs md:text-sm font-bold border-2 border-white">
-                {maxVIPLevel}
-              </div>
-            )}
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-base md:text-lg">{user?.first_name || user?.username}</div>
-            <div className="text-sm md:text-base text-gray-500">{user?.phone}</div>
-            <div className="text-sm md:text-base text-gray-500">{user?.email}</div>
-            {maxVIPLevel > 0 && (
-              <div className="text-sm md:text-base text-yellow-600 font-semibold mt-1">
-                👑 Niveau VIP {maxVIPLevel}
-              </div>
-            )}
-          </div>
+      {/* PROFIL SECTION - REDESIGNED */}
+      <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 rounded-3xl shadow-xl overflow-hidden mb-6">
+        {/* Header avec arrière-plan */}
+        <div className="relative h-24 md:h-32 bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
         </div>
-        <button
-          onClick={() => setShowProfileModal(true)}
-          className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg text-sm md:text-base font-medium w-fit"
-        >
-          Gérer votre profil
-        </button>
+
+        {/* Contenu principal */}
+        <div className="px-4 md:px-6 pb-6 -mt-12">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 mb-6">
+            {/* Avatar avec badge VIP */}
+            <div className="relative group">
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-white to-gray-100 rounded-2xl flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white transform transition-transform group-hover:scale-105">
+                👤
+              </div>
+              {maxVIPLevel > 0 && (
+                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white rounded-xl px-3 py-1 flex items-center gap-1 text-xs md:text-sm font-bold shadow-lg border-2 border-white animate-pulse">
+                  <span>👑</span>
+                  <span>VIP {maxVIPLevel}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Informations utilisateur */}
+            <div className="flex-1 text-white">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-1">
+                {user?.first_name || user?.username || 'Utilisateur'}
+              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base opacity-90">
+                <div className="flex items-center gap-2">
+                  <span>📧</span>
+                  <span>{user?.email || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>📱</span>
+                  <span>{user?.phone || '—'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Statistiques rapides */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <div className="text-white/70 text-xs md:text-sm mb-1">Total Investi</div>
+              <div className="text-white text-lg md:text-xl lg:text-2xl font-bold">
+                ${user?.total_invested ? Number(user.total_invested).toLocaleString() : '0'}
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <div className="text-white/70 text-xs md:text-sm mb-1">Parrainés</div>
+              <div className="text-white text-lg md:text-xl lg:text-2xl font-bold">
+                {stats?.total_referred ?? 0}
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
+              <div className="text-white/70 text-xs md:text-sm mb-1">Niveau VIP</div>
+              <div className="text-white text-lg md:text-xl lg:text-2xl font-bold flex items-center gap-1">
+                {maxVIPLevel > 0 ? (
+                  <>
+                    <span>👑</span>
+                    <span>{maxVIPLevel}</span>
+                  </>
+                ) : (
+                  <span>0</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Badges et accomplissements */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {maxVIPLevel >= 5 && (
+              <div className="bg-yellow-500/20 border border-yellow-400/30 text-yellow-200 px-3 py-1 rounded-full text-xs md:text-sm flex items-center gap-1">
+                <span>⭐</span>
+                <span>VIP Elite</span>
+              </div>
+            )}
+            {stats?.total_referred >= 10 && (
+              <div className="bg-blue-500/20 border border-blue-400/30 text-blue-200 px-3 py-1 rounded-full text-xs md:text-sm flex items-center gap-1">
+                <span>🎯</span>
+                <span>Recruteur Pro</span>
+              </div>
+            )}
+            {(user?.total_invested ?? 0) >= 1000 && (
+              <div className="bg-green-500/20 border border-green-400/30 text-green-200 px-3 py-1 rounded-full text-xs md:text-sm flex items-center gap-1">
+                <span>💎</span>
+                <span>Investisseur</span>
+              </div>
+            )}
+            {investments.length > 0 && (
+              <div className="bg-purple-500/20 border border-purple-400/30 text-purple-200 px-3 py-1 rounded-full text-xs md:text-sm flex items-center gap-1">
+                <span>📈</span>
+                <span>{investments.length} Investissements actifs</span>
+              </div>
+            )}
+          </div>
+
+          {/* Bouton d'action */}
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="w-full bg-white text-violet-700 hover:bg-gray-50 font-semibold py-3 md:py-4 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <span>⚙️</span>
+            <span>Gérer votre profil</span>
+          </button>
+        </div>
       </div>
 
       {/* MES INVESTISSEMENTS */}
@@ -362,9 +441,39 @@ export default function DashboardPage() {
       {/* MON EQUIPE */}
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
         <h2 className="font-semibold text-lg md:text-xl mb-3">Mon équipe</h2>
-        <div className="text-sm md:text-base space-y-2">
-          <div className="flex justify-between"><span>Niveau 7</span><span>{stats.vip7 ?? 0}</span></div>
-          <div className="flex justify-between"><span>Niveau 5</span><span>{stats.vip5 ?? 0}</span></div>
+        <div className="text-sm md:text-base space-y-3">
+          <div className="flex justify-between items-center pb-2 border-b">
+            <span className="font-semibold">Total parrainés</span>
+            <span className="text-violet-600 font-bold">{stats?.total_referred ?? 0}</span>
+          </div>
+          
+          {stats?.vip_breakdown && Object.keys(stats.vip_breakdown).length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-2">Répartition par niveau VIP</p>
+              {Object.entries(stats.vip_breakdown)
+                .sort((a, b) => {
+                  const levelA = parseInt(a[0].replace('niveau_', ''))
+                  const levelB = parseInt(b[0].replace('niveau_', ''))
+                  return levelB - levelA
+                })
+                .map(([level, count]: [string, any]) => {
+                  const levelNum = level.replace('niveau_', '')
+                  return (
+                    <div key={level} className="flex justify-between items-center">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-violet-600"></span>
+                        {levelNum === '0' ? 'Sans VIP' : `Niveau VIP ${levelNum}`}
+                      </span>
+                      <span className="font-semibold">{count}</span>
+                    </div>
+                  )
+                })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">
+              Aucun filleul pour le moment. Partagez votre code pour commencer !
+            </p>
+          )}
         </div>
       </div>
 

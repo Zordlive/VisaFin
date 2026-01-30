@@ -768,10 +768,29 @@ class ReferralsMeView(APIView):
         referrals = Referral.objects.filter(code__referrer=request.user).order_by('-created_at')
         referrals_data = ReferralSerializer(referrals, many=True).data
 
+        # Statistiques de parrainage avec niveaux VIP
+        total_referred = referrals.count()
+        used = referrals.filter(status='used').count()
+        pending = referrals.filter(status='pending').count()
+
+        # Compter les filleuls par niveau VIP
+        vip_breakdown = {}
+        for referral in referrals.filter(status='used', referred_user__isnull=False):
+            user = referral.referred_user
+            # Récupérer les subscriptions VIP de l'utilisateur
+            subscriptions = UserVIPSubscription.objects.filter(user=user, active=True)
+            if subscriptions.exists():
+                max_level = subscriptions.aggregate(max_level=Max('vip_level__level')).get('max_level')
+                vip_key = f"niveau_{max_level}"
+                vip_breakdown[vip_key] = vip_breakdown.get(vip_key, 0) + 1
+            else:
+                vip_breakdown['niveau_0'] = vip_breakdown.get('niveau_0', 0) + 1
+
         stats = {
-            'total_referred': referrals.count(),
-            'used': referrals.filter(status='used').count(),
-            'pending': referrals.filter(status='pending').count(),
+            'total_referred': total_referred,
+            'used': used,
+            'pending': pending,
+            'vip_breakdown': vip_breakdown,
         }
 
         return Response({'code': code_data, 'referrals': referrals_data, 'stats': stats})
