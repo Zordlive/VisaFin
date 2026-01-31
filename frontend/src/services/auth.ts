@@ -10,14 +10,15 @@ export const authService = {
     try { if (refresh_token) localStorage.setItem('refresh_token', refresh_token) } catch (e) {}
     return { user, access_token }
   },
-  async register(payload: { name: string; email?: string; phone?: string; password: string }) {
+  async register(payload: { name: string; email?: string; phone?: string; password: string; [key: string]: any }) {
     const res = await api.post('/auth/register', payload)
     const access_token = res.data.access_token || res.data.token || null
     const refresh_token = res.data.refresh_token || res.data.refresh || null
     const user = res.data.user
+    const referral_bonus = res.data.referral_bonus || 0
     if (access_token) setAuthToken(access_token)
     try { if (refresh_token) localStorage.setItem('refresh_token', refresh_token) } catch (e) {}
-    return { user, access_token }
+    return { user, access_token, referral_bonus }
   },
   async refresh() {
     // This helper can be used by other parts if needed. api interceptor already attempts refresh.
