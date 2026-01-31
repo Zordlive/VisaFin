@@ -28,6 +28,8 @@ export default function DashboardPage() {
   const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
   const [pageLoading, setPageLoading] = useState(true)
+  const [referrals, setReferrals] = useState<any[]>([])
+  const [showReferralsModal, setShowReferralsModal] = useState(false)
   const maxVIPLevel = vipSubscriptions.length > 0 
     ? Math.max(...vipSubscriptions.map((s: any) => s.vip_level?.level || 0))
     : 0
@@ -118,7 +120,12 @@ export default function DashboardPage() {
         return fetchUserVIPSubscriptions().then((data: any) => {
           if (mounted) setVipSubscriptions(Array.isArray(data) ? data : [])
         }).catch(() => {})
-      })
+      }),
+      api.get('/referrals/me').then(res => {
+        if (mounted && res.data) {
+          setReferrals(res.data.referrals || [])
+        }
+      }).catch(() => {})
     ]).finally(() => {
       if (mounted) setPageLoading(false)
     })
@@ -448,7 +455,17 @@ export default function DashboardPage() {
 
       {/* MON EQUIPE */}
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
-        <h2 className="font-semibold text-lg md:text-xl mb-3">Mon équipe</h2>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg md:text-xl">Mon équipe</h2>
+          {(stats?.total_referred ?? 0) > 0 && (
+            <button
+              onClick={() => setShowReferralsModal(true)}
+              className="text-xs md:text-sm text-violet-600 hover:underline font-medium"
+            >
+              Voir tous →
+            </button>
+          )}
+        </div>
         <div className="text-sm md:text-base space-y-3">
           <div className="flex justify-between items-center pb-2 border-b">
             <span className="font-semibold">Total parrainés</span>
@@ -957,6 +974,64 @@ export default function DashboardPage() {
             <button
               onClick={() => setShowAboutModal(false)}
               className="w-full border py-2 rounded-lg text-sm md:text-base mt-4"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* REFERRALS MODAL */}
+      {showReferralsModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-2 sm:px-4 py-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 w-full max-w-[95vw] sm:max-w-md md:max-w-lg max-h-[88vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-base sm:text-lg md:text-xl">Mes filleuls</h3>
+              <button onClick={() => setShowReferralsModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">
+                ✕
+              </button>
+            </div>
+
+            {referrals && referrals.length > 0 ? (
+              <div className="space-y-3">
+                {referrals.map((ref: any, idx: number) => (
+                  <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm md:text-base text-gray-900">
+                          {ref.referred_user?.first_name || 'Utilisateur'}
+                        </p>
+                        <p className="text-xs md:text-sm text-gray-500 truncate">
+                          {ref.referred_user?.email || '—'}
+                        </p>
+                        <p className="text-xs md:text-sm text-gray-500 mt-1">
+                          Inscrit le: {ref.used_at ? new Date(ref.used_at).toLocaleDateString('fr-FR') : '—'}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                          ref.status === 'used' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {ref.status === 'used' ? 'Actif' : 'Attente'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm md:text-base text-gray-400">
+                  Aucun filleul pour le moment
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowReferralsModal(false)}
+              className="w-full border py-2 sm:py-2.5 rounded-lg text-sm md:text-base mt-4 hover:bg-gray-50 transition"
             >
               Fermer
             </button>

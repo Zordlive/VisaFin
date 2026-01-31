@@ -43,6 +43,7 @@ export default function AdminDashboardPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('notifications');
@@ -66,12 +67,14 @@ export default function AdminDashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [notificationsRes, withdrawalsRes] = await Promise.all([
+        const [notificationsRes, withdrawalsRes, referralsRes] = await Promise.all([
           api.get('/api/admin-notifications/'),
           api.get('/api/withdrawals/'),
+          api.get('/referrals/all/').catch(() => ({ data: [] }))
         ]);
         setNotifications(notificationsRes.data.results || notificationsRes.data);
         setWithdrawals(withdrawalsRes.data.results || withdrawalsRes.data);
+        setReferrals(referralsRes.data.results || referralsRes.data || []);
         setError('');
       } catch (err: any) {
         setError(err.response?.data?.detail || 'Erreur lors du chargement des données');
@@ -197,6 +200,16 @@ export default function AdminDashboardPage() {
                     {withdrawals.filter(w => w.status === 'pending').length}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => setActiveTab('referrals')}
+                className={`pb-4 px-4 font-semibold transition ${
+                  activeTab === 'referrals'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Parrainages ({referrals.length})
               </button>
             </div>
 
@@ -419,6 +432,56 @@ export default function AdminDashboardPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Referrals Tab */}
+      {activeTab === 'referrals' && (
+        <div className="grid gap-4">
+          {referrals.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg">
+              <p className="text-gray-500">Aucun parrainage enregistré</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {referrals.map((ref: any) => (
+                <div key={ref.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold text-lg">Filleul</h3>
+                      <p className="text-gray-600">{ref.referred_user?.first_name || 'N/A'}</p>
+                      <p className="text-sm text-gray-500">{ref.referred_user?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Parrain</h3>
+                      <p className="text-gray-600">{ref.code?.referrer?.first_name || 'N/A'}</p>
+                      <p className="text-sm text-gray-500">{ref.code?.referrer?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Code</h3>
+                      <p className="font-mono text-blue-600">{ref.code?.code}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Statut</h3>
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        ref.status === 'used' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {ref.status === 'used' ? 'Actif' : 'En attente'}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Date d'inscription</h3>
+                      <p className="text-gray-600">{ref.used_at ? new Date(ref.used_at).toLocaleDateString('fr-FR') : '—'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Bonus accordé</h3>
+                      <p className="text-green-600 font-bold">10 USDT</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

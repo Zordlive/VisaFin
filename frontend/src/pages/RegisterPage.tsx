@@ -75,18 +75,27 @@ export default function RegisterPage() {
       const params = new URLSearchParams(location.search)
       const refFromUrl = params.get('ref')
 
+      // Send referral code with both key names for flexibility
       const payload = {
         ...rest,
-        referralCode: rest.referralCode || refFromUrl
+        referralCode: rest.referralCode || refFromUrl,
+        ref: rest.referralCode || refFromUrl  // Also send as 'ref' for backend compatibility
       }
 
-      await authService.register(payload)
+      const result = await authService.register(payload)
+      
+      // Show referral bonus if applicable
+      if (result.referral_bonus && result.referral_bonus > 0) {
+        alert(`✅ Inscription réussie! Le parrain a reçu ${result.referral_bonus} USDT de bonus.`)
+      }
+      
       setLoading(false)
       // Rediriger vers la page de connexion au lieu de connecter automatiquement
       navigate('/login')
-    } catch {
+    } catch (error: any) {
       setLoading(false)
-      alert(t('register.failed'))
+      const message = error?.response?.data?.message || t('register.failed')
+      alert(`❌ Erreur: ${message}`)
     }
   }
 

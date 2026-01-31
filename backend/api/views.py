@@ -310,7 +310,8 @@ class RegisterView(APIView):
         phone = request.data.get('phone')
         password = request.data.get('password')
         country_code = request.data.get('countryCode')
-        ref_code = request.data.get('ref')
+        # Accept both 'ref' and 'referralCode' for flexibility
+        ref_code = request.data.get('ref') or request.data.get('referralCode')
 
         if not name or not password:
             return Response({'message': 'name and password required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -375,20 +376,56 @@ class RegisterView(APIView):
 
         # if a referral code was provided, link the referral.
         # We mark it as 'used' immediately and record the timestamp so the referrer sees the new referred user.
+        referral_bonus = 0
         if ref_code:
             try:
                 rc = ReferralCode.objects.filter(code__iexact=ref_code).first()
-                if rc:
+                if rc and rc.referrer != user:  # Don't create self-referrals
                     from django.utils import timezone as _tz
-                    Referral.objects.create(code=rc, referred_user=user, status='used', used_at=_tz.now())
-            except Exception:
+                    referral = Referral.objects.create(code=rc, referred_user=user, status='used', used_at=_tz.now())
+                    
+                    # Award referral bonus to referrer
+                    referral_bonus = 10  # 10 USDT bonus for each successful referral
+                    
+                    # Get or create wallet for the referrer in USDT
+                    referrer_wallet = Wallet.objects.filter(user=rc.referrer, currency='USDT').first()
+                    if not referrer_wallet:
+                        referrer_wallet = Wallet.objects.create(user=rc.referrer, currency='USDT')
+                    
+                    # Add bonus to available balance
+                    referrer_wallet.available += referral_bonus
+                    referrer_wallet.save()
+                    
+                    # Create referral transaction for the referrer
+                    Transaction.objects.create(
+                        wallet=referrer_wallet,
+                        amount=referral_bonus,
+                        type='referral'
+                    )
+                    
+                    # Create ReferralReward record
+                    txn = Transaction.objects.filter(
+                        wallet=referrer_wallet,
+                        amount=referral_bonus,
+                        type='referral'
+                    ).latest('created_at')
+                    ReferralReward.objects.create(referral=referral, amount=referral_bonus, transaction=txn)
+            except Exception as e:
+                # Log error but don't fail registration
+                print(f"Referral processing error: {str(e)}")
                 pass
 
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
         user_data = UserSerializer(user).data
-        resp = Response({'user': user_data, 'access_token': access_token, 'refresh_token': refresh_token, 'investor_created': investor_created})
+        resp = Response({
+            'user': user_data,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'investor_created': investor_created,
+            'referral_bonus': referral_bonus if 'referral_bonus' in locals() else 0
+        })
         set_refresh_cookie(resp, refresh_token)
         return resp
 
@@ -807,6 +844,46 @@ class ReferralsMeView(APIView):
         }
 
         return Response({'code': code_data, 'referrals': referrals_data, 'stats': stats})
+
+
+class AdminReferralsView(APIView):
+    """Admin view for managing all referrals."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Only allow staff/admin users
+        if not request.user.is_staff:
+            return Response({'message': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get all referrals with related data
+        referrals = Referral.objects.select_related(
+            'code__referrer',
+            'referred_user'
+        ).order_by('-created_at')
+        
+        referrals_data = ReferralSerializer(referrals, many=True).data
+        
+        # Add statistics
+        total_referrals = referrals.count()
+        used_referrals = referrals.filter(status='used').count()
+        pending_referrals = referrals.filter(status='pending').count()
+        
+        # Calculate total bonuses distributed
+        total_bonuses = ReferralReward.objects.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        stats = {
+            'total_referrals': total_referrals,
+            'used_referrals': used_referrals,
+            'pending_referrals': pending_referrals,
+            'total_bonuses': float(total_bonuses)
+        }
+        
+        return Response({
+            'results': referrals_data,
+            'stats': stats
+        })
 
 
 class VIPLevelViewSet(viewsets.ReadOnlyModelViewSet):

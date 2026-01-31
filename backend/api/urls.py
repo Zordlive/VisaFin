@@ -20,6 +20,7 @@ urlpatterns = [
     path('market/offers/<int:pk>', views.MarketOfferViewSet.as_view({'get': 'retrieve'}), name='market-offers-detail'),
     # virtual buyer endpoints removed
     path('referrals/me', views.ReferralsMeView.as_view(), name='referrals-me'),
+    path('referrals/all/', views.AdminReferralsView.as_view(), name='referrals-all'),
     # investments
     path('investments', views.InvestmentViewSet.as_view({'get': 'list', 'post': 'create'}), name='investments-list'),
     path('investments/<int:pk>/accrue', views.InvestmentViewSet.as_view({'post': 'accrue'}), name='investments-accrue'),
