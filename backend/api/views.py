@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -61,6 +61,7 @@ from .serializers import (
     WithdrawalSerializer,
     AdminNotificationSerializer,
     CryptoAddressSerializer,
+    SocialLinksSerializer,
 )
 
 User = get_user_model()
@@ -978,6 +979,26 @@ class CryptoAddressViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Return only active crypto addresses."""
         return CryptoAddress.objects.filter(is_active=True)
+
+
+class SocialLinksViewSet(viewsets.ReadOnlyModelViewSet):
+    """Retrieve social media links (WhatsApp and Telegram)."""
+    queryset = SocialLinks.objects.all()
+    serializer_class = SocialLinksSerializer
+    permission_classes = [AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        """Return the single instance of social links."""
+        instance = SocialLinks.objects.first()
+        if instance:
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        return Response({
+            'whatsapp_channel': None,
+            'whatsapp_group': None,
+            'telegram_channel': None,
+            'telegram_group': None
+        })
 
 
 class UserBankAccountViewSet(viewsets.ModelViewSet):

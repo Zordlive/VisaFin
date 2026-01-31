@@ -12,6 +12,7 @@ router.register(r'bank-accounts', views.UserBankAccountViewSet, basename='bank-a
 router.register(r'withdrawals', views.WithdrawalViewSet, basename='withdrawal')
 router.register(r'admin-notifications', views.AdminNotificationViewSet, basename='admin-notification')
 router.register(r'crypto-addresses', views.CryptoAddressViewSet, basename='crypto-address')
+router.register(r'social-links', views.SocialLinksViewSet, basename='social-links')
 
 urlpatterns = [
     path('', include(router.urls)),

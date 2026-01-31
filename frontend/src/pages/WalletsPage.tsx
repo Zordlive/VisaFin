@@ -85,6 +85,14 @@ export default function PortefeuillePage() {
   const [txid, setTxid] = useState('')
   const [loadingDeposit, setLoadingDeposit] = useState(false)
   const [depositError, setDepositError] = useState<string | null>(null)
+  const [selectedCryptoNetwork, setSelectedCryptoNetwork] = useState('')
+
+  // Réseaux crypto avec leurs adresses
+  const cryptoNetworks = [
+    { id: 'usdt-bep20', name: 'USDT BEP20', address: '0x7ee2ebefab063aac29f9a941bbf924cbd448ad3a' },
+    { id: 'bnb-bep20', name: 'BNB BEP20', address: '0x7ee2ebefab063aac29f9a941bbf924cbd448ad3a' },
+    { id: 'trx-tronc20', name: 'TRX Tronc20', address: 'TUUCK4H63D9bz1S4e1EVbJHKHxEwsYNDzM' }
+  ]
 
   /* ===== TRANSACTIONS ===== */
   const [transactions, setTransactions] = useState<any[]>([])
@@ -305,6 +313,18 @@ export default function PortefeuillePage() {
     try {
       await navigator.clipboard.writeText(text)
       notify.success('Numéro copié !')
+    } catch (e) {
+      notify.error('Erreur de copie')
+    }
+  }
+
+  const handleCopyCryptoAddress = async () => {
+    const network = cryptoNetworks.find(n => n.id === selectedCryptoNetwork)
+    if (!network) return
+    
+    try {
+      await navigator.clipboard.writeText(network.address)
+      notify.success('Adresse copiée !')
     } catch (e) {
       notify.error('Erreur de copie')
     }
@@ -748,38 +768,28 @@ export default function PortefeuillePage() {
       {depositType === 'CRYPTO' && (
         <div className="space-y-4">
           <select
-            value={cryptoChannel}
-            onChange={(e) => setCryptoChannel(e.target.value as any)}
+            value={selectedCryptoNetwork}
+            onChange={(e) => setSelectedCryptoNetwork(e.target.value)}
             className="w-full bg-gray-100 rounded-xl px-3 py-3 sm:px-3 sm:py-2 text-sm sm:text-sm min-h-[44px] sm:min-h-[40px]"
             style={selectStyle}
           >
             <option value="">Sélectionner le réseau</option>
-            {loadingCryptoAddresses ? (
-              <option disabled>Chargement...</option>
-            ) : (
-              cryptoAddresses.map((addr) => (
-                <option key={addr.id} value={addr.network}>
-                  {addr.network_display}
-                </option>
-              ))
-            )}
+            {cryptoNetworks.map((network) => (
+              <option key={network.id} value={network.id}>
+                {network.name}
+              </option>
+            ))}
           </select>
 
-          {cryptoChannel && cryptoAddresses.find(a => a.network === cryptoChannel) && (
+          {selectedCryptoNetwork && (
             <div className="space-y-2">
-              <div className="bg-gray-100 rounded-xl px-3 py-2 text-xs sm:text-sm md:text-base break-all">
-                <b>Adresse :</b><br />
-                {cryptoAddresses.find(a => a.network === cryptoChannel)?.address}
+              <div className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-3 text-xs sm:text-sm md:text-base break-all font-mono">
+                <div className="text-gray-600 text-xs mb-1">Adresse de dépôt:</div>
+                {cryptoNetworks.find(n => n.id === selectedCryptoNetwork)?.address}
               </div>
               <button
-                onClick={() => {
-                  const address = cryptoAddresses.find(a => a.network === cryptoChannel)?.address
-                  if (address) {
-                    navigator.clipboard.writeText(address)
-                    notify.success('Adresse copiée !')
-                  }
-                }}
-                className="w-full py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
+                onClick={handleCopyCryptoAddress}
+                className="w-full py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
               >
                 📋 Copier l'adresse
               </button>

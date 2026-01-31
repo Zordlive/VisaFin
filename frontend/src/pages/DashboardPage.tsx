@@ -6,7 +6,7 @@ import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import TradeSignals from '../components/TradeSignals'
-import api from '../services/api'
+import api, { getSocialLinks, type SocialLinks } from '../services/api'
 import logo from '../img/Logo à jour.png'
 import propos1 from '../img/About.png'
 import propos2 from '../img/about 2.png'
@@ -45,6 +45,11 @@ export default function DashboardPage() {
   // Floating buttons modals
   const [showChatModal, setShowChatModal] = useState(false)
   const [showSocialModal, setShowSocialModal] = useState(false)
+  const [showWhatsAppSubModal, setShowWhatsAppSubModal] = useState(false)
+  const [showTelegramSubModal, setShowTelegramSubModal] = useState(false)
+
+  // Social links data
+  const [socialLinks, setSocialLinks] = useState<SocialLinks | null>(null)
 
   // Chat
   const [chatMessage, setChatMessage] = useState('')
@@ -150,6 +155,7 @@ export default function DashboardPage() {
   useEffect(() => {
     loadBankAccounts()
     loadOperateurs()
+    loadSocialLinks()
   }, [])
 
   async function loadBankAccounts() {
@@ -167,6 +173,15 @@ export default function DashboardPage() {
       setOperateurs(Array.isArray(ops) ? ops : [])
     } catch (e) {
       console.error('Error loading operateurs:', e)
+    }
+  }
+
+  async function loadSocialLinks() {
+    try {
+      const links = await getSocialLinks()
+      setSocialLinks(links)
+    } catch (e) {
+      console.error('Error loading social links:', e)
     }
   }
 
@@ -1056,36 +1071,129 @@ export default function DashboardPage() {
       {/* MODAL RESEAUX SOCIAUX */}
       {showSocialModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
-            <h3 className="font-semibold text-lg md:text-xl mb-4">Nos réseaux sociaux</h3>
-            <div className="space-y-3">
+          <div className="bg-white p-6 md:p-8 rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl">
+            <h3 className="font-bold text-xl md:text-2xl mb-6 text-center text-gray-800">Nos réseaux sociaux</h3>
+            <div className="space-y-4">
               <button
-                onClick={() => window.open('https://wa.me/group/example', '_blank')}
-                className="w-full bg-green-600 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
+                onClick={() => {
+                  setShowSocialModal(false)
+                  setShowWhatsAppSubModal(true)
+                }}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
               >
-                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
-                Groupe WhatsApp
+                <img src={whatsappIcon} alt="WhatsApp" className="w-6 h-6" />
+                WhatsApp
               </button>
               <button
-                onClick={() => window.open('https://wa.me/channel/example', '_blank')}
-                className="w-full bg-green-500 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
+                onClick={() => {
+                  setShowSocialModal(false)
+                  setShowTelegramSubModal(true)
+                }}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
               >
-                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
-                Canal WhatsApp
-              </button>
-              <button
-                onClick={() => window.open('https://t.me/example', '_blank')}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg text-sm md:text-base font-medium flex items-center justify-center gap-2"
-              >
-                <img src={telegramIcon} alt="Telegram" className="w-5 h-5" />
-                Canal Télégram
+                <img src={telegramIcon} alt="Telegram" className="w-6 h-6" />
+                Telegram
               </button>
             </div>
             <button
               onClick={() => setShowSocialModal(false)}
-              className="w-full border py-2 rounded-lg text-sm md:text-base mt-4"
+              className="w-full border-2 border-gray-300 hover:border-gray-400 py-3 rounded-xl text-base md:text-lg mt-6 font-medium text-gray-700 transition"
             >
               Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL WHATSAPP SUB-MENU */}
+      {showWhatsAppSubModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white p-6 md:p-8 rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl">
+            <h3 className="font-bold text-xl md:text-2xl mb-6 text-center text-gray-800">WhatsApp</h3>
+            <div className="space-y-4">
+              {socialLinks?.whatsapp_channel && (
+                <button
+                  onClick={() => {
+                    window.open(socialLinks.whatsapp_channel!, '_blank')
+                    setShowWhatsAppSubModal(false)
+                  }}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
+                >
+                  <img src={whatsappIcon} alt="WhatsApp" className="w-6 h-6" />
+                  Canal WhatsApp
+                </button>
+              )}
+              {socialLinks?.whatsapp_group && (
+                <button
+                  onClick={() => {
+                    window.open(socialLinks.whatsapp_group!, '_blank')
+                    setShowWhatsAppSubModal(false)
+                  }}
+                  className="w-full bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
+                >
+                  <img src={whatsappIcon} alt="WhatsApp" className="w-6 h-6" />
+                  Groupe WhatsApp
+                </button>
+              )}
+              {!socialLinks?.whatsapp_channel && !socialLinks?.whatsapp_group && (
+                <p className="text-center text-gray-500 py-4">Aucun lien WhatsApp disponible</p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setShowWhatsAppSubModal(false)
+                setShowSocialModal(true)
+              }}
+              className="w-full border-2 border-gray-300 hover:border-gray-400 py-3 rounded-xl text-base md:text-lg mt-6 font-medium text-gray-700 transition"
+            >
+              Retour
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TELEGRAM SUB-MENU */}
+      {showTelegramSubModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white p-6 md:p-8 rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl">
+            <h3 className="font-bold text-xl md:text-2xl mb-6 text-center text-gray-800">Telegram</h3>
+            <div className="space-y-4">
+              {socialLinks?.telegram_channel && (
+                <button
+                  onClick={() => {
+                    window.open(socialLinks.telegram_channel!, '_blank')
+                    setShowTelegramSubModal(false)
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
+                >
+                  <img src={telegramIcon} alt="Telegram" className="w-6 h-6" />
+                  Canal Telegram
+                </button>
+              )}
+              {socialLinks?.telegram_group && (
+                <button
+                  onClick={() => {
+                    window.open(socialLinks.telegram_group!, '_blank')
+                    setShowTelegramSubModal(false)
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white py-4 rounded-xl text-base md:text-lg font-semibold flex items-center justify-center gap-3 shadow-lg transform transition hover:scale-105"
+                >
+                  <img src={telegramIcon} alt="Telegram" className="w-6 h-6" />
+                  Groupe Telegram
+                </button>
+              )}
+              {!socialLinks?.telegram_channel && !socialLinks?.telegram_group && (
+                <p className="text-center text-gray-500 py-4">Aucun lien Telegram disponible</p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setShowTelegramSubModal(false)
+                setShowSocialModal(true)
+              }}
+              className="w-full border-2 border-gray-300 hover:border-gray-400 py-3 rounded-xl text-base md:text-lg mt-6 font-medium text-gray-700 transition"
+            >
+              Retour
             </button>
           </div>
         </div>

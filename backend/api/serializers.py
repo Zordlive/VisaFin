@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks
 
 User = get_user_model()
 
@@ -240,4 +240,11 @@ class CryptoAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = CryptoAddress
         fields = ('id', 'network', 'network_display', 'address', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class SocialLinksSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SocialLinks
+        fields = ('id', 'whatsapp_channel', 'whatsapp_group', 'telegram_channel', 'telegram_group', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
 from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
-from .models import Withdrawal, AdminNotification, CryptoAddress
+from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks
 from .admin_site import admin_site
 
 
@@ -112,6 +112,30 @@ class CryptoAddressAdmin(admin.ModelAdmin):
     address_preview.short_description = 'Adresse'
 
 
+class SocialLinksAdmin(admin.ModelAdmin):
+    list_display = ('id', 'has_whatsapp', 'has_telegram', 'updated_at')
+    fieldsets = (
+        ('Liens WhatsApp', {'fields': ('whatsapp_channel', 'whatsapp_group')}),
+        ('Liens Telegram', {'fields': ('telegram_channel', 'telegram_group')}),
+        ('Horodatage', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def has_whatsapp(self, obj):
+        return bool(obj.whatsapp_channel or obj.whatsapp_group)
+    has_whatsapp.boolean = True
+    has_whatsapp.short_description = 'WhatsApp configuré'
+    
+    def has_telegram(self, obj):
+        return bool(obj.telegram_channel or obj.telegram_group)
+    has_telegram.boolean = True
+    has_telegram.short_description = 'Telegram configuré'
+    
+    def has_add_permission(self, request):
+        # Limiter à une seule instance
+        return not SocialLinks.objects.exists()
+
+
 admin_site.register(MarketOffer, MarketOfferAdmin)
 admin_site.register(Wallet, WalletAdmin)
 admin_site.register(Transaction, TransactionAdmin)
@@ -126,5 +150,6 @@ admin_site.register(UserBankAccount, UserBankAccountAdmin)
 admin_site.register(Withdrawal, WithdrawalAdmin)
 admin_site.register(AdminNotification, AdminNotificationAdmin)
 admin_site.register(CryptoAddress, CryptoAddressAdmin)
+admin_site.register(SocialLinks, SocialLinksAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)

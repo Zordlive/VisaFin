@@ -106,3 +106,23 @@ export async function getCryptoAddresses(): Promise<CryptoAddress[]> {
   }
   return resp.data.results || []
 }
+
+export interface SocialLinks {
+  id?: number
+  whatsapp_channel: string | null
+  whatsapp_group: string | null
+  telegram_channel: string | null
+  telegram_group: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export async function getSocialLinks(): Promise<SocialLinks> {
+  const resp = await api.get<SocialLinks>('/social-links/')
+  return resp.data || {
+    whatsapp_channel: null,
+    whatsapp_group: null,
+    telegram_channel: null,
+    telegram_group: null
+  }
+}

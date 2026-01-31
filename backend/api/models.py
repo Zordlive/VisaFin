@@ -394,3 +394,28 @@ class CryptoAddress(models.Model):
     
     def __str__(self):
         return f"{self.get_network_display()} - {self.address[:20]}..."
+
+
+class SocialLinks(models.Model):
+    """Modèle pour gérer les liens réseaux sociaux depuis l'admin."""
+    whatsapp_channel = models.URLField('Lien Canal WhatsApp', max_length=500, blank=True, null=True)
+    whatsapp_group = models.URLField('Lien Groupe WhatsApp', max_length=500, blank=True, null=True)
+    telegram_channel = models.URLField('Lien Canal Telegram', max_length=500, blank=True, null=True)
+    telegram_group = models.URLField('Lien Groupe Telegram', max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de modification', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Lien Réseau Social'
+        verbose_name_plural = 'Liens Réseaux Sociaux'
+    
+    def __str__(self):
+        return f"Liens Réseaux Sociaux (ID: {self.id})"
+    
+    def save(self, *args, **kwargs):
+        # Garantir qu'il n'y a qu'une seule instance
+        if not self.pk and SocialLinks.objects.exists():
+            # Si c'est une nouvelle instance et qu'il en existe déjà une, mettre à jour l'existante
+            existing = SocialLinks.objects.first()
+            self.pk = existing.pk
+        super().save(*args, **kwargs)
