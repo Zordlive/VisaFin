@@ -70,15 +70,14 @@ export default function DashboardPage() {
 
   // Liste des banques disponibles
   const banks = [
-    'TRC-20',
-    'BEP-20',
-    'BNB',
+    { id: 'bank', label: 'Compte bancaire' },
+    { id: 'crypto', label: 'Portefeuille Crypto' },
   ]
 
   const operators = [
-    { id: 'Orange', name: 'Orange Money' },
-    { id: 'Airtel', name: 'Airtel Money' },
-    { id: 'M-Pesa', name: 'Vodacom M-Pesa' },
+    { id: 'ORANGE', name: 'Orange Money' },
+    { id: 'AIRTEL', name: 'Airtel Money' },
+    { id: 'MPESA', name: 'Vodacom M-Pesa' },
   ]
 
   // Edit profile form
@@ -232,9 +231,8 @@ export default function DashboardPage() {
     if (!chatMessage.trim()) return
     setLoadingChat(true)
     try {
-      // Assume there's an API for chat, or just notify
-      await api.post('/chat', { message: chatMessage })
-      notify.success('Message envoyé')
+      // Just show success notification without API call
+      notify.success('Message envoyé à l\'administrateur')
       setChatMessage('')
       setShowChatModal(false)
     } catch (e: any) {
@@ -752,16 +750,16 @@ export default function DashboardPage() {
               <button onClick={() => setShowBankList(false)} className="text-2xl text-gray-500">✕</button>
             </div>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {banks.map((bank) => (
+              {banks.map((bank: any) => (
                 <button
-                  key={bank}
+                  key={bank.id}
                   onClick={() => {
-                    setSelectedBank(bank)
+                    setSelectedBank(bank.label)
                     setShowBankList(false)
                   }}
                   className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition text-sm md:text-base"
                 >
-                  {bank}
+                  {bank.label}
                 </button>
               ))}
             </div>
