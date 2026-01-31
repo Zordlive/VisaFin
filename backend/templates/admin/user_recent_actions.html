@@ -1,174 +1,430 @@
 {% load i18n static %}
 
-<div class="module" id="user-recent-actions-module" style="margin-bottom: 20px;">
-    <h2>{% trans 'Actions récentes des utilisateurs' %}</h2>
+<style>
+    /* Variables et styles du widget actions */
+    :root {
+        --primary-color: #417690;
+        --primary-dark: #2e5469;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --bg-light: #f9fafb;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    #user-recent-actions-module {
+        box-shadow: var(--box-shadow);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        background: white;
+        padding: 28px;
+        margin-bottom: 30px;
+        border: none !important;
+        border-top: none !important;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    #user-recent-actions-module h2 {
+        margin: 0 0 24px 0;
+        padding-bottom: 16px;
+        border-bottom: 3px solid var(--primary-color);
+        color: var(--primary-color);
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    /* Onglets de filtrage */
+    .actions-tabs {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .action-tab {
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .action-tab:hover {
+        color: var(--primary-color);
+        background: var(--bg-light);
+    }
+
+    .action-tab.active {
+        border-bottom-color: var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    /* Tableau responsive */
+    .actions-table-wrapper {
+        overflow-x: auto;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead tr {
+        background-color: var(--bg-light);
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    thead th {
+        padding: 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 13px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s ease;
+    }
+
+    tbody tr:hover {
+        background-color: var(--bg-light);
+    }
+
+    tbody td {
+        padding: 16px;
+        font-size: 14px;
+        color: var(--text-primary);
+    }
+
+    /* Badges */
+    .action-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-deposit {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .badge-withdrawal {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-password_reset {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .status-completed, .status-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-processing {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .status-failed, .status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Bouton d'action rapide */
+    .action-button {
+        display: inline-block;
+        padding: 8px 14px;
+        background-color: var(--primary-color);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        border: none;
+        cursor: pointer;
+    }
+
+    .action-button:hover {
+        background-color: var(--primary-dark);
+        box-shadow: 0 4px 8px rgba(65, 118, 144, 0.3);
+        text-decoration: none;
+    }
+
+    /* Lien utilisateur */
+    .user-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .user-link:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    /* Footer avec liens directs */
+    .actions-footer {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .actions-footer a {
+        display: inline-block;
+        padding: 10px 16px;
+        background: var(--bg-light);
+        color: var(--primary-color);
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+
+    .actions-footer a:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    /* Message vide */
+    .empty-message {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 15px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        #user-recent-actions-module {
+            padding: 16px;
+        }
+
+        #user-recent-actions-module h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+
+        .actions-tabs {
+            gap: 0;
+            margin-bottom: 16px;
+        }
+
+        .action-tab {
+            padding: 10px 14px;
+            font-size: 12px;
+            flex: 1;
+            text-align: center;
+            min-width: auto;
+        }
+
+        thead th {
+            padding: 12px 8px;
+            font-size: 11px;
+        }
+
+        tbody td {
+            padding: 12px 8px;
+            font-size: 12px;
+        }
+
+        .action-button {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .actions-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .actions-footer a {
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #user-recent-actions-module {
+            padding: 12px;
+        }
+
+        thead {
+            display: none;
+        }
+
+        tbody tr {
+            display: block;
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        tbody td {
+            display: block;
+            padding: 10px;
+            text-align: right;
+            padding-left: 120px;
+            position: relative;
+        }
+
+        tbody td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+
+        .action-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 8px;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div id="user-recent-actions-module" class="module">
+    <h2>🕐 Actions récentes des utilisateurs</h2>
     
-    <div class="actions-tabs" style="margin-bottom: 15px; border-bottom: 2px solid #e1e4e8;">
-        <button class="action-tab active" data-filter="all" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid #417690; font-weight: bold; cursor: pointer; color: #417690;">
-            Toutes les actions
-        </button>
-        <button class="action-tab" data-filter="deposit" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: #666;">
-            Dépôts
-        </button>
-        <button class="action-tab" data-filter="withdrawal" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: #666;">
-            Retraits
-        </button>
-        <button class="action-tab" data-filter="password_reset" style="padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: #666;">
-            Réinitialisations
-        </button>
+    <div class="actions-tabs">
+        <button class="action-tab active" data-filter="all">Toutes les actions</button>
+        <button class="action-tab" data-filter="deposit">💰 Dépôts</button>
+        <button class="action-tab" data-filter="withdrawal">🏦 Retraits</button>
+        <button class="action-tab" data-filter="password_reset">🔐 Réinitialisations</button>
     </div>
 
     {% if user_recent_actions %}
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Date & Heure</th>
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Utilisateur</th>
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Action</th>
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Détails</th>
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Statut</th>
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #495057;">Action rapide</th>
-            </tr>
-        </thead>
-        <tbody id="actions-table-body">
-            {% for action in user_recent_actions %}
-            <tr class="action-row" data-action-type="{{ action.action_type }}" style="border-bottom: 1px solid #dee2e6; {% cycle 'background-color: #ffffff;' 'background-color: #f8f9fa;' %}">
-                <td style="padding: 12px; color: #6c757d; font-size: 13px;">
-                    <strong>{{ action.timestamp|date:"d/m/Y" }}</strong><br>
-                    <span style="color: #adb5bd;">{{ action.timestamp|date:"H:i:s" }}</span>
-                </td>
-                <td style="padding: 12px;">
-                    <a href="{% url 'admin:auth_user_change' action.user_id %}" style="color: #417690; text-decoration: none; font-weight: 500;">
-                        {{ action.user_name }}
-                    </a>
-                    {% if action.user_email %}
-                    <br><span style="color: #6c757d; font-size: 12px;">{{ action.user_email }}</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 12px;">
-                    <span class="action-badge" style="
-                        padding: 4px 12px;
-                        border-radius: 12px;
-                        font-size: 12px;
-                        font-weight: 600;
-                        {% if action.action_type == 'deposit' %}
-                            background-color: #d1ecf1;
-                            color: #0c5460;
-                        {% elif action.action_type == 'withdrawal' %}
-                            background-color: #fff3cd;
-                            color: #856404;
-                        {% elif action.action_type == 'password_reset' %}
-                            background-color: #f8d7da;
-                            color: #721c24;
-                        {% else %}
-                            background-color: #e2e3e5;
-                            color: #383d41;
+    <div class="actions-table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date & Heure</th>
+                    <th>Utilisateur</th>
+                    <th>Action</th>
+                    <th>Détails</th>
+                    <th>Statut</th>
+                    <th>Action rapide</th>
+                </tr>
+            </thead>
+            <tbody id="actions-table-body">
+                {% for action in user_recent_actions %}
+                <tr class="action-row" data-action-type="{{ action.action_type }}">
+                    <td data-label="Date & Heure">
+                        <strong>{{ action.timestamp|date:"d/m/Y" }}</strong><br>
+                        <span style="color: #adb5bd; font-size: 12px;">{{ action.timestamp|date:"H:i:s" }}</span>
+                    </td>
+                    <td data-label="Utilisateur">
+                        <a href="{% url 'admin:auth_user_change' action.user_id %}" class="user-link">{{ action.user_name }}</a>
+                        {% if action.user_email %}
+                        <br><span style="color: #6c757d; font-size: 12px;">{{ action.user_email }}</span>
                         {% endif %}
-                    ">
-                        {{ action.action_display }}
-                    </span>
-                </td>
-                <td style="padding: 12px; font-size: 13px;">
-                    {{ action.details|safe }}
-                </td>
-                <td style="padding: 12px;">
-                    <span style="
-                        padding: 4px 10px;
-                        border-radius: 8px;
-                        font-size: 11px;
-                        font-weight: 600;
-                        {% if action.status == 'completed' or action.status == 'success' %}
-                            background-color: #d4edda;
-                            color: #155724;
-                        {% elif action.status == 'pending' %}
-                            background-color: #fff3cd;
-                            color: #856404;
-                        {% elif action.status == 'processing' %}
-                            background-color: #d1ecf1;
-                            color: #0c5460;
-                        {% elif action.status == 'failed' or action.status == 'rejected' %}
-                            background-color: #f8d7da;
-                            color: #721c24;
+                    </td>
+                    <td data-label="Action">
+                        <span class="action-badge {% if action.action_type == 'deposit' %}badge-deposit{% elif action.action_type == 'withdrawal' %}badge-withdrawal{% elif action.action_type == 'password_reset' %}badge-password_reset{% endif %}">
+                            {{ action.action_display }}
+                        </span>
+                    </td>
+                    <td data-label="Détails">
+                        {{ action.details|safe }}
+                    </td>
+                    <td data-label="Statut">
+                        <span class="status-badge status-{{ action.status }}">{{ action.status_display }}</span>
+                    </td>
+                    <td data-label="Action rapide">
+                        {% if action.admin_url %}
+                        <a href="{{ action.admin_url }}" class="action-button">
+                            {% if action.action_type == 'deposit' or action.action_type == 'withdrawal' %}Gérer →{% else %}Voir →{% endif %}
+                        </a>
                         {% else %}
-                            background-color: #e2e3e5;
-                            color: #383d41;
+                        <span style="color: #adb5bd; font-size: 12px;">—</span>
                         {% endif %}
-                    ">
-                        {{ action.status_display }}
-                    </span>
-                </td>
-                <td style="padding: 12px;">
-                    {% if action.admin_url %}
-                    <a href="{{ action.admin_url }}" class="button" style="
-                        display: inline-block;
-                        padding: 6px 12px;
-                        background-color: #417690;
-                        color: white;
-                        text-decoration: none;
-                        border-radius: 4px;
-                        font-size: 12px;
-                        font-weight: 500;
-                        transition: background-color 0.2s;
-                    " onmouseover="this.style.backgroundColor='#2e5469'" onmouseout="this.style.backgroundColor='#417690'">
-                        {% if action.action_type == 'deposit' or action.action_type == 'withdrawal' %}
-                            Gérer →
-                        {% else %}
-                            Voir détails →
-                        {% endif %}
-                    </a>
-                    {% else %}
-                    <span style="color: #adb5bd; font-size: 12px;">—</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; text-align: center;">
-        <a href="{% url 'admin:api_deposit_changelist' %}" style="color: #417690; text-decoration: none; margin-right: 15px; font-weight: 500;">
-            📥 Voir tous les dépôts
-        </a>
-        <a href="{% url 'admin:api_withdrawal_changelist' %}" style="color: #417690; text-decoration: none; margin-right: 15px; font-weight: 500;">
-            📤 Voir tous les retraits
-        </a>
-        <a href="{% url 'admin:auth_user_changelist' %}" style="color: #417690; text-decoration: none; font-weight: 500;">
-            👥 Voir tous les utilisateurs
-        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     
+    <div class="actions-footer">
+        <a href="{% url 'admin:api_deposit_changelist' %}">📥 Voir tous les dépôts</a>
+        <a href="{% url 'admin:api_withdrawal_changelist' %}">📤 Voir tous les retraits</a>
+        <a href="{% url 'admin:auth_user_changelist' %}">👥 Voir tous les utilisateurs</a>
+    </div>
     {% else %}
-    <p style="padding: 20px; text-align: center; color: #6c757d;">
-        Aucune action récente des utilisateurs.
-    </p>
+    <div class="empty-message">
+        📭 Aucune action récente des utilisateurs pour le moment.
+    </div>
     {% endif %}
 </div>
 
 <script>
 (function() {
-    // Gestion des onglets de filtrage
     const tabs = document.querySelectorAll('.action-tab');
     const rows = document.querySelectorAll('.action-row');
     
     tabs.forEach(tab => {
         tab.addEventListener('click', function() {
-            // Retirer la classe active de tous les onglets
-            tabs.forEach(t => {
-                t.classList.remove('active');
-                t.style.borderBottom = '2px solid transparent';
-                t.style.color = '#666';
-                t.style.fontWeight = 'normal';
-            });
-            
-            // Ajouter la classe active à l'onglet cliqué
+            tabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            this.style.borderBottom = '2px solid #417690';
-            this.style.color = '#417690';
-            this.style.fontWeight = 'bold';
             
             const filter = this.dataset.filter;
             
-            // Filtrer les lignes
             rows.forEach(row => {
                 if (filter === 'all' || row.dataset.actionType === filter) {
                     row.style.display = '';
@@ -180,46 +436,6 @@
     });
     
     // Auto-refresh toutes les 30 secondes
-    setInterval(function() {
-        location.reload();
-    }, 30000);
+    setInterval(() => location.reload(), 30000);
 })();
 </script>
-
-<style>
-#user-recent-actions-module {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    background: white;
-    padding: 20px;
-}
-
-#user-recent-actions-module h2 {
-    margin: 0 0 15px 0;
-    padding-bottom: 10px;
-    border-bottom: 3px solid #417690;
-    color: #417690;
-    font-size: 18px;
-}
-
-.action-row:hover {
-    background-color: #e9ecef !important;
-    transition: background-color 0.2s;
-}
-
-@media (max-width: 768px) {
-    .actions-tabs {
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-    
-    table {
-        font-size: 12px;
-    }
-    
-    td, th {
-        padding: 8px !important;
-    }
-}
-</style>
