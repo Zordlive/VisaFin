@@ -88,3 +88,17 @@ api.interceptors.response.use(
 
 export default api
 
+export interface CryptoAddress {
+  id: number
+  network: string
+  network_display: string
+  address: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export async function getCryptoAddresses(): Promise<CryptoAddress[]> {
+  const resp = await api.get<CryptoAddress[]>('/crypto-addresses/')
+  return resp.data
+}

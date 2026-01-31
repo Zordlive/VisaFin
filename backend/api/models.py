@@ -371,3 +371,26 @@ class AdminNotification(models.Model):
 
     def __str__(self):
         return f"Notification {self.id} - {self.get_notification_type_display()} - {self.user}"
+
+
+class CryptoAddress(models.Model):
+    """Modèle pour gérer les adresses crypto depuis l'admin."""
+    NETWORK_CHOICES = (
+        ('TRC20_USDT', 'TRC-20 (USDT)'),
+        ('BEP20_USDT', 'BEP-20 (USDT)'),
+        ('BNB', 'BNB (Binance Smart Chain)'),
+    )
+    
+    network = models.CharField('réseau', max_length=20, choices=NETWORK_CHOICES, unique=True)
+    address = models.CharField('adresse', max_length=255)
+    is_active = models.BooleanField('actif', default=True)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de modification', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'adresse crypto'
+        verbose_name_plural = 'adresses crypto'
+        ordering = ['network']
+    
+    def __str__(self):
+        return f"{self.get_network_display()} - {self.address[:20]}..."

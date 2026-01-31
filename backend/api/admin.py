@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
 from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
-from .models import Withdrawal, AdminNotification
+from .models import Withdrawal, AdminNotification, CryptoAddress
 
 
 @admin.register(MarketOffer)
@@ -122,3 +122,30 @@ class AdminNotificationAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(CryptoAddress)
+class CryptoAddressAdmin(admin.ModelAdmin):
+    list_display = ('network', 'address_preview', 'is_active', 'updated_at')
+    list_filter = ('network', 'is_active')
+    search_fields = ('address',)
+    ordering = ('network',)
+    
+    fieldsets = (
+        ('Informations du réseau', {
+            'fields': ('network', 'address', 'is_active')
+        }),
+        ('Horodatage', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def address_preview(self, obj):
+        """Affiche un aperçu de l'adresse."""
+        if len(obj.address) > 30:
+            return f"{obj.address[:15]}...{obj.address[-15:]}"
+        return obj.address
+    address_preview.short_description = 'Adresse'

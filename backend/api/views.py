@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -60,6 +60,7 @@ from .serializers import (
     UserBankAccountSerializer,
     WithdrawalSerializer,
     AdminNotificationSerializer,
+    CryptoAddressSerializer,
 )
 
 User = get_user_model()
@@ -897,6 +898,13 @@ class OperateurViewSet(viewsets.ReadOnlyModelViewSet):
     """List and retrieve operators."""
     queryset = Operateur.objects.all()
     serializer_class = OperateurSerializer
+    permission_classes = [AllowAny]
+
+
+class CryptoAddressViewSet(viewsets.ReadOnlyModelViewSet):
+    """List and retrieve crypto addresses for deposits."""
+    queryset = CryptoAddress.objects.filter(is_active=True)
+    serializer_class = CryptoAddressSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):

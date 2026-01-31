@@ -11,6 +11,7 @@ router.register(r'operateurs', views.OperateurViewSet, basename='operateur')
 router.register(r'bank-accounts', views.UserBankAccountViewSet, basename='bank-account')
 router.register(r'withdrawals', views.WithdrawalViewSet, basename='withdrawal')
 router.register(r'admin-notifications', views.AdminNotificationViewSet, basename='admin-notification')
+router.register(r'crypto-addresses', views.CryptoAddressViewSet, basename='crypto-address')
 
 urlpatterns = [
     path('', include(router.urls)),

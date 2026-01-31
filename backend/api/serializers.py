@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress
 
 User = get_user_model()
 
@@ -232,3 +232,12 @@ class AdminNotificationSerializer(serializers.ModelSerializer):
             return obj.user.investor.phone
         except Exception:
             return None
+
+
+class CryptoAddressSerializer(serializers.ModelSerializer):
+    network_display = serializers.CharField(source='get_network_display', read_only=True)
+    
+    class Meta:
+        model = CryptoAddress
+        fields = ('id', 'network', 'network_display', 'address', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')

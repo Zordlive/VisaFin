@@ -6,7 +6,7 @@ import HeaderActions from '../components/HeaderActions'
 import BottomNav from '../components/BottomNav'
 import { createCryptoDeposit } from '../services/deposits'
 import { createWithdrawal } from '../services/withdrawals'
-import api from '../services/api'
+import api, { getCryptoAddresses, type CryptoAddress } from '../services/api'
 import logo from '../img/Logo à jour.png'
 import orangeLogo from '../img/Orange Monnaie.png'
 import airtelLogo from '../img/Airtel-Money-Logo-PNG.png'
@@ -92,11 +92,9 @@ export default function PortefeuillePage() {
   const [loadingTransactions, setLoadingTransactions] = useState(false)
   const [clearingHistory, setClearingHistory] = useState(false)
 
-  const cryptoMethods: any = {
-    TRC20_USDT: { address: 'TON_ADRESSE_TRC20' },
-    BEP20_USDT: { address: 'TON_ADRESSE_BEP20' },
-    BNB: { address: 'TON_ADRESSE_BNB' },
-  }
+  const [cryptoAddresses, setCryptoAddresses] = useState<CryptoAddress[]>([])
+  const [loadingCryptoAddresses, setLoadingCryptoAddresses] = useState(false)
+
 
   /* ===================== VALIDATIONS ===================== */
   const isValidDeposit = cryptoChannel && depositAmount && txid.trim()
@@ -120,7 +118,20 @@ export default function PortefeuillePage() {
   useEffect(() => {
     loadOperateurs()
     loadBankAccounts()
+    loadCryptoAddresses()
   }, [])
+
+  async function loadCryptoAddresses() {
+    setLoadingCryptoAddresses(true)
+    try {
+      const addresses = await getCryptoAddresses()
+      setCryptoAddresses(addresses)
+    } catch (e) {
+      console.error('Error loading crypto addresses:', e)
+    } finally {
+      setLoadingCryptoAddresses(false)
+    }
+  }
 
   async function loadOperateurs() {
     try {
@@ -317,6 +328,7 @@ export default function PortefeuillePage() {
         type: 'FIAT'
       })
       notify.success('Transaction confirmée')
+      // Fermer le modal de dépôt et réinitialiser les champs
       setShowDeposit(false)
       setFiatPhone('')
       setFiatAmount('')
@@ -325,7 +337,13 @@ export default function PortefeuillePage() {
       refetch()
       loadTransactions()
     } catch (e: any) {
-      notify.error(e?.response?.data?.message || 'Erreur lors de la transaction')
+      // Fermer quand même le modal même en cas d'erreur
+      setShowDeposit(false)
+      setFiatPhone('')
+      setFiatAmount('')
+      setFiatOperator('')
+      setSelectedOperateurData(null)
+      // Ne pas afficher de notification d'erreur
     } finally {
       setLoadingFiat(false)
     }
@@ -732,15 +750,35 @@ export default function PortefeuillePage() {
             style={selectStyle}
           >
             <option value="">Sélectionner le réseau</option>
-            <option value="TRC20_USDT">TRC-20</option>
-            <option value="BEP20_USDT">BEP-20</option>
-            <option value="BNB">BNB</option>
+            {loadingCryptoAddresses ? (
+              <option disabled>Chargement...</option>
+            ) : (
+              cryptoAddresses.map((addr) => (
+                <option key={addr.id} value={addr.network}>
+                  {addr.network_display}
+                </option>
+              ))
+            )}
           </select>
 
-          {cryptoChannel && cryptoMethods[cryptoChannel] && (
-            <div className="bg-gray-100 rounded-xl px-3 py-2 text-xs sm:text-sm md:text-base break-all">
-              <b>Adresse :</b><br />
-              {cryptoMethods[cryptoChannel].address}
+          {cryptoChannel && cryptoAddresses.find(a => a.network === cryptoChannel) && (
+            <div className="space-y-2">
+              <div className="bg-gray-100 rounded-xl px-3 py-2 text-xs sm:text-sm md:text-base break-all">
+                <b>Adresse :</b><br />
+                {cryptoAddresses.find(a => a.network === cryptoChannel)?.address}
+              </div>
+              <button
+                onClick={() => {
+                  const address = cryptoAddresses.find(a => a.network === cryptoChannel)?.address
+                  if (address) {
+                    navigator.clipboard.writeText(address)
+                    notify.success('Adresse copiée !')
+                  }
+                }}
+                className="w-full py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
+              >
+                📋 Copier l'adresse
+              </button>
             </div>
           )}
 
