@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification
 
 User = get_user_model()
 
@@ -196,3 +196,39 @@ class UserBankAccountSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'operator_name': 'Le nom de l\'opérateur est requis pour un compte opérateur.'})
         
         return data
+
+
+class WithdrawalSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_phone = serializers.SerializerMethodField()
+    processed_by_username = serializers.CharField(source='processed_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Withdrawal
+        fields = ('id', 'user', 'user_username', 'user_email', 'user_phone', 'amount', 'bank', 'account', 'status', 'reason_rejected', 'processed_by', 'processed_by_username', 'processed_at', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def get_user_phone(self, obj):
+        try:
+            return obj.user.investor.phone
+        except Exception:
+            return None
+
+
+class AdminNotificationSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_phone = serializers.SerializerMethodField()
+    notification_type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
+
+    class Meta:
+        model = AdminNotification
+        fields = ('id', 'admin', 'user', 'user_username', 'user_email', 'user_phone', 'notification_type', 'notification_type_display', 'amount', 'account_info', 'is_read', 'deposit', 'withdrawal', 'created_at')
+        read_only_fields = ('id', 'created_at', 'admin')
+
+    def get_user_phone(self, obj):
+        try:
+            return obj.user.investor.phone
+        except Exception:
+            return None

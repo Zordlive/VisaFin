@@ -9,6 +9,8 @@ router.register(r'transactions', views.TransactionViewSet, basename='transaction
 router.register(r'vip-levels', views.VIPLevelViewSet, basename='vip-level')
 router.register(r'operateurs', views.OperateurViewSet, basename='operateur')
 router.register(r'bank-accounts', views.UserBankAccountViewSet, basename='bank-account')
+router.register(r'withdrawals', views.WithdrawalViewSet, basename='withdrawal')
+router.register(r'admin-notifications', views.AdminNotificationViewSet, basename='admin-notification')
 
 urlpatterns = [
     path('', include(router.urls)),

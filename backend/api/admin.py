@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
 from .models import ReferralCode, Referral, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
+from .models import Withdrawal, AdminNotification
 
 
 @admin.register(MarketOffer)
@@ -70,3 +71,54 @@ class UserBankAccountAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
     ordering = ('-is_default', '-created_at')
 
+
+@admin.register(Withdrawal)
+class WithdrawalAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'amount', 'bank', 'account', 'status', 'processed_by', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('user__username', 'user__email', 'bank', 'account')
+    raw_id_fields = ('user', 'processed_by')
+    readonly_fields = ('created_at', 'updated_at', 'processed_at')
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Informations de l\'utilisateur', {
+            'fields': ('user',)
+        }),
+        ('Détails du retrait', {
+            'fields': ('amount', 'bank', 'account', 'status')
+        }),
+        ('Traitement administrateur', {
+            'fields': ('processed_by', 'processed_at', 'reason_rejected')
+        }),
+        ('Horodatage', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(AdminNotification)
+class AdminNotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'notification_type', 'amount', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('user__username', 'user__email', 'account_info')
+    raw_id_fields = ('user', 'admin', 'deposit', 'withdrawal')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Notifications', {
+            'fields': ('admin', 'user', 'notification_type', 'amount')
+        }),
+        ('Détails du compte', {
+            'fields': ('account_info',)
+        }),
+        ('Statut', {
+            'fields': ('is_read', 'deposit', 'withdrawal')
+        }),
+        ('Horodatage', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )

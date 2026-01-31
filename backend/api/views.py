@@ -41,7 +41,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -58,6 +58,8 @@ from .serializers import (
     UserVIPSubscriptionSerializer,
     OperateurSerializer,
     UserBankAccountSerializer,
+    WithdrawalSerializer,
+    AdminNotificationSerializer,
 )
 
 User = get_user_model()
@@ -232,6 +234,17 @@ class DepositViewSet(viewsets.GenericViewSet):
             return Response({'message': 'amount is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         deposit = Deposit.objects.create(user=request.user, amount=amount, currency=currency, status='pending')
+        
+        # Créer une notification admin
+        AdminNotification.objects.create(
+            admin=User.objects.filter(is_staff=True, is_superuser=True).first(),
+            user=request.user,
+            notification_type='deposit',
+            amount=deposit.amount,
+            account_info=f"Dépôt via {request.data.get('method', 'unknown')}",
+            deposit=deposit
+        )
+        
         # Simulate external provider instructions
         instructions = {'provider': 'mock', 'payment_address': 'mock_address', 'deposit_id': str(deposit.id)}
         return Response({'deposit_id': deposit.id, 'instructions': instructions, 'status': deposit.status})
@@ -997,3 +1010,86 @@ class ClaimGainsView(APIView):
         except Exception as e:
             logger.error(f'Error claiming gains: {e}')
             return Response({'message': 'Erreur lors de l\'encaissement'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class WithdrawalViewSet(viewsets.ModelViewSet):
+    """Manage withdrawal requests."""
+    serializer_class = WithdrawalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Les utilisateurs voient leurs propres retraits
+        # Les admins voient tous les retraits
+        if self.request.user.is_staff:
+            return Withdrawal.objects.all()
+        return Withdrawal.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        withdrawal = serializer.save(user=self.request.user)
+        # Créer une notification admin
+        AdminNotification.objects.create(
+            admin=User.objects.filter(is_staff=True, is_superuser=True).first(),
+            user=self.request.user,
+            notification_type='withdrawal',
+            amount=withdrawal.amount,
+            account_info=f"{withdrawal.bank} - {withdrawal.account}",
+            withdrawal=withdrawal
+        )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def process(self, request, pk=None):
+        """Admin process a withdrawal request."""
+        if not request.user.is_staff:
+            return Response({'error': 'Permissionsrefused'}, status=status.HTTP_403_FORBIDDEN)
+        
+        withdrawal = self.get_object()
+        action_type = request.data.get('action')  # 'complete' or 'reject'
+        reason = request.data.get('reason', '')
+
+        if action_type == 'complete':
+            withdrawal.status = 'completed'
+            withdrawal.processed_by = request.user
+            withdrawal.processed_at = timezone.now()
+            withdrawal.save()
+            return Response({'message': 'Retrait complété'})
+        
+        elif action_type == 'reject':
+            if not reason:
+                return Response({'error': 'Raison requise'}, status=status.HTTP_400_BAD_REQUEST)
+            withdrawal.status = 'rejected'
+            withdrawal.reason_rejected = reason
+            withdrawal.processed_by = request.user
+            withdrawal.processed_at = timezone.now()
+            withdrawal.save()
+            return Response({'message': 'Retrait rejeté'})
+        
+        else:
+            return Response({'error': 'Action invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminNotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """Admin notifications for deposits and withdrawals."""
+    serializer_class = AdminNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return AdminNotification.objects.filter(admin=self.request.user)
+        return AdminNotification.objects.none()
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_as_read(self, request, pk=None):
+        """Mark notification as read."""
+        notification = self.get_object()
+        if notification.admin != request.user:
+            return Response({'error': 'Permissions denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        notification.is_read = True
+        notification.save()
+        return Response({'message': 'Notification marquée comme lue'})
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_all_as_read(self, request):
+        """Mark all notifications as read."""
+        AdminNotification.objects.filter(admin=request.user, is_read=False).update(is_read=True)
+        return Response({'message': 'Toutes les notifications marquées comme lues'})

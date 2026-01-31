@@ -6,7 +6,7 @@ import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import api from '../services/api'
-import logo from '../img/logo.png'
+import logo from '../img/Logo à jour.png'
 import propos1 from '../img/propos 1.jpeg'
 import propos2 from '../img/propos 2.jpeg'
 import chatIcon from '../img/chat.png'
@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [investments, setInvestments] = useState<any[]>([])
   const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<any[]>([])
   const [pageLoading, setPageLoading] = useState(true)
   const maxVIPLevel = vipSubscriptions.length > 0 
     ? Math.max(...vipSubscriptions.map((s: any) => s.vip_level?.level || 0))
@@ -94,6 +95,10 @@ export default function DashboardPage() {
     ? `${window.location.origin}/register?ref=${code}`
     : ''
 
+  const totalExpenses = transactions
+    .filter((tx: any) => ['withdraw', 'trade', 'transfer'].includes(tx?.type))
+    .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
+
   useEffect(() => {
     let mounted = true
 
@@ -105,6 +110,9 @@ export default function DashboardPage() {
       }),
       api.get('/investments').then(res => {
         if (mounted) setInvestments(res.data || [])
+      }),
+      api.get('/transactions').then(res => {
+        if (mounted) setTransactions(Array.isArray(res.data) ? res.data : [])
       }),
       import('../services/vip').then(({ fetchUserVIPSubscriptions }) => {
         return fetchUserVIPSubscriptions().then((data: any) => {
@@ -285,7 +293,7 @@ export default function DashboardPage() {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+      <div className="min-h-screen pb-20 sm:pb-24 flex items-center justify-center" style={{backgroundColor: '#F4EDDE'}}>
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
           <p className="text-sm sm:text-base text-gray-600">Chargement de votre tableau de bord...</p>
@@ -295,11 +303,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6">
+    <div className="relative mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 min-h-screen" style={{backgroundColor: '#F4EDDE'}}>
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gray-800 p-1" />
+        <img src={logo} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain" />
         <h1 className="font-semibold text-lg md:text-xl lg:text-2xl">Profil</h1>
         <HeaderActions />
       </div>
@@ -348,9 +356,9 @@ export default function DashboardPage() {
           {/* Statistiques rapides */}
           <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <div className="text-white/70 text-xs md:text-sm mb-1">Total Investi</div>
+              <div className="text-white/70 text-xs md:text-sm mb-1">Total dépensé</div>
               <div className="text-white text-lg md:text-xl lg:text-2xl font-bold">
-                ${user?.total_invested ? Number(user.total_invested).toLocaleString() : '0'}
+                ${Number(totalExpenses).toLocaleString()}
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">

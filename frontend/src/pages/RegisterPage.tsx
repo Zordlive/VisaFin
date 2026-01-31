@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { authService } from '../services/auth'
 import { useAuth } from '../hooks/useAuth'
 import LoadingScreen from '../components/LoadingScreen'
-import logo from '../img/logo.png'
+import logo from '../img/Logo à jour.png'
 
 /* -------------------- PAYS -------------------- */
 const COUNTRIES = [
@@ -95,12 +95,12 @@ export default function RegisterPage() {
       {/* Loading Screen Modal */}
       {loading && <LoadingScreen isModal={true} />}
 
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4 py-8">
+      <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{backgroundColor: '#F4EDDE'}}>
       <div className="w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-[32px] p-6 sm:p-8 shadow-lg">
 
         {/* Header */}
         <div className="flex flex-col items-center gap-3 mb-6 sm:mb-8 text-center">
-          <img src={logo} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-gray-800 p-1" />
+          <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain" />
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
               {t('register.title')}

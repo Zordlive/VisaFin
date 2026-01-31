@@ -316,3 +316,58 @@ class UserBankAccount(models.Model):
         if self.is_default:
             UserBankAccount.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
         super().save(*args, **kwargs)
+
+
+class Withdrawal(models.Model):
+    """Demandes de retrait des utilisateurs à traiter par l'administrateur."""
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('processing', 'En cours de traitement'),
+        ('completed', 'Complétée'),
+        ('rejected', 'Rejetée'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='withdrawals')
+    amount = models.DecimalField('montant', max_digits=20, decimal_places=2)
+    bank = models.CharField('banque/opérateur', max_length=100)
+    account = models.CharField('numéro de compte', max_length=100)
+    status = models.CharField('statut', max_length=32, choices=STATUS_CHOICES, default='pending')
+    reason_rejected = models.TextField('raison du rejet', blank=True, null=True)
+    processed_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='traité par', on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_withdrawals')
+    processed_at = models.DateTimeField('date de traitement', null=True, blank=True)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de mise à jour', auto_now=True)
+
+    class Meta:
+        verbose_name = 'demande de retrait'
+        verbose_name_plural = 'demandes de retrait'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Retrait {self.id} - {self.user} - {self.amount} ({self.status})"
+
+
+class AdminNotification(models.Model):
+    """Notifications administrateur pour les dépôts et retraits."""
+    NOTIFICATION_TYPES = (
+        ('deposit', 'Dépôt'),
+        ('withdrawal', 'Retrait'),
+    )
+
+    admin = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='administrateur', on_delete=models.CASCADE, related_name='admin_notifications')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='user_notifications')
+    notification_type = models.CharField('type de notification', max_length=20, choices=NOTIFICATION_TYPES)
+    amount = models.DecimalField('montant', max_digits=20, decimal_places=2)
+    account_info = models.CharField('info compte', max_length=255)
+    is_read = models.BooleanField('lu', default=False)
+    deposit = models.ForeignKey(Deposit, verbose_name='dépôt', on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_notifications')
+    withdrawal = models.ForeignKey(Withdrawal, verbose_name='retrait', on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_notifications')
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'notification administrateur'
+        verbose_name_plural = 'notifications administrateur'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification {self.id} - {self.get_notification_type_display()} - {self.user}"

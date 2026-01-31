@@ -7,7 +7,7 @@ import BottomNav from '../components/BottomNav'
 import { createCryptoDeposit } from '../services/deposits'
 import { createWithdrawal } from '../services/withdrawals'
 import api from '../services/api'
-import logo from '../img/logo.png'
+import logo from '../img/Logo à jour.png'
 import orangeLogo from '../img/Orange Monnaie.png'
 import airtelLogo from '../img/Airtel-Money-Logo-PNG.png'
 import mpesaLogo from '../img/M-pesa-logo.png'
@@ -197,11 +197,13 @@ export default function PortefeuillePage() {
 
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
-  const totalInvested = wallets.reduce((a: number, w: any) => a + Number(w.invested || 0), 0)
+  const totalExpenses = transactions
+    .filter((tx: any) => ['withdraw', 'trade', 'transfer'].includes(tx?.type))
+    .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
 
   if (isLoading)
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+      <div className="min-h-screen pb-20 sm:pb-24 flex items-center justify-center" style={{backgroundColor: '#131E3A'}}>
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
           <p className="text-sm sm:text-base text-gray-600">Chargement de votre portefeuille...</p>
@@ -211,7 +213,7 @@ export default function PortefeuillePage() {
 
   if (error)
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+      <div className="min-h-screen pb-20 sm:pb-24 flex items-center justify-center" style={{backgroundColor: '#F4EDDE'}}>
         <div className="text-center px-4">
           <p className="text-sm sm:text-base text-red-600 font-semibold">Erreur de chargement</p>
         </div>
@@ -340,7 +342,7 @@ export default function PortefeuillePage() {
       {/* HEADER */}
       <header className="flex items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <img src={logo} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-gray-800 p-0.5 sm:p-1" />
+          <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain" />
         </div>
         <h1 className="font-bold text-sm sm:text-base md:text-lg flex-1 text-center">
           Portefeuille
@@ -369,9 +371,9 @@ export default function PortefeuillePage() {
               </div>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Solde investi</div>
+              <div className="text-gray-500 text-xs">Total dépensé</div>
               <div className="font-bold text-sm sm:text-base">
-                {totalInvested.toLocaleString()} {mainWallet?.currency || 'USDT'}
+                {totalExpenses.toLocaleString()} {mainWallet?.currency || 'USDT'}
               </div>
             </div>
           </div>
@@ -527,26 +529,26 @@ export default function PortefeuillePage() {
         )}
       </section>
       {showDeposit && (
-  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4">
+  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-2 sm:px-4 py-4">
     <div
       className="
         bg-white rounded-2xl w-full
-        max-w-sm sm:max-w-md md:max-w-lg
-        max-h-[90vh] overflow-y-auto
-        p-4 sm:p-5 md:p-6
+        max-w-[95vw] sm:max-w-md md:max-w-lg
+        max-h-[88vh] sm:max-h-[90vh] overflow-y-auto
+        p-3 sm:p-5 md:p-6
       "
     >
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-3 sm:mb-4">
         <h2 className="font-semibold text-base sm:text-lg md:text-xl">Dépôt</h2>
         <button onClick={() => setShowDeposit(false)} className="text-xl md:text-2xl">✕</button>
       </div>
 
       {/* TABS */}
-      <div className="flex bg-gray-100 rounded-full p-1 mb-4">
+      <div className="flex bg-gray-100 rounded-full p-1 mb-3 sm:mb-4">
         <button
           onClick={() => setDepositType('FIAT')}
-          className={`flex-1 py-2 rounded-full text-xs sm:text-sm font-medium
+          className={`flex-1 py-2.5 rounded-full text-xs sm:text-sm font-medium
             ${depositType === 'FIAT' ? 'bg-white shadow' : 'text-gray-500'}
           `}
         >
@@ -554,7 +556,7 @@ export default function PortefeuillePage() {
         </button>
         <button
           onClick={() => setDepositType('CRYPTO')}
-          className={`flex-1 py-2 rounded-full text-xs sm:text-sm font-medium
+          className={`flex-1 py-2.5 rounded-full text-xs sm:text-sm font-medium
             ${depositType === 'CRYPTO' ? 'bg-white shadow' : 'text-gray-500'}
           `}
         >
@@ -564,9 +566,9 @@ export default function PortefeuillePage() {
 
       {/* ================= FIAT ================= */}
       {depositType === 'FIAT' && (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <select
-            className="w-full bg-gray-100 rounded-xl px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm"
+            className="w-full bg-gray-100 rounded-xl px-3 py-2 sm:px-3 sm:py-2.5 text-xs sm:text-sm"
             value={fiatCurrency}
             onChange={(e) =>
               setFiatCurrency(e.target.value as 'CDF' | 'USD')
@@ -591,7 +593,7 @@ export default function PortefeuillePage() {
                     : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'}
                 `}
               >
-                <img src={orangeLogo} alt="Orange" className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
+                <img src={orangeLogo} alt="Orange" className="w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
                 <span className="text-xs sm:text-sm">Orange</span>
               </button>
               <button
@@ -603,7 +605,7 @@ export default function PortefeuillePage() {
                     : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'}
                 `}
               >
-                <img src={airtelLogo} alt="Airtel" className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
+                <img src={airtelLogo} alt="Airtel" className="w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
                 <span className="text-xs sm:text-sm">Airtel</span>
               </button>
               <button
@@ -615,7 +617,7 @@ export default function PortefeuillePage() {
                     : 'bg-gray-100 hover:bg-gray-200 border border-gray-200'}
                 `}
               >
-                <img src={mpesaLogo} alt="M-Pesa" className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
+                <img src={mpesaLogo} alt="M-Pesa" className="w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
                 <span className="text-xs sm:text-sm">M-Pesa</span>
               </button>
             </div>
@@ -688,7 +690,7 @@ export default function PortefeuillePage() {
             placeholder="Téléphone"
             value={fiatPhone}
             onChange={(e) => setFiatPhone(e.target.value)}
-            className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             required
           />
 
@@ -697,7 +699,7 @@ export default function PortefeuillePage() {
             type="number"
             value={fiatAmount}
             onChange={(e) => setFiatAmount(e.target.value)}
-            className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             required
           />
 
@@ -709,7 +711,7 @@ export default function PortefeuillePage() {
           <button
             onClick={handleFiatSubmit}
             disabled={!fiatOperator || !fiatPhone || !fiatAmount || loadingFiat}
-            className={`w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
+            className={`w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
               ${!fiatOperator || !fiatPhone || !fiatAmount || loadingFiat
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-700 shadow-md'}

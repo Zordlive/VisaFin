@@ -3,7 +3,7 @@ import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import api from '../services/api'
-import logo from '../img/logo.png'
+import logo from '../img/Logo à jour.png'
 
 type Investment = {
   id: number
@@ -61,7 +61,7 @@ export default function MesInvestissementsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-20 sm:pb-24 flex items-center justify-center">
+      <div className="min-h-screen pb-20 sm:pb-24 flex items-center justify-center" style={{backgroundColor: '#F4EDDE'}}>
         <div className="text-center px-4">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-violet-600 mx-auto mb-3 sm:mb-4"></div>
           <p className="text-sm sm:text-base text-gray-600">Chargement de vos investissements...</p>
@@ -71,12 +71,12 @@ export default function MesInvestissementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 pb-24">
+    <div className="min-h-screen pb-24" style={{backgroundColor: '#F4EDDE'}}>
       {/* HEADER */}
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gray-800 p-1" />
+            <img src={logo} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain" />
             <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Mes Investissements</h1>
           </div>
           <HeaderActions />
