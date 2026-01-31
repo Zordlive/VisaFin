@@ -99,6 +99,10 @@ export interface CryptoAddress {
 }
 
 export async function getCryptoAddresses(): Promise<CryptoAddress[]> {
-  const resp = await api.get<CryptoAddress[]>('/crypto-addresses/')
-  return resp.data
+  const resp = await api.get<{ results: CryptoAddress[] } | CryptoAddress[]>('/crypto-addresses/')
+  // Handle both paginated response and direct array response
+  if (Array.isArray(resp.data)) {
+    return resp.data
+  }
+  return resp.data.results || []
 }

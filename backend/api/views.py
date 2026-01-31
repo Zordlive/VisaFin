@@ -976,12 +976,8 @@ class CryptoAddressViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """Filter by operateur if provided."""
-        queryset = Operateur.objects.all()
-        operateur = self.request.query_params.get('operateur')
-        if operateur:
-            queryset = queryset.filter(operateur=operateur)
-        return queryset
+        """Return only active crypto addresses."""
+        return CryptoAddress.objects.filter(is_active=True)
 
 
 class UserBankAccountViewSet(viewsets.ModelViewSet):

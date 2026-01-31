@@ -5,10 +5,11 @@ import { fetchMyReferrals } from '../services/referrals'
 import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
+import TradeSignals from '../components/TradeSignals'
 import api from '../services/api'
 import logo from '../img/Logo à jour.png'
-import propos1 from '../img/propos 1.jpeg'
-import propos2 from '../img/propos 2.jpeg'
+import propos1 from '../img/About.png'
+import propos2 from '../img/about 2.png'
 import chatIcon from '../img/chat.png'
 import aproposIcon from '../img/a-propos.png'
 import reseauxIcon from '../img/resaux.png'
@@ -95,7 +96,7 @@ export default function DashboardPage() {
   const stats = data?.stats || {}
 
   const inviteLink = code
-    ? `${window.location.origin}/register?ref=${code}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}/register?ref=${code}`
     : ''
 
   const totalExpenses = transactions
@@ -175,17 +176,29 @@ export default function DashboardPage() {
 
   async function onCopy() {
     if (!inviteLink) return
-    await navigator.clipboard.writeText(inviteLink)
-    notify.success('Code copié')
+    try {
+      await navigator.clipboard.writeText(inviteLink)
+      notify.success('Code copié')
+    } catch (e) {
+      notify.error('Erreur de copie')
+    }
   }
 
   async function onShare() {
     if (!inviteLink) return
     if (navigator.share) {
-      await navigator.share({ url: inviteLink })
+      try {
+        await navigator.share({ url: inviteLink })
+      } catch (e) {
+        console.log('Share cancelled')
+      }
     } else {
-      await navigator.clipboard.writeText(inviteLink)
-      notify.success('Lien copié')
+      try {
+        await navigator.clipboard.writeText(inviteLink)
+        notify.success('Lien copié')
+      } catch (e) {
+        notify.error('Erreur de copie')
+      }
     }
   }
 
@@ -441,6 +454,9 @@ export default function DashboardPage() {
           </a>
         </div>
       </div>
+
+      {/* TRADE SIGNALS */}
+      <TradeSignals />
 
       {/* CODE PARRAINAGE */}
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">

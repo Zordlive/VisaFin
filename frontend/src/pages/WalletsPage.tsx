@@ -301,9 +301,13 @@ export default function PortefeuillePage() {
     setSelectedOperateurData(operateur)
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    notify.success('Numéro copié !')
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      notify.success('Numéro copié !')
+    } catch (e) {
+      notify.error('Erreur de copie')
+    }
   }
 
   const handleFiatSubmit = () => {
@@ -743,124 +747,65 @@ export default function PortefeuillePage() {
       {/* ================= CRYPTO ================= */}
       {depositType === 'CRYPTO' && (
         <div className="space-y-4">
-          {/* Sélection du réseau */}
-          <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
-              🔗 Sélectionner le réseau
-            </label>
-            <select
-              value={cryptoChannel}
-              onChange={(e) => setCryptoChannel(e.target.value as any)}
-              disabled={loadingCryptoAddresses}
-              className="w-full bg-white border-2 border-gray-300 focus:border-orange-500 rounded-xl px-3 py-3 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-200 transition min-h-[44px] sm:min-h-[40px] cursor-pointer"
-              style={selectStyle}
-            >
-              <option value="">
-                {loadingCryptoAddresses ? '⏳ Chargement des réseaux...' : '📡 Sélectionner le réseau'}
-              </option>
-              {!loadingCryptoAddresses && cryptoAddresses.length > 0 ? (
-                cryptoAddresses.map((addr) => (
-                  <option key={addr.id} value={addr.network}>
-                    ✓ {addr.network_display}
-                  </option>
-                ))
-              ) : (
-                !loadingCryptoAddresses && (
-                  <option disabled>Aucun réseau disponible</option>
-                )
-              )}
-            </select>
-          </div>
+          <select
+            value={cryptoChannel}
+            onChange={(e) => setCryptoChannel(e.target.value as any)}
+            className="w-full bg-gray-100 rounded-xl px-3 py-3 sm:px-3 sm:py-2 text-sm sm:text-sm min-h-[44px] sm:min-h-[40px]"
+            style={selectStyle}
+          >
+            <option value="">Sélectionner le réseau</option>
+            {loadingCryptoAddresses ? (
+              <option disabled>Chargement...</option>
+            ) : (
+              cryptoAddresses.map((addr) => (
+                <option key={addr.id} value={addr.network}>
+                  {addr.network_display}
+                </option>
+              ))
+            )}
+          </select>
 
-          {/* Zone d'affichage de l'adresse - Dynamique */}
-          {cryptoChannel && cryptoAddresses.find(a => a.network === cryptoChannel) ? (
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-4 sm:p-5 space-y-3">
-              {/* Titre */}
-              <div className="flex items-center gap-2">
-                <span className="text-lg">₿</span>
-                <span className="font-bold text-gray-800">Adresse de dépôt</span>
+          {cryptoChannel && cryptoAddresses.find(a => a.network === cryptoChannel) && (
+            <div className="space-y-2">
+              <div className="bg-gray-100 rounded-xl px-3 py-2 text-xs sm:text-sm md:text-base break-all">
+                <b>Adresse :</b><br />
+                {cryptoAddresses.find(a => a.network === cryptoChannel)?.address}
               </div>
-
-              {/* Adresse avec code monospace */}
-              <div className="bg-white rounded-lg p-3 border border-orange-200">
-                <p className="text-xs text-gray-500 mb-2 font-medium">
-                  {cryptoAddresses.find(a => a.network === cryptoChannel)?.network_display}
-                </p>
-                <code className="text-xs sm:text-sm font-mono text-gray-800 break-all block">
-                  {cryptoAddresses.find(a => a.network === cryptoChannel)?.address}
-                </code>
-              </div>
-
-              {/* Avertissement */}
-              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-2.5 text-xs text-yellow-800 flex gap-2">
-                <span className="text-base">⚠️</span>
-                <span>N'envoyez que des tokens {cryptoAddresses.find(a => a.network === cryptoChannel)?.network_display}</span>
-              </div>
-
-              {/* Bouton Copier */}
               <button
                 onClick={() => {
                   const address = cryptoAddresses.find(a => a.network === cryptoChannel)?.address
                   if (address) {
                     navigator.clipboard.writeText(address)
-                    notify.success('✅ Adresse copiée dans le presse-papiers !')
+                    notify.success('Adresse copiée !')
                   }
                 }}
-                className="w-full py-3 sm:py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold text-xs sm:text-sm transition shadow-md hover:shadow-lg active:scale-95"
+                className="w-full py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
               >
                 📋 Copier l'adresse
               </button>
             </div>
-          ) : cryptoChannel ? (
-            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 text-center">
-              <p className="text-red-700 font-medium text-sm">❌ Adresse non disponible</p>
-              <p className="text-red-600 text-xs mt-1">Contactez l'administrateur</p>
-            </div>
-          ) : (
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
-              <p className="text-blue-700 font-medium text-sm">📡 Sélectionnez un réseau ci-dessus</p>
-            </div>
           )}
 
-          {/* TXID / Hash */}
-          <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
-              🔍 Hash/TXID (Identifiant de transaction)
-            </label>
-            <input
-              placeholder="Collez le hash de votre transaction..."
-              value={txid}
-              onChange={(e) => setTxid(e.target.value)}
-              disabled={!cryptoChannel}
-              className="w-full bg-white border-2 border-gray-300 focus:border-orange-500 rounded-xl px-4 py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
+          <input
+            placeholder="TXID / Hash"
+            value={txid}
+            onChange={(e) => setTxid(e.target.value)}
+            className="w-full bg-gray-100 rounded-xl px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm md:text-base"
+          />
 
-          {/* Bouton Valider */}
           <button
             onClick={handleDeposit}
             disabled={!isValidDeposit || loadingDeposit}
-            className={`w-full py-3 sm:py-3.5 rounded-xl text-white font-bold text-sm sm:text-base transition shadow-md hover:shadow-lg active:scale-95 min-h-[44px] sm:min-h-[40px]
-              ${loadingDeposit || !isValidDeposit
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'}
+            className={`w-full py-3 rounded-xl text-white font-semibold
+              ${loadingDeposit ? 'bg-green-300' : 'bg-green-600'}
             `}
           >
-            {loadingDeposit ? '⏳ Validation en cours...' : '✅ Valider le dépôt'}
+            {loadingDeposit ? '...' : 'Valider'}
           </button>
 
-          {/* Message d'erreur */}
           {depositError && (
-            <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-red-700 text-xs sm:text-sm">
-              <span className="font-semibold">❌ Erreur:</span> {depositError}
-            </div>
+            <p className="text-red-600 text-sm">{depositError}</p>
           )}
-
-          {/* Info supplémentaire */}
-          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 border border-gray-200 space-y-1">
-            <p><span className="font-semibold">⏱️ Délai:</span> 5-30 minutes pour confirmation</p>
-            <p><span className="font-semibold">✓ Vérification:</span> 2-3 confirmations réseau requises</p>
-          </div>
         </div>
       )}
     </div>
