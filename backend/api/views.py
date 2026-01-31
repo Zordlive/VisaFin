@@ -431,6 +431,74 @@ class RegisterView(APIView):
         return resp
 
 
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            from google.auth.transport import requests
+            from google.oauth2 import id_token
+            
+            token = request.data.get('token')
+            if not token:
+                return Response({'message': 'token required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify the token
+            try:
+                idinfo = id_token.verify_oauth2_token(
+                    token, 
+                    requests.Request(), 
+                    settings.GOOGLE_CLIENT_ID
+                )
+            except ValueError:
+                return Response({'message': 'invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            email = idinfo.get('email')
+            first_name = idinfo.get('given_name', '')
+            picture = idinfo.get('picture', '')
+            
+            if not email:
+                return Response({'message': 'email not provided'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create or get user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email.split('@')[0],
+                    'first_name': first_name
+                }
+            )
+            
+            # Create Investor record if doesn't exist
+            if created:
+                try:
+                    Investor.objects.create(user=user)
+                    # Create default wallets
+                    Wallet.objects.create(user=user, currency='USD')
+                    Wallet.objects.create(user=user, currency='CDF')
+                except Exception:
+                    pass
+            
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            user_data = UserSerializer(user).data
+            
+            resp = Response({
+                'user': user_data,
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'referral_bonus': 0
+            })
+            set_refresh_cookie(resp, refresh_token)
+            return resp
+            
+        except Exception as e:
+            logger.error(f"Google login error: {str(e)}")
+            return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class RefreshTokenFromCookieView(APIView):
     permission_classes = [AllowAny]
 

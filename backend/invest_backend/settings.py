@@ -163,6 +163,9 @@ EMAIL_BACKEND = os.environ.get('DJANGO_EMAIL_BACKEND', 'django.core.mail.backend
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:5173')
 
+# Google OAuth
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com')
+
 # VIP configuration: by default compute VIP from the user's portfolio
 # (sum of available + invested + gains) when True. When False, VIP is
 # computed from the invested balance only.
