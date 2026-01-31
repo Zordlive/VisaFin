@@ -174,7 +174,10 @@ export default function DashboardPage() {
     Date.now() - new Date(date).getTime() >= 24 * 60 * 60 * 1000
 
   async function onCopy() {
-    if (!inviteLink) return
+    if (!inviteLink) {
+      notify.error('Code non disponible')
+      return
+    }
     try {
       await navigator.clipboard.writeText(inviteLink)
       notify.success('Code copié')
@@ -184,19 +187,20 @@ export default function DashboardPage() {
   }
 
   async function onShare() {
-    if (!inviteLink) return
-    if (navigator.share) {
-      try {
-        await navigator.share({ url: inviteLink })
-      } catch (e) {
-        console.log('Share cancelled')
-      }
-    } else {
-      try {
+    if (!inviteLink) {
+      notify.error('Lien non disponible')
+      return
+    }
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: inviteLink, title: 'VISAFINANCE' })
+      } else {
         await navigator.clipboard.writeText(inviteLink)
         notify.success('Lien copié')
-      } catch (e) {
-        notify.error('Erreur de copie')
+      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        notify.error('Erreur lors du partage')
       }
     }
   }
@@ -460,10 +464,20 @@ export default function DashboardPage() {
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
         <div className="text-sm md:text-base text-gray-500 mb-2">Code Parrainage</div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <span className="font-bold text-lg md:text-xl">{code ?? '—'}</span>
-          <div className="flex gap-2">
-            <button onClick={onCopy} className="border px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base">Copier</button>
-            <button onClick={onShare} className="border px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base">Partager</button>
+          <span className="font-bold text-lg md:text-xl break-all">{code ?? '—'}</span>
+          <div className="flex gap-2 flex-shrink-0">
+            <button 
+              onClick={() => onCopy()} 
+              className="border border-gray-300 hover:bg-gray-50 px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base font-medium transition"
+            >
+              📋 Copier
+            </button>
+            <button 
+              onClick={() => onShare()} 
+              className="border border-gray-300 hover:bg-gray-50 px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base font-medium transition"
+            >
+              🔗 Partager
+            </button>
           </div>
         </div>
       </div>
