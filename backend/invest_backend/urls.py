@@ -5,8 +5,10 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from api.admin_site import admin_site  # Import notre AdminSite personnalisé
+from invest_backend.views import home
 
 urlpatterns = [
+    path('', home, name='home'),  # Root URL
     path('admin/', admin_site.urls),  # Utilise admin_site au lieu de admin.site
     # serve a simple favicon during development
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.svg')),

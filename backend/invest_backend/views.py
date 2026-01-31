@@ -1,4 +1,20 @@
 from django.template.response import TemplateResponse
+from django.http import JsonResponse
+
+
+def home(request):
+    """Root URL handler - returns API info."""
+    return JsonResponse({
+        'status': 'success',
+        'message': 'VISAFINANCE API',
+        'version': '1.0.0',
+        'endpoints': {
+            'api': '/api/',
+            'admin': '/admin/',
+            'docs': '/api/docs/ (future)',
+        },
+        'note': 'Frontend is served separately at http://localhost:5173/'
+    })
 
 
 def custom_404(request, exception=None):

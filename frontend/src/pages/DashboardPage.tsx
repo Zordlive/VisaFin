@@ -40,7 +40,6 @@ export default function DashboardPage() {
   const [showAboutModal, setShowAboutModal] = useState(false)
 
   const [showIOSModal, setShowIOSModal] = useState(false)
-  const [showAndroidModal, setShowAndroidModal] = useState(false)
 
   // Floating buttons modals
   const [showChatModal, setShowChatModal] = useState(false)
@@ -73,10 +72,11 @@ export default function DashboardPage() {
   const [operateurs, setOperateurs] = useState<any[]>([])
   const [savingAccount, setSavingAccount] = useState(false)
 
-  // Liste des banques disponibles
+  // Liste des banques disponibles (remplacée par crypto networks)
   const banks = [
-    { id: 'bank', label: 'Compte bancaire' },
-    { id: 'crypto', label: 'Portefeuille Crypto' },
+    { id: 'TRX', label: 'TRX Tronc20' },
+    { id: 'BNB', label: 'BNB BEP20' },
+    { id: 'USDT', label: 'USDT BEP20' },
   ]
 
   const operators = [
@@ -268,7 +268,7 @@ export default function DashboardPage() {
     }
 
     if (accountType === 'bank' && !selectedBank) {
-      notify.error('Veuillez sélectionner une banque')
+      notify.error('Veuillez sélectionner un réseau crypto')
       return
     }
 
@@ -288,7 +288,10 @@ export default function DashboardPage() {
         is_default: bankAccounts.length === 0
       })
 
-      notify.success('Compte ajouté avec succès')
+      const successMessage = accountType === 'bank' 
+        ? 'Portefeuille crypto ajouté avec succès' 
+        : 'Compte opérateur ajouté avec succès'
+      notify.success(successMessage)
       await loadBankAccounts()
       
       // Reset form
@@ -550,19 +553,21 @@ export default function DashboardPage() {
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-24">
         <h2 className="font-semibold text-lg md:text-xl mb-3">Téléchargement de l’application</h2>
         <div className="flex flex-row gap-3">
-          <button
-            onClick={() => setShowAndroidModal(true)}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2 transition"
+          <a
+            href="https://play.google.com/store/apps/details?id=com.visafinance.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
           >
-            <img src={androidIcon} alt="Android" className="w-5 h-5" />
-            Android
-          </button>
+            <img src={androidIcon} alt="Android" className="w-6 h-6" />
+            Google Play
+          </a>
           <button
             onClick={() => setShowIOSModal(true)}
-            className="flex-1 bg-black text-white py-3 rounded-xl text-base md:text-lg flex items-center justify-center gap-2"
+            className="flex-1 bg-gradient-to-r from-gray-800 to-black hover:from-gray-900 hover:to-gray-800 text-white py-4 rounded-xl text-base md:text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
           >
-            <img src={appleIcon} alt="Apple" className="w-5 h-5" />
-            Apple
+            <img src={appleIcon} alt="Apple" className="w-6 h-6" />
+            App Store
           </button>
         </div>
       </div>
@@ -673,96 +678,152 @@ export default function DashboardPage() {
             )}
 
             <div className="border-t pt-4">
-              <h4 className="font-semibold text-base mb-3">Ajouter un nouveau compte</h4>
+              <h4 className="font-semibold text-base mb-4">Ajouter un nouveau compte</h4>
 
-              {/* Type de compte */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Type de compte</label>
-                <div className="flex gap-3">
+              {/* Onglets Type de compte - Animations professionnelles */}
+              <div className="mb-6">
+                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
                   <button
                     onClick={() => setAccountType('bank')}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition ${
+                    className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-300 transform ${
                       accountType === 'bank'
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
+                        : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-white/50'
                     }`}
                   >
-                    🏦 Banque
+                    🪙 Crypto Networks
                   </button>
                   <button
                     onClick={() => setAccountType('operator')}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition ${
+                    className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-300 transform ${
                       accountType === 'operator'
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
+                        : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-white/50'
                     }`}
                   >
-                    📱 Opérateur
+                    📱 Opérateurs
                   </button>
                 </div>
               </div>
 
-              {/* Sélection banque ou opérateur */}
-              {accountType === 'bank' ? (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Sélectionnez votre banque</label>
-                  <button
-                    onClick={() => setShowBankList(true)}
-                    className="w-full border border-gray-300 p-3 rounded-lg text-left text-sm md:text-base hover:bg-gray-50"
-                  >
-                    {selectedBank || 'Choisir une banque...'}
-                  </button>
-                </div>
-              ) : (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Sélectionnez votre opérateur</label>
-                  <button
-                    onClick={() => setShowOperatorList(true)}
-                    className="w-full border border-gray-300 p-3 rounded-lg text-left text-sm md:text-base hover:bg-gray-50"
-                  >
-                    {selectedOperator || 'Choisir un opérateur...'}
-                  </button>
-                </div>
-              )}
+              {/* Contenu dynamique avec animation fade-in */}
+              <div className="transition-all duration-300">
+                {accountType === 'bank' ? (
+                  <div className="space-y-4 animate-fadeIn">
+                    {/* Sélection crypto network */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Sélectionnez votre réseau crypto</label>
+                      <button
+                        onClick={() => setShowBankList(true)}
+                        className="w-full border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-lg text-left text-sm md:text-base hover:border-violet-400 hover:shadow-md transition-all duration-300 font-medium text-gray-800"
+                      >
+                        {selectedBank ? (
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">🪙</span>
+                            {selectedBank}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Choisir un réseau...</span>
+                        )}
+                      </button>
+                    </div>
 
-              {/* Numéro de compte */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Numéro de compte</label>
-                <input
-                  type="text"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  className="w-full border border-gray-300 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
-                  placeholder={accountType === 'bank' ? 'Ex: 0123456789' : 'Ex: +243 XXX XXX XXX'}
-                />
-              </div>
+                    {/* Adresse portefeuille */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Adresse portefeuille</label>
+                      <input
+                        type="text"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        className="w-full border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all duration-300"
+                        placeholder="Votre adresse complète (0x...)"
+                      />
+                    </div>
 
-              {/* Nom du titulaire */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Nom du titulaire</label>
-                <input
-                  type="text"
-                  value={accountHolderName}
-                  onChange={(e) => setAccountHolderName(e.target.value)}
-                  className="w-full border border-gray-300 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
-                  placeholder="Nom complet tel qu'enregistré"
-                />
+                    {/* Nom du portefeuille */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Nom du portefeuille</label>
+                      <input
+                        type="text"
+                        value={accountHolderName}
+                        onChange={(e) => setAccountHolderName(e.target.value)}
+                        className="w-full border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all duration-300"
+                        placeholder="Ex: Mon Wallet, Ledger, etc."
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-fadeIn">
+                    {/* Sélection opérateur */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Sélectionnez votre opérateur</label>
+                      <button
+                        onClick={() => setShowOperatorList(true)}
+                        className="w-full border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg text-left text-sm md:text-base hover:border-green-400 hover:shadow-md transition-all duration-300 font-medium text-gray-800"
+                      >
+                        {selectedOperator ? (
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">📱</span>
+                            {selectedOperator}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Choisir un opérateur...</span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Numéro de compte */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Numéro de compte</label>
+                      <input
+                        type="text"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        className="w-full border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-300"
+                        placeholder="Ex: +243 XXX XXX XXX"
+                      />
+                    </div>
+
+                    {/* Nom du titulaire */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3 text-gray-700">Nom du titulaire</label>
+                      <input
+                        type="text"
+                        value={accountHolderName}
+                        onChange={(e) => setAccountHolderName(e.target.value)}
+                        className="w-full border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg text-sm md:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-300"
+                        placeholder="Nom complet tel qu'enregistré"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Boutons d'action */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-6 pt-4 border-t">
                 <button
                   onClick={() => setShowCompleteAccount(false)}
-                  className="flex-1 border border-gray-300 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-gray-50"
+                  className="flex-1 border-2 border-gray-300 py-3 md:py-3 rounded-lg text-sm md:text-base font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 transform hover:scale-105"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleSaveBankAccount}
                   disabled={savingAccount}
-                  className="flex-1 bg-violet-600 text-white py-2.5 md:py-3 rounded-lg text-sm md:text-base font-medium hover:bg-violet-700 disabled:opacity-50"
+                  className={`flex-1 ${
+                    accountType === 'bank'
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700'
+                      : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                  } text-white py-3 md:py-3 rounded-lg text-sm md:text-base font-semibold shadow-lg transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {savingAccount ? 'Enregistrement...' : 'Enregistrer'}
+                  {savingAccount ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="inline-block animate-spin">⏳</span>
+                      Enregistrement...
+                    </span>
+                  ) : (
+                    'Enregistrer'
+                  )}
                 </button>
               </div>
             </div>
@@ -770,12 +831,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* MODAL LISTE DES BANQUES */}
+      {/* MODAL LISTE DES CRYPTO NETWORKS */}
       {showBankList && (
         <div className="fixed inset-0 bg-black/40 z-[60] flex justify-center items-center px-4">
           <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-lg">Sélectionnez une banque</h3>
+              <h3 className="font-semibold text-lg">Sélectionnez un réseau crypto</h3>
               <button onClick={() => setShowBankList(false)} className="text-2xl text-gray-500">✕</button>
             </div>
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -786,7 +847,7 @@ export default function DashboardPage() {
                     setSelectedBank(bank.label)
                     setShowBankList(false)
                   }}
-                  className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition text-sm md:text-base"
+                  className="w-full text-left p-3 rounded-lg hover:bg-violet-50 transition text-sm md:text-base font-medium text-gray-700"
                 >
                   {bank.label}
                 </button>
@@ -892,119 +953,6 @@ export default function DashboardPage() {
             <button onClick={() => setShowIOSModal(false)} className="w-full py-2 border rounded-lg text-base md:text-lg">
               Fermer
             </button>
-          </div>
-        </div>
-      )}
-      {/* ================= MODAL ANDROID ================= */}
-      {showAndroidModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4 py-4 sm:py-8">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 w-full max-w-xs sm:max-w-sm lg:max-w-md space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto">
-            {/* Header avec icone */}
-            <div className="flex items-center gap-3 sm:gap-4 border-b pb-4 sm:pb-5">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center border-2 border-green-200">
-                <img src={androidIcon} alt="Android" className="w-7 h-7 sm:w-8 sm:h-8" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base sm:text-lg lg:text-xl text-gray-900 truncate">Application Android</h3>
-                <p className="text-xs sm:text-sm text-green-600 font-medium">Bientôt disponible</p>
-              </div>
-            </div>
-
-            {/* Contenu principal */}
-            <div className="space-y-3 sm:space-y-4">
-              {/* Message de disponibilité */}
-              <div className="bg-gradient-to-br from-green-50 to-green-25 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <span className="text-2xl sm:text-3xl flex-shrink-0">📱</span>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm sm:text-base text-green-900 mb-1 sm:mb-2">Disponibilité imminente</h4>
-                    <p className="text-xs sm:text-sm text-green-800 leading-relaxed">
-                      Notre application Android sera bientôt disponible sur le <strong>Google Play Store</strong>. Restez à l'écoute !
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Méthode d'installation alternative */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-25 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
-                <h4 className="font-bold text-sm sm:text-base text-blue-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <span>💡</span> <span>En attendant</span>
-                </h4>
-                <p className="text-xs sm:text-sm text-blue-800 mb-3 sm:mb-4 leading-relaxed">
-                  Vous pouvez ajouter notre application directement à l'écran d'accueil de votre téléphone :
-                </p>
-                <ol className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-blue-800">
-                  <li className="flex gap-2.5 leading-relaxed">
-                    <span className="font-bold flex-shrink-0">1.</span>
-                    <span><strong>Ouvrez</strong> l'application dans votre navigateur Chrome</span>
-                  </li>
-                  <li className="flex gap-2.5 leading-relaxed">
-                    <span className="font-bold flex-shrink-0">2.</span>
-                    <span>Appuyez sur le <strong>menu (⋮)</strong> en haut à droite</span>
-                  </li>
-                  <li className="flex gap-2.5 leading-relaxed">
-                    <span className="font-bold flex-shrink-0">3.</span>
-                    <span>Sélectionnez <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong></span>
-                  </li>
-                  <li className="flex gap-2.5 leading-relaxed">
-                    <span className="font-bold flex-shrink-0">4.</span>
-                    <span>Appuyez sur <strong>"Installer"</strong></span>
-                  </li>
-                </ol>
-              </div>
-
-              {/* Avantages de l'installation */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-25 border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
-                <h4 className="font-bold text-sm sm:text-base text-purple-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <span>⭐</span> <span>Avantages</span>
-                </h4>
-                <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-purple-800">
-                  <li className="flex items-center gap-2.5 leading-relaxed">
-                    <span className="font-bold text-base flex-shrink-0">✓</span> 
-                    <span>Accès rapide depuis l'écran d'accueil</span>
-                  </li>
-                  <li className="flex items-center gap-2.5 leading-relaxed">
-                    <span className="font-bold text-base flex-shrink-0">✓</span> 
-                    <span>Fonctionnalité hors ligne partielle</span>
-                  </li>
-                  <li className="flex items-center gap-2.5 leading-relaxed">
-                    <span className="font-bold text-base flex-shrink-0">✓</span> 
-                    <span>Notifications de dépôt et retrait</span>
-                  </li>
-                  <li className="flex items-center gap-2.5 leading-relaxed">
-                    <span className="font-bold text-base flex-shrink-0">✓</span> 
-                    <span>Expérience fluide et rapide</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Notification de suivi */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-25 border border-amber-200 rounded-lg sm:rounded-xl p-3.5 sm:p-4 lg:p-5">
-                <p className="text-xs sm:text-sm text-amber-800 text-center leading-relaxed font-medium">
-                  <span className="text-lg sm:text-xl">🔔</span> <strong>Notification :</strong> Vous serez averti dès que l'application sera disponible sur le Play Store
-                </p>
-              </div>
-            </div>
-
-            {/* Boutons d'action */}
-            <div className="flex flex-col sm:flex-row gap-3 border-t pt-4 sm:pt-5">
-              <button
-                onClick={() => setShowAndroidModal(false)}
-                className="order-2 sm:order-1 flex-1 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700 py-3 sm:py-3.5 px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-95"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href)
-                  notify.success('Lien copié !')
-                }}
-                className="order-1 sm:order-2 flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 sm:py-3.5 px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <span>📋</span>
-                <span>Copier le lien</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
