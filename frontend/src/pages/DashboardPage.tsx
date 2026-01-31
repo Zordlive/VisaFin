@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [showAboutModal, setShowAboutModal] = useState(false)
 
   const [showIOSModal, setShowIOSModal] = useState(false)
+  const [showAndroidModal, setShowAndroidModal] = useState(false)
 
   // Floating buttons modals
   const [showChatModal, setShowChatModal] = useState(false)
@@ -506,10 +507,13 @@ export default function DashboardPage() {
       <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-24">
         <h2 className="font-semibold text-lg md:text-xl mb-3">Téléchargement de l’application</h2>
         <div className="flex flex-row gap-3">
-          <a href="/app/app-release.apk" download className="flex-1 bg-green-600 text-white py-3 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2">
+          <button
+            onClick={() => setShowAndroidModal(true)}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2 transition"
+          >
             <img src={androidIcon} alt="Android" className="w-5 h-5" />
             Android
-          </a>
+          </button>
           <button
             onClick={() => setShowIOSModal(true)}
             className="flex-1 bg-black text-white py-3 rounded-xl text-base md:text-lg flex items-center justify-center gap-2"
@@ -845,6 +849,119 @@ export default function DashboardPage() {
             <button onClick={() => setShowIOSModal(false)} className="w-full py-2 border rounded-lg text-base md:text-lg">
               Fermer
             </button>
+          </div>
+        </div>
+      )}
+      {/* ================= MODAL ANDROID ================= */}
+      {showAndroidModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4 py-4 sm:py-8">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 w-full max-w-xs sm:max-w-sm lg:max-w-md space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Header avec icone */}
+            <div className="flex items-center gap-3 sm:gap-4 border-b pb-4 sm:pb-5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center border-2 border-green-200">
+                <img src={androidIcon} alt="Android" className="w-7 h-7 sm:w-8 sm:h-8" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base sm:text-lg lg:text-xl text-gray-900 truncate">Application Android</h3>
+                <p className="text-xs sm:text-sm text-green-600 font-medium">Bientôt disponible</p>
+              </div>
+            </div>
+
+            {/* Contenu principal */}
+            <div className="space-y-3 sm:space-y-4">
+              {/* Message de disponibilité */}
+              <div className="bg-gradient-to-br from-green-50 to-green-25 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <span className="text-2xl sm:text-3xl flex-shrink-0">📱</span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm sm:text-base text-green-900 mb-1 sm:mb-2">Disponibilité imminente</h4>
+                    <p className="text-xs sm:text-sm text-green-800 leading-relaxed">
+                      Notre application Android sera bientôt disponible sur le <strong>Google Play Store</strong>. Restez à l'écoute !
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Méthode d'installation alternative */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-25 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
+                <h4 className="font-bold text-sm sm:text-base text-blue-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <span>💡</span> <span>En attendant</span>
+                </h4>
+                <p className="text-xs sm:text-sm text-blue-800 mb-3 sm:mb-4 leading-relaxed">
+                  Vous pouvez ajouter notre application directement à l'écran d'accueil de votre téléphone :
+                </p>
+                <ol className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-blue-800">
+                  <li className="flex gap-2.5 leading-relaxed">
+                    <span className="font-bold flex-shrink-0">1.</span>
+                    <span><strong>Ouvrez</strong> l'application dans votre navigateur Chrome</span>
+                  </li>
+                  <li className="flex gap-2.5 leading-relaxed">
+                    <span className="font-bold flex-shrink-0">2.</span>
+                    <span>Appuyez sur le <strong>menu (⋮)</strong> en haut à droite</span>
+                  </li>
+                  <li className="flex gap-2.5 leading-relaxed">
+                    <span className="font-bold flex-shrink-0">3.</span>
+                    <span>Sélectionnez <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong></span>
+                  </li>
+                  <li className="flex gap-2.5 leading-relaxed">
+                    <span className="font-bold flex-shrink-0">4.</span>
+                    <span>Appuyez sur <strong>"Installer"</strong></span>
+                  </li>
+                </ol>
+              </div>
+
+              {/* Avantages de l'installation */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-25 border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-5">
+                <h4 className="font-bold text-sm sm:text-base text-purple-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <span>⭐</span> <span>Avantages</span>
+                </h4>
+                <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-purple-800">
+                  <li className="flex items-center gap-2.5 leading-relaxed">
+                    <span className="font-bold text-base flex-shrink-0">✓</span> 
+                    <span>Accès rapide depuis l'écran d'accueil</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 leading-relaxed">
+                    <span className="font-bold text-base flex-shrink-0">✓</span> 
+                    <span>Fonctionnalité hors ligne partielle</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 leading-relaxed">
+                    <span className="font-bold text-base flex-shrink-0">✓</span> 
+                    <span>Notifications de dépôt et retrait</span>
+                  </li>
+                  <li className="flex items-center gap-2.5 leading-relaxed">
+                    <span className="font-bold text-base flex-shrink-0">✓</span> 
+                    <span>Expérience fluide et rapide</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Notification de suivi */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-25 border border-amber-200 rounded-lg sm:rounded-xl p-3.5 sm:p-4 lg:p-5">
+                <p className="text-xs sm:text-sm text-amber-800 text-center leading-relaxed font-medium">
+                  <span className="text-lg sm:text-xl">🔔</span> <strong>Notification :</strong> Vous serez averti dès que l'application sera disponible sur le Play Store
+                </p>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex flex-col sm:flex-row gap-3 border-t pt-4 sm:pt-5">
+              <button
+                onClick={() => setShowAndroidModal(false)}
+                className="order-2 sm:order-1 flex-1 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700 py-3 sm:py-3.5 px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-95"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href)
+                  notify.success('Lien copié !')
+                }}
+                className="order-1 sm:order-2 flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 sm:py-3.5 px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>📋</span>
+                <span>Copier le lien</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
