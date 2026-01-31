@@ -27,17 +27,22 @@
     /* Réinitialiser les styles Django par défaut */
     #content {
         padding: 0;
+        max-width: 100%;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     }
 
     .module {
-        margin-bottom: 30px !important;
+        margin-bottom: 32px !important;
         background: var(--bg-white);
-        padding: 28px !important;
+        padding: 32px !important;
         border-radius: var(--border-radius);
         box-shadow: var(--box-shadow);
         border: none !important;
         border-top: none !important;
-        transition: box-shadow 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .module:hover {
@@ -55,18 +60,179 @@
     }
 
     /* Styles responsives */
+    @media (max-width: 1600px) {
+        #content {
+            padding: 20px;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+    }
+
+    @media (max-width: 1024px) {
+        #content {
+            padding: 16px;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .module {
+            padding: 28px !important;
+            margin-bottom: 28px !important;
+        }
+
+        .module h2 {
+            font-size: 24px !important;
+            margin-bottom: 24px !important;
+        }
+
+        .stat-card {
+            padding: 28px;
+            min-height: 180px;
+        }
+
+        .stat-card-value {
+            font-size: 40px;
+        }
+
+        .stat-card-label {
+            font-size: 13px;
+        }
+    }
+
     @media (max-width: 768px) {
         #content {
             padding: 12px;
         }
 
         .module {
-            margin-bottom: 20px !important;
+            margin-bottom: 24px !important;
+            padding: 20px !important;
+            border-radius: 10px;
+        }
+
+        .module h2 {
+            font-size: 20px !important;
+            margin-bottom: 18px !important;
+            padding-bottom: 14px !important;
+            border-bottom-width: 3px !important;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            min-height: 160px;
+        }
+
+        .stat-card-value {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card-label {
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card-action {
+            font-size: 11px;
+            padding: 6px 10px;
+            margin-top: 12px;
+        }
+
+        .urgent-alerts {
             padding: 16px !important;
+            border-left-width: 4px;
+        }
+
+        .urgent-alerts h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .urgent-alerts li {
+            padding: 10px 0;
+            font-size: 13px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .urgent-alerts a {
+            margin-left: 0;
+            width: 100%;
+            text-align: center;
+            display: block;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #content {
+            padding: 8px;
+        }
+
+        .module {
+            margin-bottom: 16px !important;
+            padding: 16px !important;
+            border-radius: 8px;
         }
 
         .module h2 {
             font-size: 18px !important;
+            margin-bottom: 14px !important;
+            padding-bottom: 12px !important;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            padding: 16px;
+            min-height: 140px;
+        }
+
+        .stat-card-value {
+            font-size: 28px;
+        }
+
+        .stat-card-label {
+            font-size: 11px;
+        }
+
+        .stat-card-action {
+            padding: 5px 8px;
+            font-size: 10px;
+        }
+
+        .urgent-alerts {
+            padding: 12px !important;
+        }
+
+        .urgent-alerts h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .urgent-alerts li {
+            padding: 8px 0;
+            font-size: 12px;
+        }
+
+        .urgent-alerts a {
+            padding: 5px 8px;
+            font-size: 10px;
         }
     }
 
@@ -303,7 +469,7 @@
 </style>
 
 <!-- Conteneur principal avec padding responsive -->
-<div style="padding: 0 12px; max-width: 1600px; margin: 0 auto;">
+<div style="padding: 20px 12px; max-width: 1600px; margin: 0 auto; width: 100%;">
     
     <!-- Actions récentes des utilisateurs -->
     {% include "admin/user_recent_actions.html" %}
