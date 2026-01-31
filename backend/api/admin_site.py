@@ -2,7 +2,6 @@
 AdminSite personnalisé pour VISAFINANCE
 """
 from django.contrib import admin
-from django.template.response import TemplateResponse
 
 
 class CustomAdminSite(admin.AdminSite):
@@ -34,7 +33,11 @@ class CustomAdminSite(admin.AdminSite):
         
         # Utiliser le template personnalisé
         request.current_app = self.name
-        return TemplateResponse(request, 'admin/custom_index.html', extra_context)
+        # Appeler la méthode parent pour obtenir le contexte par défaut
+        response = super().index(request, extra_context)
+        # Changer le template
+        response.template_name = 'admin/custom_index.html'
+        return response
 
 
 # Créer une instance de notre AdminSite personnalisé
