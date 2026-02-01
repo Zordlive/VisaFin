@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["python39", "postgresql"]
+nixPkgs = ["python39", "python39Packages.pip", "postgresql"]
 
 [phases.install]
-cmds = ["cd backend && python -m pip install --upgrade pip && python -m pip install -r requirements.txt"]
+cmds = ["cd backend && pip install -r requirements.txt"]
 
 [phases.build]
 cmds = [
@@ -10,4 +10,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && python -m gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT"
+cmd = "cd backend && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT"
