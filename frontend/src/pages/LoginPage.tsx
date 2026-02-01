@@ -24,6 +24,8 @@ export default function LoginPage() {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string>('')
+  const [showError, setShowError] = useState(false)
 
   // Initialize Google Sign-In
   useEffect(() => {
@@ -89,7 +91,9 @@ export default function LoginPage() {
     console.log('Google login response:', response)
     
     if (!response.credential) {
-      alert('Erreur: pas de credential Google')
+      setErrorMessage('Erreur: pas de credential Google')
+      setShowError(true)
+      setTimeout(() => setShowError(false), 5000)
       return
     }
 
@@ -114,7 +118,9 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error('Google login error:', error)
       setGoogleLoading(false)
-      alert(error.message || 'Erreur lors de la connexion avec Google')
+      setErrorMessage(error.message || 'Erreur lors de la connexion avec Google')
+      setShowError(true)
+      setTimeout(() => setShowError(false), 5000)
     }
   }
 
@@ -125,19 +131,24 @@ export default function LoginPage() {
         console.log('Prompt notification:', notification)
         if (notification.isNotDisplayed()) {
           console.log('❌ Prompt not displayed - showing fallback')
-          alert('Veuillez configurer votre compte Google. Assurez-vous que localhost:5173 est autorisé dans Google Cloud Console.')
+          setErrorMessage('Veuillez configurer votre compte Google. Assurez-vous que localhost:5173 est autorisé dans Google Cloud Console.')
+          setShowError(true)
+          setTimeout(() => setShowError(false), 5000)
         } else if (notification.isSkippedMoment()) {
           console.log('⏭️ User previously dismissed the prompt')
         }
       })
     } else {
       console.error('❌ Google Identity Services not loaded')
-      alert('Google Sign-In non disponible. Veuillez recharger la page.')
+      setErrorMessage('Google Sign-In non disponible. Veuillez recharger la page.')
+      setShowError(true)
+      setTimeout(() => setShowError(false), 5000)
     }
   }
 
   async function onSubmit(data: FormData) {
     setLoading(true)
+    setShowError(false)
     const startTime = Date.now()
 
     try {
@@ -154,9 +165,11 @@ export default function LoginPage() {
         setLoading(false)
         navigate('/dashboard')
       }, remainingTime)
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false)
-      alert(t('login.failed'))
+      setErrorMessage(error.message || t('login.failed'))
+      setShowError(true)
+      setTimeout(() => setShowError(false), 5000)
     }
   }
 
@@ -164,6 +177,30 @@ export default function LoginPage() {
     <>
       {/* Loading Screen Modal */}
       {loading && <LoadingScreen isModal={true} userName={(user as any)?.first_name} />}
+
+      {/* Error Notification Toast */}
+      {showError && (
+        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 animate-in fade-in slide-in-from-top-4">
+          <div className="bg-red-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl shadow-lg flex items-start gap-3 max-w-xs sm:max-w-sm">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-sm sm:text-base">{errorMessage}</p>
+            </div>
+            <button
+              onClick={() => setShowError(false)}
+              className="flex-shrink-0 text-red-100 hover:text-white ml-2"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-8" style={{backgroundColor: '#F4EDDE'}}>
         <div className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-[32px] p-6 sm:p-8 md:p-10 shadow-lg">
