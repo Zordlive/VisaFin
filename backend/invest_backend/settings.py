@@ -12,9 +12,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "72.62.213.226",
-    "http://visanance.com",
-    "http://www.visanance.com"
+    "145.79.20.6",
+    "visafin-gest.org",
+    "www.visafin-gest.org"
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -133,11 +133,11 @@ REST_FRAMEWORK = {
 # Allow only the dev frontend origin and allow credentials (cookies).
 CORS_ALLOW_ALL_ORIGINS = True  # Ensure this is set to False
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "https://visafin-gest.org",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "https://visafin-gest.org",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -167,7 +167,7 @@ LOGGING = {
 # Email + site for verification links
 EMAIL_BACKEND = os.environ.get('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
-SITE_URL = os.environ.get('SITE_URL', 'http://localhost:5173')
+SITE_URL = os.environ.get('SITE_URL', 'https://visafin-gest.org')
 
 # Google OAuth
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com')
