@@ -14,6 +14,9 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    '.sslip.io',  # Coolify domains
+    'visafin-gest.org',
+    'www.visafin-gest.org',
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
