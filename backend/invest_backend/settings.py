@@ -9,11 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
+    'visafin-gest.org',
+    'www.visafin-gest.org',
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -127,12 +127,12 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS - allow frontend local dev
+# CORS - allow frontend production
 # For security, don't use wildcard when the frontend sends credentials.
-# Allow only the dev frontend origin and allow credentials (cookies).
+# Allow only the production frontend origin and allow credentials (cookies).
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
+    'https://visafin-gest.org',
+    'https://www.visafin-gest.org',
 ]
 CORS_ALLOW_CREDENTIALS = True
 

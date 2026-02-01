@@ -10,6 +10,7 @@ cmds = [
 
 [phases.build]
 cmds = [
+  "cd backend && . /opt/venv/bin/activate && python manage.py migrate",
   "cd backend && . /opt/venv/bin/activate && python manage.py collectstatic --noinput"
 ]
 
