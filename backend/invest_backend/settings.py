@@ -9,9 +9,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.environ.get('DJANGO_DEBUG', 'True') == 'True' else False
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    "72.62.213.226",
+    "http://visanance.com",
+    "http://www.visanance.com"
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Application definition
 INSTALLED_APPS = [
