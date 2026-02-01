@@ -12,7 +12,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "145.79.20.6",
+    "72.62.213.226",
     "visafin-gest.org",
     "www.visafin-gest.org"
 ]
