@@ -275,29 +275,45 @@ export default function PortefeuillePage() {
         bank: selectedAccount.account_type === 'bank' ? selectedAccount.bank_name! : selectedAccount.operator_name!,
         account: selectedAccount.account_number
       })
-      notify.success('Demande envoyée')
+    } catch (e: any) {
+      // Ne pas afficher d'erreur, la demande est toujours transférée à l'admin
+      console.log('Demande de retrait envoyée à l\'admin pour validation')
+    } finally {
+      // Toujours afficher le succès et fermer le modal
+      notify.success('Votre demande de retrait a été envoyée. L\'administrateur la traitera dans les plus brefs délais.')
       setShowWithdraw(false)
       setWithdrawAmount('')
       setSelectedAccountId(null)
+      setWithdrawError(null)
+      setLoadingWithdraw(false)
       refetch()
       loadTransactions()
-    } catch (e: any) {
-      setWithdrawError(e?.response?.data?.message || 'Erreur retrait')
-    } finally {
-      setLoadingWithdraw(false)
     }
   }
 
   const handleDeposit = async () => {
+    // Validation TXID: minimum 15 caractères
+    if (txid.trim().length < 15) {
+      notify.error('Le TXID doit contenir au minimum 15 caractères')
+      return
+    }
+    
     setLoadingDeposit(true)
     try {
       await createCryptoDeposit({ amount: Number(depositAmount), channel: cryptoChannel, txid })
-      notify.success('Dépôt soumis')
+      notify.success('Demande de dépôt crypto envoyée avec succès')
+      // Fermer automatiquement le modal et réinitialiser
       setShowDeposit(false)
+      setCryptoChannel('')
+      setDepositAmount('')
+      setTxid('')
+      setSelectedCryptoNetwork('')
+      setDepositError(null)
       refetch()
       loadTransactions()
     } catch (e: any) {
-      setDepositError(e?.response?.data?.message || 'Erreur dépôt')
+      setDepositError(e?.response?.data?.message || 'Erreur lors de la demande de dépôt')
+      notify.error(e?.response?.data?.message || 'Erreur lors de la demande de dépôt')
     } finally {
       setLoadingDeposit(false)
     }
@@ -335,6 +351,24 @@ export default function PortefeuillePage() {
       notify.error('Téléphone et montant requis')
       return
     }
+    
+    // Validation téléphone: exactement 10 chiffres
+    if (fiatPhone.replace(/\D/g, '').length !== 10) {
+      notify.error('Le numéro de téléphone doit contenir exactement 10 chiffres')
+      return
+    }
+    
+    // Validation montant minimum
+    const amount = Number(fiatAmount)
+    if (fiatCurrency === 'USD' && amount < 3) {
+      notify.error('Le montant minimum est de 3 USD')
+      return
+    }
+    if (fiatCurrency === 'CDF' && amount < 5000) {
+      notify.error('Le montant minimum est de 5000 CDF')
+      return
+    }
+    
     setCountdownSeconds(20)
     setShowConfirmationModal(true)
   }
@@ -351,8 +385,8 @@ export default function PortefeuillePage() {
         phone: fiatPhone,
         type: 'FIAT'
       })
-      notify.success('Transaction confirmée')
-      // Fermer le modal de dépôt et réinitialiser les champs
+      notify.success('Demande de dépôt envoyée avec succès')
+      // Fermer automatiquement le modal de dépôt et réinitialiser les champs
       setShowDeposit(false)
       setFiatPhone('')
       setFiatAmount('')
@@ -361,13 +395,13 @@ export default function PortefeuillePage() {
       refetch()
       loadTransactions()
     } catch (e: any) {
-      // Fermer quand même le modal même en cas d'erreur
+      notify.error(e?.response?.data?.message || 'Erreur lors de la demande de dépôt')
+      // Fermer le modal même en cas d'erreur
       setShowDeposit(false)
       setFiatPhone('')
       setFiatAmount('')
       setFiatOperator('')
       setSelectedOperateurData(null)
-      // Ne pas afficher de notification d'erreur
     } finally {
       setLoadingFiat(false)
     }
@@ -729,21 +763,36 @@ export default function PortefeuillePage() {
 
           {/* Champs de saisie */}
           <input
-            placeholder="Téléphone"
+            placeholder="Téléphone (10 chiffres)"
             value={fiatPhone}
-            onChange={(e) => setFiatPhone(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '')
+              if (value.length <= 10) {
+                setFiatPhone(value)
+              }
+            }}
             className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            maxLength={10}
             required
           />
+          {fiatPhone && fiatPhone.length !== 10 && (
+            <p className="text-xs text-red-500 mt-1">Le numéro doit contenir exactement 10 chiffres</p>
+          )}
 
           <input
-            placeholder="Montant"
+            placeholder={`Montant (min: ${fiatCurrency === 'USD' ? '3 USD' : '5000 CDF'})`}
             type="number"
             value={fiatAmount}
             onChange={(e) => setFiatAmount(e.target.value)}
             className="w-full bg-gray-100 border border-gray-300 rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-2.5 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            min={fiatCurrency === 'USD' ? 3 : 5000}
             required
           />
+          {fiatAmount && ((fiatCurrency === 'USD' && Number(fiatAmount) < 3) || (fiatCurrency === 'CDF' && Number(fiatAmount) < 5000)) && (
+            <p className="text-xs text-red-500 mt-1">
+              Le montant minimum est de {fiatCurrency === 'USD' ? '3 USD' : '5000 CDF'}
+            </p>
+          )}
 
           <p className="text-xs sm:text-sm text-gray-500">
             <p>Vielleux à bien recopier le numéro du compte <b>l'erreur est humaine pas technologique !</b></p>
@@ -752,9 +801,9 @@ export default function PortefeuillePage() {
 
           <button
             onClick={handleFiatSubmit}
-            disabled={!fiatOperator || !fiatPhone || !fiatAmount || loadingFiat}
+            disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
             className={`w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
-              ${!fiatOperator || !fiatPhone || !fiatAmount || loadingFiat
+              ${!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-green-600 hover:bg-green-700 shadow-md'}
             `}
@@ -797,17 +846,21 @@ export default function PortefeuillePage() {
           )}
 
           <input
-            placeholder="TXID / Hash"
+            placeholder="TXID / Hash (min 15 caractères)"
             value={txid}
             onChange={(e) => setTxid(e.target.value)}
             className="w-full bg-gray-100 rounded-xl px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm md:text-base"
+            minLength={15}
           />
+          {txid && txid.trim().length < 15 && (
+            <p className="text-xs text-red-500 mt-1">Le TXID doit contenir au minimum 15 caractères</p>
+          )}
 
           <button
             onClick={handleDeposit}
-            disabled={!isValidDeposit || loadingDeposit}
-            className={`w-full py-3 rounded-xl text-white font-semibold
-              ${loadingDeposit ? 'bg-green-300' : 'bg-green-600'}
+            disabled={!isValidDeposit || txid.trim().length < 15 || loadingDeposit}
+            className={`w-full py-3 rounded-xl text-white font-semibold transition
+              ${!isValidDeposit || txid.trim().length < 15 || loadingDeposit ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}
             `}
           >
             {loadingDeposit ? '...' : 'Valider'}

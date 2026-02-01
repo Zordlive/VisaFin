@@ -229,27 +229,84 @@ class DepositViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='initiate')
     def initiate(self, request):
-        # expected payload: { method, amount, currency }
+        # Endpoint pour créer un dépôt FIAT
+        # Payload attendu: { amount, currency, operateur, phone, type }
         amount = request.data.get('amount')
-        currency = request.data.get('currency', 'XAF')
+        currency = request.data.get('currency', 'CDF')
+        operateur = request.data.get('operateur')
+        phone = request.data.get('phone')
+        deposit_type = request.data.get('type', 'FIAT')
+        
         if not amount:
             return Response({'message': 'amount is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        deposit = Deposit.objects.create(user=request.user, amount=amount, currency=currency, status='pending')
-        
-        # Créer une notification admin
-        AdminNotification.objects.create(
-            admin=User.objects.filter(is_staff=True, is_superuser=True).first(),
+        deposit = Deposit.objects.create(
             user=request.user,
-            notification_type='deposit',
-            amount=deposit.amount,
-            account_info=f"Dépôt via {request.data.get('method', 'unknown')}",
-            deposit=deposit
+            amount=amount,
+            currency=currency,
+            status='pending',
+            external_id=f'{deposit_type}_{operateur}_{phone}' if deposit_type == 'FIAT' else None
         )
         
-        # Simulate external provider instructions
-        instructions = {'provider': 'mock', 'payment_address': 'mock_address', 'deposit_id': str(deposit.id)}
-        return Response({'deposit_id': deposit.id, 'instructions': instructions, 'status': deposit.status})
+        return Response({
+            'deposit_id': deposit.id,
+            'status': deposit.status,
+            'amount': float(deposit.amount),
+            'currency': deposit.currency
+        })
+
+    @action(detail=False, methods=['post'], url_path='')
+    def create(self, request):
+        """Créer un nouveau dépôt (FIAT ou CRYPTO)."""
+        amount = request.data.get('amount')
+        currency = request.data.get('currency', 'USDT')
+        channel = request.data.get('channel')
+        txid = request.data.get('txid')
+        operateur = request.data.get('operateur')
+        phone = request.data.get('phone')
+        deposit_type = request.data.get('type', 'FIAT')
+        
+        if not amount:
+            return Response({'message': 'amount is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Créer le dépôt
+            if deposit_type == 'CRYPTO':
+                external_id = f'CRYPTO_{channel}_{txid[:20]}'
+            else:
+                external_id = f'FIAT_{operateur}_{phone}'
+            
+            deposit = Deposit.objects.create(
+                user=request.user,
+                amount=amount,
+                currency=currency,
+                status='pending',
+                external_id=external_id
+            )
+            
+            # Créer une notification admin pour tous les admins
+            admin_users = User.objects.filter(is_staff=True, is_active=True)
+            for admin in admin_users:
+                AdminNotification.objects.create(
+                    admin=admin,
+                    user=request.user,
+                    notification_type='deposit',
+                    amount=deposit.amount,
+                    account_info=external_id,
+                    deposit=deposit,
+                    is_read=False
+                )
+            
+            return Response({
+                'deposit_id': deposit.id,
+                'status': deposit.status,
+                'amount': float(deposit.amount),
+                'currency': deposit.currency,
+                'message': 'Dépôt créé avec succès'
+            }, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'], url_path='status')
     def status(self, request, pk=None):
@@ -1191,26 +1248,78 @@ class WithdrawalViewSet(viewsets.ModelViewSet):
         # Les utilisateurs voient leurs propres retraits
         # Les admins voient tous les retraits
         if self.request.user.is_staff:
-            return Withdrawal.objects.all()
-        return Withdrawal.objects.filter(user=self.request.user)
+            return Withdrawal.objects.all().order_by('-created_at')
+        return Withdrawal.objects.filter(user=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
+        """Créer une demande de retrait et notifier les admins."""
         withdrawal = serializer.save(user=self.request.user)
-        # Créer une notification admin
-        AdminNotification.objects.create(
-            admin=User.objects.filter(is_staff=True, is_superuser=True).first(),
-            user=self.request.user,
-            notification_type='withdrawal',
-            amount=withdrawal.amount,
-            account_info=f"{withdrawal.bank} - {withdrawal.account}",
-            withdrawal=withdrawal
-        )
+        
+        # Créer des notifications admin pour tous les admins
+        admin_users = User.objects.filter(is_staff=True, is_active=True)
+        for admin in admin_users:
+            AdminNotification.objects.create(
+                admin=admin,
+                user=self.request.user,
+                notification_type='withdrawal',
+                amount=withdrawal.amount,
+                account_info=f"{withdrawal.bank} - {withdrawal.account}",
+                withdrawal=withdrawal,
+                is_read=False
+            )
+
+    def create(self, request):
+        """Créer une demande de retrait."""
+        amount = request.data.get('amount')
+        bank = request.data.get('bank')
+        account = request.data.get('account')
+        
+        if not all([amount, bank, account]):
+            return Response(
+                {'message': 'amount, bank, and account are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            withdrawal = Withdrawal.objects.create(
+                user=request.user,
+                amount=amount,
+                bank=bank,
+                account=account,
+                status='pending'
+            )
+            
+            # Créer des notifications admin
+            admin_users = User.objects.filter(is_staff=True, is_active=True)
+            for admin in admin_users:
+                AdminNotification.objects.create(
+                    admin=admin,
+                    user=self.request.user,
+                    notification_type='withdrawal',
+                    amount=withdrawal.amount,
+                    account_info=f"{withdrawal.bank} - {withdrawal.account}",
+                    withdrawal=withdrawal,
+                    is_read=False
+                )
+            
+            return Response({
+                'withdrawal_id': withdrawal.id,
+                'status': withdrawal.status,
+                'amount': float(withdrawal.amount),
+                'message': 'Demande de retrait créée avec succès'
+            }, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response(
+                {'message': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def process(self, request, pk=None):
         """Admin process a withdrawal request."""
         if not request.user.is_staff:
-            return Response({'error': 'Permissionsrefused'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Permissions denied'}, status=status.HTTP_403_FORBIDDEN)
         
         withdrawal = self.get_object()
         action_type = request.data.get('action')  # 'complete' or 'reject'

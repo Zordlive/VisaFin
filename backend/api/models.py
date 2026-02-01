@@ -143,8 +143,22 @@ class Referral(models.Model):
         ('cancelled', 'Cancelled'),
     )
 
+    GENERATION = (
+        (1, 'Génération 1 (Parent)'),
+        (2, 'Génération 2 (Enfant)'),
+        (3, 'Génération 3 (Petit-enfant)'),
+    )
+
     code = models.ForeignKey(ReferralCode, verbose_name='code', on_delete=models.CASCADE, related_name='referrals')
     referred_user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='filleul', on_delete=models.CASCADE, related_name='referred_by', null=True, blank=True)
+    
+    # Champs pour gérer les générations
+    parent_referral = models.ForeignKey('self', verbose_name='parrainage parent', on_delete=models.SET_NULL, null=True, blank=True, related_name='children_referrals')
+    generation = models.IntegerField('génération', choices=GENERATION, default=1)
+    
+    # Flag pour tracker si la première commission a été versée
+    first_deposit_reward_processed = models.BooleanField('première commission versée', default=False)
+    
     created_at = models.DateTimeField('date', auto_now_add=True)
     used_at = models.DateTimeField('utilisé le', null=True, blank=True)
     status = models.CharField('statut', max_length=32, choices=STATUS, default='pending')
@@ -155,14 +169,23 @@ class Referral(models.Model):
         verbose_name_plural = 'parrainages'
 
     def __str__(self):
-        return f"Referral {self.id} code={self.code.code} -> {self.referred_user} ({self.status})"
+        gen_text = dict(self.GENERATION).get(self.generation, 'Unknown')
+        return f"Referral {self.id} ({gen_text}) - {self.code.code} -> {self.referred_user} ({self.status})"
 
 
 class ReferralReward(models.Model):
     """Record of a reward paid to the referrer when a referral meets conditions."""
+    REWARD_TYPES = (
+        ('direct_generation1', 'Commission directe - Génération 1 (10%)'),
+        ('direct_generation2', 'Commission directe - Génération 2 (10%)'),
+        ('indirect_generation2', 'Commission indirecte - Génération 2 (3%)'),
+    )
+    
     referral = models.ForeignKey(Referral, verbose_name='parrainage', on_delete=models.CASCADE, related_name='rewards')
     amount = models.DecimalField('montant', max_digits=20, decimal_places=2)
+    reward_type = models.CharField('type de commission', max_length=30, choices=REWARD_TYPES, default='direct_generation1')
     transaction = models.ForeignKey(Transaction, verbose_name='transaction', on_delete=models.SET_NULL, null=True, blank=True)
+    deposit = models.ForeignKey(Deposit, verbose_name='dépôt', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField('date', auto_now_add=True)
 
     class Meta:
@@ -170,7 +193,7 @@ class ReferralReward(models.Model):
         verbose_name_plural = 'récompenses de parrainage'
 
     def __str__(self):
-        return f"Reward {self.id} {self.amount} for referral {self.referral_id}"
+        return f"Reward {self.id} {self.amount} ({self.get_reward_type_display()}) for referral {self.referral_id}"
 
 
 class Investment(models.Model):
@@ -419,3 +442,31 @@ class SocialLinks(models.Model):
             existing = SocialLinks.objects.first()
             self.pk = existing.pk
         super().save(*args, **kwargs)
+
+
+class UserNotification(models.Model):
+    """Notifications pour les utilisateurs concernant leurs demandes de retrait et dépôt."""
+    NOTIFICATION_TYPES = (
+        ('withdrawal_approved', 'Retrait Approuvé'),
+        ('withdrawal_rejected', 'Retrait Rejeté'),
+        ('deposit_approved', 'Dépôt Approuvé'),
+        ('deposit_rejected', 'Dépôt Rejeté'),
+        ('general', 'Général'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField('type de notification', max_length=30, choices=NOTIFICATION_TYPES)
+    title = models.CharField('titre', max_length=200)
+    message = models.TextField('message')
+    is_read = models.BooleanField('lu', default=False)
+    withdrawal = models.ForeignKey(Withdrawal, verbose_name='retrait', on_delete=models.SET_NULL, null=True, blank=True, related_name='user_notifications')
+    deposit = models.ForeignKey(Deposit, verbose_name='dépôt', on_delete=models.SET_NULL, null=True, blank=True, related_name='user_notifications')
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'notification utilisateur'
+        verbose_name_plural = 'notifications utilisateur'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification {self.id} - {self.user} - {self.title}"

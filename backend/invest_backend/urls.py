@@ -1,15 +1,15 @@
+from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from api.admin_site import admin_site  # Import notre AdminSite personnalisé
 from invest_backend.views import home
 
 urlpatterns = [
     path('', home, name='home'),  # Root URL
-    path('admin/', admin_site.urls),  # Utilise admin_site au lieu de admin.site
+    path('admin/', admin.site.urls),
     # serve a simple favicon during development
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.svg')),
     path('api/', include('api.urls')),
