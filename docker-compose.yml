@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=cryptoinvest
+      - POSTGRES_USER=investuser
+      - POSTGRES_PASSWORD=investpass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   backend:
     build:
       context: ./backend
@@ -10,9 +21,12 @@ services:
     environment:
       - DEBUG=False
       - PYTHONUNBUFFERED=1
-    volumes:
-      - ./backend:/app
-    command: gunicorn --bind 0.0.0.0:8000 invest_backend.wsgi:application
+      - DATABASE_URL=postgresql://investuser:investpass123@db:5432/cryptoinvest
+      - DJANGO_SECRET_KEY=your-secret-key-change-in-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,*.sslip.io,*.onrender.com,visafin-gest.org
+    depends_on:
+      - db
+    command: sh -c "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 --workers 3 invest_backend.wsgi:application"
 
   frontend:
     build:
@@ -21,8 +35,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000/api
-    volumes:
-      - ./frontend:/app
+      - VITE_API_BASE_URL=http://backend:8000/api
     depends_on:
       - backend
+
+volumes:
+  postgres_data:

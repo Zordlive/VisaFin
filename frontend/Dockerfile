@@ -1,5 +1,5 @@
-# Frontend Dockerfile
-FROM node:22-alpine
+# Frontend Dockerfile - Multi-stage build
+FROM node:22-alpine as builder
 
 WORKDIR /app
 
@@ -15,8 +15,16 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Use serve to run the built app
+# Production stage
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install serve globally
 RUN npm install -g serve
+
+# Copy built app from builder
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
