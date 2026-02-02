@@ -1,2 +1,0 @@
-# This file redirects to the actual requirements in the backend folder
--r backend/requirements.txt
