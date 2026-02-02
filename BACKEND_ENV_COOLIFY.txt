@@ -1,0 +1,19 @@
+# Variables d'environnement BACKEND pour Coolify
+# À configurer dans Coolify → Backend Service → Environment
+
+# Django Core
+DJANGO_SECRET_KEY=<GENERER_UNE_CLE_FORTE>
+DEBUG=False
+ALLOWED_HOSTS=visafin-gest.org,www.visafin-gest.org
+
+# Database (sera fourni automatiquement si tu ajoutes un service PostgreSQL dans Coolify)
+DATABASE_URL=postgresql://user:password@postgres-host:5432/dbname
+
+# Site URL
+SITE_URL=https://visafin-gest.org
+
+# Google OAuth
+GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com
+
+# Port (Coolify le fournit automatiquement)
+PORT=8000
