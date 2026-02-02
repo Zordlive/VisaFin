@@ -1,11 +1,8 @@
 # Nixpacks configuration for Coolify deployment
-# CRITICAL: Do NOT install PostgreSQL dev packages - psycopg2-binary doesn't need compilation
-
-[phases.setup]
-nixPkgs = ["python39"]
+# Note: .nixpacks/default.nix handles package installation (python39, gcc, postgresql, libpq)
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
 
 [phases.build]
 cmds = ["python manage.py collectstatic --noinput --clear || true"]
