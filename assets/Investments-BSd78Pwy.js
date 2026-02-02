@@ -1,1 +1,0 @@
-import{a as e}from"./index-Du5RQlyx.js";async function c(t,a){const s={amount:t};return a&&(s.offer_id=a),(await e.post("/investments",s)).data}async function o(){return(await e.get("/wallets")).data}async function f(){return(await e.get("/market/offers")).data}export{c as createInvestment,f as fetchMarketOffers,o as fetchWallets};
