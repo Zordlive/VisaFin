@@ -1,48 +1,51 @@
-version: '3.8'
+version: '3.9'
 
 services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=cryptoinvest
-      - POSTGRES_USER=investuser
-      - POSTGRES_PASSWORD=investpass123
+      POSTGRES_DB: cryptoinvest
+      POSTGRES_USER: cryptoinvest
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryptoinvest"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: 'False'
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: postgresql://cryptoinvest:${DB_PASSWORD:-changeme}@db:5432/cryptoinvest
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-api.visafin-gest.org,visafin-gest.org}
+      SITE_URL: https://visafin-gest.org
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com}
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=False
-      - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://investuser:investpass123@db:5432/cryptoinvest
-      - DJANGO_SECRET_KEY=django-insecure-replace-with-strong-key-in-coolify
-      - ALLOWED_HOSTS=localhost,127.0.0.1,*.sslip.io,*.onrender.com,visafin-gest.org,www.visafin-gest.org
-      - GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com
-      - SITE_URL=https://visafin-gest.org
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/me"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.visafin-gest.org/api}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com}
     ports:
       - "3000:3000"
-    environment:
-      - VITE_API_BASE_URL=http://backend:8000/api
     depends_on:
       - backend
 

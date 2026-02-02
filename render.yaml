@@ -20,17 +20,15 @@ services:
         value: '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com'
       - key: SITE_URL
         value: 'https://visafin-gest.org'
-      - key: PORT
-        value: '8000'
 
   - type: web
     name: cryptoinvest-frontend
     runtime: node
     buildCommand: cd frontend && npm ci && npm run build
-    startCommand: cd frontend && npm run preview -- --host 0.0.0.0 --port 3000
+    startCommand: cd frontend && npm run preview -- --host 0.0.0.0 --port $PORT
     envVars:
       - key: VITE_API_BASE_URL
-        value: 'https://api.visafin-gest.org/api'
+        value: 'https://cryptoinvest-backend.onrender.com/api'
       - key: VITE_GOOGLE_CLIENT_ID
         value: '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com'
 
