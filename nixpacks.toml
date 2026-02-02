@@ -1,0 +1,19 @@
+# Nixpacks configuration for Coolify deployment
+# This file configures how Nixpacks builds the Docker image
+
+[build]
+# Specify Python version
+pythonVersion = "3.9"
+
+# Don't try to install PostgreSQL dev headers
+# psycopg2-binary (used in requirements.txt) doesn't need compilation
+# Install only essential system packages
+nixPkgs = ["gcc", "libpq"]
+
+[build.env]
+# Set Python version explicitly
+NIXPACKS_PYTHON_VERSION = "3.9"
+
+[start]
+# Run migrations before starting the application
+cmd = "python manage.py migrate --noinput && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 60"

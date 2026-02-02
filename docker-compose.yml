@@ -15,7 +15,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     ports:
       - "8000:8000"
     environment:
@@ -23,12 +23,17 @@ services:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=postgresql://investuser:investpass123@db:5432/cryptoinvest
       - DJANGO_SECRET_KEY=django-insecure-replace-with-strong-key-in-coolify
-      - ALLOWED_HOSTS=localhost,127.0.0.1,*.sslip.io,*.onrender.com,visafin-gest.org,visafin-gest.org,www.visafin-gest.org
+      - ALLOWED_HOSTS=localhost,127.0.0.1,*.sslip.io,*.onrender.com,visafin-gest.org,www.visafin-gest.org
       - GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com
       - SITE_URL=https://visafin-gest.org
     depends_on:
       - db
-    command: sh -c "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 --workers 3 invest_backend.wsgi:application"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/me"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   frontend:
     build:

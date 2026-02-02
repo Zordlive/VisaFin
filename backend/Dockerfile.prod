@@ -1,0 +1,53 @@
+# Production Dockerfile for CryptoInvest Backend
+# Multi-stage build for optimal size
+FROM python:3.9-slim as base
+
+WORKDIR /app
+
+# Install system dependencies (minimal)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Build Python dependencies
+FROM base as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+# Create a venv and install packages
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Final runtime image
+FROM base
+
+# Copy venv from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/staticfiles /app/logs
+
+# Collect static files (non-fatal if errors)
+RUN python manage.py collectstatic --noinput --clear 2>/dev/null || true
+
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/me || exit 1
+
+# Start command
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 60 --access-logfile - --error-logfile - invest_backend.wsgi:application"]
