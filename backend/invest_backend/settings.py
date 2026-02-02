@@ -169,9 +169,23 @@ if not DEBUG:
         r"^https://.*\.sslip\.io$",
         r"^http://.*\.sslip\.io$",
     ]
-# For testing purposes, allow all origins (not recommended for production)
-CORS_ALLOW_ALL_ORIGINS = True
+# Do not allow all origins in production; keep explicit allowlist
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF trusted origins for HTTPS deployments
+CSRF_TRUSTED_ORIGINS = [
+    'https://visafin-gest.org',
+    'https://www.visafin-gest.org',
+    'https://api.visafin-gest.org',
+]
+
+# Respect reverse proxy SSL headers (Coolify/Traefik)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Secure cookies when DEBUG=False
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 
 # Logging: use console/stderr in production (Docker), files in development
@@ -202,7 +216,7 @@ LOGGING = {
 # Email + site for verification links
 EMAIL_BACKEND = os.environ.get('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
-SITE_URL = os.environ.get('SITE_URL', 'http://visafin-gest.org')
+SITE_URL = os.environ.get('SITE_URL', 'https://visafin-gest.org')
 
 # Google OAuth
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com')
