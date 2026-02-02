@@ -1,6 +1,6 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 
-const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const BASE = import.meta.env.VITE_API_BASE_URL as string
 
 let authToken: string | null = null
 
@@ -25,9 +25,8 @@ try {
 } catch (e) {}
 
 // Attach Authorization header from module-scoped token
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  if (!config.headers) config.headers = {}
-  if (authToken) config.headers.Authorization = `Bearer ${authToken}`
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  config.headers.Authorization = authToken ? `Bearer ${authToken}` : ''
   return config
 })
 
