@@ -1,6 +1,17 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 
-const BASE = import.meta.env.VITE_API_BASE_URL as string
+// Use environment variable, or detect from window.location for production
+let BASE = import.meta.env.VITE_API_BASE_URL as string
+
+// Fallback: if in production and no env var, use api subdomain
+if (!BASE && typeof window !== 'undefined') {
+  const hostname = window.location.hostname
+  if (hostname === 'visafin-gest.org' || hostname === 'www.visafin-gest.org') {
+    BASE = 'https://api.visafin-gest.org/api'
+  }
+}
+
+console.log('🔗 API Base URL:', BASE)
 
 let authToken: string | null = null
 
