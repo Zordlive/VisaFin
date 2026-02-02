@@ -17,3 +17,14 @@ services:
         fromDatabase:
           name: cryptoinvest-db
           property: connectionString
+
+  - type: static
+    name: cryptoinvest-frontend
+    env: static
+    region: frankfurt
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://cryptoinvest-backend.onrender.com/api

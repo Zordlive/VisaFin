@@ -20,9 +20,6 @@ ALLOWED_HOSTS = [
     'www.visafin-gest.org',
 ]
 
-if not DEBUG:
-    ALLOWED_HOSTS.append('*')  # Allow all hosts in production (adjust as needed)
-
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Application definition
@@ -159,10 +156,10 @@ CORS_ALLOWED_ORIGINS = [
 
 # In production, also allow Render and Coolify domains
 if not DEBUG:
-    CORS_ALLOWED_ORIGINS.extend([
-        'https://*.onrender.com',
-        'https://*.sslip.io',
-    ])
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://.*\.onrender\.com$",
+        r"^https://.*\.sslip\.io$",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
