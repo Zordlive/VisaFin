@@ -16,6 +16,23 @@ services:
         fromDatabase:
           name: cryptoinvest-db
           property: connectionString
+      - key: GOOGLE_CLIENT_ID
+        value: '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com'
+      - key: SITE_URL
+        value: 'https://api.visafin-gest.org'
+      - key: DJANGO_EMAIL_BACKEND
+        value: 'django.core.mail.backends.console.EmailBackend'
+
+  - type: web
+    name: cryptoinvest-frontend
+    runtime: node
+    buildCommand: cd frontend && npm ci && npm run build
+    startCommand: cd frontend && npm run preview
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: 'https://cryptoinvest-backend.onrender.com/api'
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: '562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com'
 
 databases:
   - name: cryptoinvest-db
