@@ -152,7 +152,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'https://visafin-gest.org',
     'https://www.visafin-gest.org',
-    'http://aok4sc8k4ook04okc0ww040s.72.62.213.226.sslip.io',
+    'visafin-gest.org',
 ]
 
 # In production, also allow Render and Coolify domains
