@@ -150,16 +150,14 @@ REST_FRAMEWORK = {
 # For security, don't use wildcard when the frontend sends credentials.
 # Allow only the dev frontend origin and allow credentials (cookies).
 CORS_ALLOWED_ORIGINS = [
+    # Development
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://visafin-gest.org',
+    # Production (HTTPS uniquement)
     'https://visafin-gest.org',
-    'http://www.visafin-gest.org',
     'https://www.visafin-gest.org',
-    'http://api.visafin-gest.org',
-    'https://api.visafin-gest.org',
 ]
 
 # In production, also allow Render and Coolify domains
@@ -167,7 +165,6 @@ if not DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         r"^https://.*\.onrender\.com$",
         r"^https://.*\.sslip\.io$",
-        r"^http://.*\.sslip\.io$",
     ]
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
