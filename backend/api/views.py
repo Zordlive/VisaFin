@@ -665,6 +665,43 @@ class MeView(APIView):
         return Response(serializer.data)
 
 
+class UserUpdateView(APIView):
+    """Update the current authenticated user."""
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        """Update user profile (PUT)."""
+        user = request.user
+        data = request.data
+
+        # Update basic fields
+        if 'first_name' in data:
+            user.first_name = data['first_name']
+        if 'email' in data:
+            user.email = data['email']
+        if 'password' in data and data['password']:
+            user.set_password(data['password'])
+
+        # Update phone via Investor profile
+        if 'phone' in data:
+            try:
+                investor = Investor.objects.get(user=user)
+                investor.phone = data['phone']
+                investor.save()
+            except Investor.DoesNotExist:
+                return Response(
+                    {'message': 'Investor profile not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        user.save()
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        """Partial update of user profile (PATCH)."""
+        # PATCH is same as PUT for this endpoint (partial updates)
+        return self.put(request)
 
 
 

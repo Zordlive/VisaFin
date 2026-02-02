@@ -45,8 +45,10 @@ urlpatterns = [
     path('auth/refresh', views.RefreshTokenFromCookieView.as_view(), name='auth-refresh'),
     path('auth/logout', views.LogoutView.as_view(), name='auth-logout'),
     path('me', views.MeView.as_view(), name='me'),
+    path('user', views.UserUpdateView.as_view(), name='user-update'),
     # admin recompute VIP endpoint removed
     path('auth/register-email/', views.RegisterEmailView.as_view(), name='auth-register-email'),
     path('auth/verify-email/<uidb64>/<token>/', views.VerifyEmailView.as_view(), name='auth-verify-email'),
     path('auth/set-password/', views.SetPasswordView.as_view(), name='auth-set-password'),
 ]
+
