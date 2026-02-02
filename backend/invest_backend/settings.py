@@ -155,8 +155,11 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://visafin-gest.org',
+    'https://visafin-gest.org',
     'http://www.visafin-gest.org',
+    'https://www.visafin-gest.org',
     'http://api.visafin-gest.org',
+    'https://api.visafin-gest.org',
 ]
 
 # In production, also allow Render and Coolify domains
@@ -164,9 +167,11 @@ if not DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         r"^https://.*\.onrender\.com$",
         r"^https://.*\.sslip\.io$",
+        r"^http://.*\.sslip\.io$",
     ]
 # For testing purposes, allow all origins (not recommended for production)
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Logging: use console/stderr in production (Docker), files in development
