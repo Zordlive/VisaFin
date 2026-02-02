@@ -12,6 +12,24 @@ import ErrorBoundary from './components/ErrorBoundary'
 
 const queryClient = new QueryClient()
 
+// Intercept unhandled promise rejections (e.g. from browser extensions)
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.message?.includes('Cannot set properties of null')) {
+    console.warn('Ignoring DOM manipulation error from extension:', event.reason)
+    event.preventDefault()
+  }
+})
+
+// Patch console.error to suppress extension-related errors
+const originalError = console.error
+console.error = function(...args: any[]) {
+  const msg = args[0]?.toString?.() || ''
+  if (msg.includes('addDevModeBanner') || msg.includes('Cannot set properties of null')) {
+    return
+  }
+  originalError.apply(console, args)
+}
+
 // Hide initial HTML loader when React is ready
 const hideInitialLoader = () => {
   const loader = document.getElementById('initial-loader')
