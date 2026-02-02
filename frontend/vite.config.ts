@@ -6,6 +6,9 @@ export default defineConfig(async () => {
     plugins: [reactPlugin()],
     server: {
       port: 5173
+    },
+    preview: {
+      port: 3000
     }
   }
 })

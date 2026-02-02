@@ -130,12 +130,15 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS - allow frontend local dev
+# CORS - allow frontend local dev and Coolify deployment
 # For security, don't use wildcard when the frontend sends credentials.
 # Allow only the dev frontend origin and allow credentials (cookies).
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://*.sslip.io',  # Allow any Coolify frontend domain
 ]
 CORS_ALLOW_CREDENTIALS = True
 
