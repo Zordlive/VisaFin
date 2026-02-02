@@ -5,7 +5,7 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
-    startCommand: PYTHONPATH=/opt/render/project/src/backend:$PYTHONPATH gunicorn --chdir /opt/render/project/src/backend invest_backend.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: bash start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.25
