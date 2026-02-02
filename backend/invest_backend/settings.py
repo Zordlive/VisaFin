@@ -169,24 +169,27 @@ if not DEBUG:
 CORS_ALLOW_ALL_ORIGINS = True
 
 
-# Logging: write Django errors (500, etc.) to a file for diagnosis when DEBUG=False
-LOGS_DIR = BASE_DIR / 'logs'
+# Logging: use console/stderr in production (Docker), files in development
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': str(LOGS_DIR / 'django-error.log'),
-            'encoding': 'utf-8',
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
+            'handlers': ['console'],
+            'level': 'INFO' if DEBUG else 'ERROR',
+            'propagate': False,
         },
     },
 }
