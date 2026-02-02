@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: cryptoinvest-backend
+    runtime: python
+    pythonVersion: 3.9.25
+    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: cd backend && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:10000 --workers 3 --timeout 60
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: 'False'
+      - key: ALLOWED_HOSTS
+        value: '*.onrender.com,visafin-gest.org,www.visafin-gest.org,api.visafin-gest.org'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cryptoinvest-db
+          property: connectionString
+
+databases:
+  - name: cryptoinvest-db
+    databaseName: cryptoinvest
+    user: cryptoinvest
