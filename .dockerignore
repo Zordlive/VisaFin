@@ -1,0 +1,63 @@
+# Node modules and build artifacts
+node_modules/
+npm-debug.log
+yarn-error.log
+frontend/dist/
+frontend/node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+env/
+*.egg
+backend/venv/
+
+# Git
+.git
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Logs and databases
+*.log
+db.sqlite3
+logs/
+backend/logs/
+
+# Test coverage
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation  
+docs/
+*.md (keep only README.md)

@@ -1,0 +1,15 @@
+[build]
+# Specify Python version for build
+pythonVersion = "3.9"
+
+# Install necessary system dependencies
+# libpq: PostgreSQL client library (needed for psycopg2-binary)
+nixpkgs = ["gcc", "libpq"]
+
+[build.env]
+# Ensure we use Python 3.9
+NIXPACKS_PYTHON_VERSION = "3.9"
+
+[start]
+# Run Django migrations before starting gunicorn
+cmd = "python manage.py migrate --noinput && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 60"
