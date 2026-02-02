@@ -161,8 +161,7 @@ if not DEBUG:
         r"^https://.*\.onrender\.com$",
         r"^https://.*\.sslip\.io$",
     ]
-
-CORS_ALLOW_CREDENTIALS = True
+# For testing purposes, allow all origins (not recommended for production)
 CORS_ALLOW_ALL_ORIGINS = True
 
 
