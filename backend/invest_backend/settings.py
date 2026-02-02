@@ -9,15 +9,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.sslip.io',  # Coolify domains
+    '.onrender.com',  # Render domains
     'visafin-gest.org',
     'www.visafin-gest.org',
 ]
+
+if not DEBUG:
+    ALLOWED_HOSTS.append('*')  # Allow all hosts in production (adjust as needed)
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -69,12 +73,23 @@ WSGI_APPLICATION = 'invest_backend.wsgi.application'
 
 # Database
 # Using sqlite for simplicity; change to Postgres in production
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import dj_database_url
+
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -138,8 +153,17 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'https://*.sslip.io',  # Allow any Coolify frontend domain
+    'https://visafin-gest.org',
+    'https://www.visafin-gest.org',
 ]
+
+# In production, also allow Render and Coolify domains
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS.extend([
+        'https://*.onrender.com',
+        'https://*.sslip.io',
+    ])
+
 CORS_ALLOW_CREDENTIALS = True
 
 
