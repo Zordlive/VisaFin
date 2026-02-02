@@ -7,7 +7,7 @@ let BASE = import.meta.env.VITE_API_BASE_URL as string
 if (!BASE && typeof window !== 'undefined') {
   const hostname = window.location.hostname
   if (hostname === 'visafin-gest.org' || hostname === 'www.visafin-gest.org') {
-    BASE = 'https://api.visafin-gest.org/api'
+    BASE = 'http://api.visafin-gest.org/api'
   }
 }
 
