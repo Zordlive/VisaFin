@@ -164,7 +164,8 @@ CORS_ALLOWED_ORIGINS = [
 if not DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         r"^https://.*\.onrender\.com$",
-        r"^https://.*\.sslip\.io$",
+          r"^https://.*\.vercel\.app$",
+          r"^https://.*\.sslip\.io$",
     ]
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
