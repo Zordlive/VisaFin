@@ -64,7 +64,7 @@ Copie l'URL : **`https://cryptoinvest-backend-xxxx.onrender.com`**
 
 Crée/mets à jour : **`frontend/.env.production`**
 ```
-VITE_API_BASE_URL=https://cryptoinvest-backend-xxxx.onrender.com/api
+VITE_API_BASE_URL=https://cryptoinvest-vmba.onrender.com/api
 VITE_GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com
 ```
 
@@ -83,7 +83,7 @@ VITE_GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleu
 
 Dans **Settings → Environment Variables** :
 ```
-VITE_API_BASE_URL=https://cryptoinvest-backend-xxxx.onrender.com/api
+VITE_API_BASE_URL=https://cryptoinvest-vmba.onrender.com/api
 VITE_GOOGLE_CLIENT_ID=562113266712-p7i84kjqmnri2ihs3lqd1d3saqh8von0.apps.googleusercontent.com
 ```
 
