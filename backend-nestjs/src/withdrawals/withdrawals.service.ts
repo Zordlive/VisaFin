@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma, PrismaClient, Withdrawal } from '@prisma/client';
 
 @Injectable()
 export class WithdrawalsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prismaService: PrismaService) {}
+
+  private get prisma(): PrismaClient {
+    return this.prismaService;
+  }
 
   async getUserWithdrawals(userId: number) {
     const withdrawals = await this.prisma.withdrawal.findMany({
@@ -12,7 +16,7 @@ export class WithdrawalsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return withdrawals.map((w) => ({
+    return withdrawals.map((w: Withdrawal) => ({
       id: w.id,
       amount: parseFloat(w.amount.toString()),
       status: w.status,
@@ -34,7 +38,7 @@ export class WithdrawalsService {
       throw new BadRequestException('Wallet not found');
     }
 
-    const amount = new Decimal(String(data.amount));
+    const amount = new Prisma.Decimal(String(data.amount));
 
     if (wallet.available.lt(amount)) {
       throw new BadRequestException('Insufficient available balance');

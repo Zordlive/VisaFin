@@ -1,4 +1,7 @@
 import { Controller, Get, Post, UseGuards, Request, Body } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
+
+type AuthRequest = ExpressRequest & { user: { id: number } };
 import { VipService } from './vip.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
@@ -13,13 +16,13 @@ export class VipController {
 
   @Get('subscriptions/me')
   @UseGuards(JwtAuthGuard)
-  async getUserSubscriptions(@Request() req) {
+  async getUserSubscriptions(@Request() req: AuthRequest) {
     return this.vipService.getUserVipSubscriptions(req.user.id);
   }
 
   @Post('subscriptions/purchase')
   @UseGuards(JwtAuthGuard)
-  async purchaseVipLevel(@Request() req, @Body() data: any) {
+  async purchaseVipLevel(@Request() req: AuthRequest, @Body() data: any) {
     return this.vipService.purchaseVipLevel(req.user.id, data.vip_level_id);
   }
 }

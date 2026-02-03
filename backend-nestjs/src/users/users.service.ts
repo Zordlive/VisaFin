@@ -25,6 +25,7 @@ export class UsersService {
       username: user.username,
       first_name: user.firstName,
       last_name: user.lastName,
+      is_staff: user.isStaff,
       phone: user.investor?.phone,
       vip_level: user.investor?.vipLevel || 0,
       vip_since: user.investor?.vipSince,

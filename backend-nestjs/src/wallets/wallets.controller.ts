@@ -1,4 +1,7 @@
 import { Controller, Get, Post, UseGuards, Request, Param, Body } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
+
+type AuthRequest = ExpressRequest & { user: { id: number } };
 import { WalletsService } from './wallets.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
@@ -8,14 +11,14 @@ export class WalletsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async getWallets(@Request() req) {
+  async getWallets(@Request() req: AuthRequest) {
     return this.walletsService.getWalletsByUser(req.user.id);
   }
 
   @Post(':id/transfer_gains')
   @UseGuards(JwtAuthGuard)
   async transferGains(
-    @Request() req,
+    @Request() req: AuthRequest,
     @Param('id') walletId: string,
     @Body() data: any,
   ) {

@@ -22,24 +22,28 @@ export interface CreateBankAccountData {
 }
 
 export async function fetchBankAccounts(): Promise<BankAccount[]> {
-  const response = await api.get('/bank-accounts/')
-  return response.data
+  try {
+    const response = await api.get('/bank-accounts')
+    return response.data
+  } catch (e) {
+    return []
+  }
 }
 
 export async function createBankAccount(data: CreateBankAccountData): Promise<BankAccount> {
-  const response = await api.post('/bank-accounts/', data)
+  const response = await api.post('/bank-accounts', data)
   return response.data
 }
 
 export async function updateBankAccount(id: number, data: Partial<CreateBankAccountData>): Promise<BankAccount> {
-  const response = await api.patch(`/bank-accounts/${id}/`, data)
+  const response = await api.patch(`/bank-accounts/${id}`, data)
   return response.data
 }
 
 export async function deleteBankAccount(id: number): Promise<void> {
-  await api.delete(`/bank-accounts/${id}/`)
+  await api.delete(`/bank-accounts/${id}`)
 }
 
 export async function setDefaultAccount(id: number): Promise<void> {
-  await api.post(`/bank-accounts/${id}/set_default/`)
+  await api.post(`/bank-accounts/${id}/set_default`)
 }

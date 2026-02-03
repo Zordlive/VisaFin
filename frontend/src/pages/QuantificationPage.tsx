@@ -6,6 +6,7 @@ import logo from '../img/Logo à jour.png'
 
 export default function QuantificationPage() {
   const notify = useNotify()
+  const quantificationEnabled = false
 
   const [gains, setGains] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -31,6 +32,12 @@ export default function QuantificationPage() {
 
   // Check if user can claim gains
   useEffect(() => {
+    if (!quantificationEnabled) {
+      setCanClaim(false)
+      setTimeUntilNextClaim('Indisponible')
+      setPageLoading(false)
+      return
+    }
     checkClaimAvailability()
     setPageLoading(false)
     // Update timer every second
@@ -71,6 +78,10 @@ export default function QuantificationPage() {
   }
 
   async function handleClaimClick() {
+    if (!quantificationEnabled) {
+      notify.error('La quantification n’est pas disponible sur ce backend.')
+      return
+    }
     if (countdown > 0 || !canClaim) return // Already counting or cannot claim
     
     setLoading(true)
@@ -89,6 +100,10 @@ export default function QuantificationPage() {
   }
 
   async function handleEncash() {
+    if (!quantificationEnabled) {
+      notify.error('La quantification n’est pas disponible sur ce backend.')
+      return
+    }
     if (claimingGains) return
     setClaimingGains(true)
 

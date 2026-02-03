@@ -1,4 +1,7 @@
 import { Controller, Get, Post, UseGuards, Request, Body } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
+
+type AuthRequest = ExpressRequest & { user: { id: number } };
 import { CryptoService } from './crypto.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
@@ -8,13 +11,13 @@ export class CryptoController {
 
   @Get('addresses')
   @UseGuards(JwtAuthGuard)
-  async getCryptoAddresses(@Request() req) {
+  async getCryptoAddresses(@Request() req: AuthRequest) {
     return this.cryptoService.getUserCryptoAddresses(req.user.id);
   }
 
   @Post('addresses')
   @UseGuards(JwtAuthGuard)
-  async addCryptoAddress(@Request() req, @Body() data: any) {
+  async addCryptoAddress(@Request() req: AuthRequest, @Body() data: any) {
     return this.cryptoService.addCryptoAddress(req.user.id, data);
   }
 }

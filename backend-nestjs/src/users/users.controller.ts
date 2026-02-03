@@ -1,4 +1,7 @@
 import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
+
+type AuthRequest = ExpressRequest & { user: { id: number } };
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 
@@ -8,19 +11,19 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getMe(@Request() req) {
+  async getMe(@Request() req: AuthRequest) {
     return this.usersService.getUserWithDetails(req.user.id);
   }
 
   @Put('user')
   @UseGuards(JwtAuthGuard)
-  async updateUser(@Request() req, @Body() data: any) {
+  async updateUser(@Request() req: AuthRequest, @Body() data: any) {
     return this.usersService.updateUser(req.user.id, data);
   }
 
   @Get('user')
   @UseGuards(JwtAuthGuard)
-  async getUser(@Request() req) {
+  async getUser(@Request() req: AuthRequest) {
     return this.usersService.getUserWithDetails(req.user.id);
   }
 }

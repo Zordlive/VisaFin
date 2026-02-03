@@ -5,5 +5,7 @@ export function createWithdrawal(payload: {
   bank: string
   account: string
 }) {
-  return api.post('/withdrawals/create/', payload)
+  return api.post('/withdrawals', {
+    amount: payload.amount,
+  })
 }

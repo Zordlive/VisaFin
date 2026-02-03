@@ -1,8 +1,7 @@
 import api from './api'
 
 export async function createSellTransaction(payload: { offer_id: string; amount: number; currency: string; otp?: string }) {
-  const res = await api.post('/transactions/sell', payload)
-  return res.data
+  throw new Error('createSellTransaction is not available on this backend')
 }
 
 export async function fetchTransactions(params?: any) {
@@ -11,6 +10,5 @@ export async function fetchTransactions(params?: any) {
 }
 
 export async function fetchTransaction(id: string) {
-  const res = await api.get(`/transactions/${id}`)
-  return res.data
+  throw new Error('fetchTransaction is not available on this backend')
 }

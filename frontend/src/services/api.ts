@@ -1,13 +1,23 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 
 // Use environment variable, or detect from window.location for production
-let BASE = import.meta.env.VITE_API_BASE_URL as string
+let BASE = (import.meta.env.VITE_API_BASE_URL as string) || ''
 
 // Fallback: if in production and no env var, use api subdomain
 if (!BASE && typeof window !== 'undefined') {
   const hostname = window.location.hostname
   if (hostname === 'visafin-gest.org' || hostname === 'www.visafin-gest.org') {
     BASE = 'https://api.visafin-gest.org/api'
+  } else {
+    BASE = 'http://localhost:3000/api'
+  }
+}
+
+// Normalize base URL (ensure it ends with /api and no trailing slash)
+if (BASE) {
+  BASE = BASE.replace(/\/+$/, '')
+  if (!BASE.endsWith('/api')) {
+    BASE = `${BASE}/api`
   }
 }
 
@@ -76,9 +86,11 @@ api.interceptors.response.use(
 
       try {
         // call refresh endpoint with a plain axios instance to avoid interceptors
+        let refreshToken: string | null = null
+        try { refreshToken = localStorage.getItem('refresh_token') } catch (e) {}
         const resp = await axios.post(
           `${BASE}/auth/refresh`,
-          {},
+          { refresh_token: refreshToken },
           { withCredentials: true }
         )
         const newToken = (resp.data && (resp.data.access_token || resp.data.token)) || null
@@ -109,7 +121,7 @@ export interface CryptoAddress {
 }
 
 export async function getCryptoAddresses(): Promise<CryptoAddress[]> {
-  const resp = await api.get<{ results: CryptoAddress[] } | CryptoAddress[]>('/crypto-addresses/')
+  const resp = await api.get<{ results: CryptoAddress[] } | CryptoAddress[]>('/crypto/addresses')
   // Handle both paginated response and direct array response
   if (Array.isArray(resp.data)) {
     return resp.data
@@ -128,11 +140,20 @@ export interface SocialLinks {
 }
 
 export async function getSocialLinks(): Promise<SocialLinks> {
-  const resp = await api.get<SocialLinks>('/social-links/')
-  return resp.data || {
-    whatsapp_channel: null,
-    whatsapp_group: null,
-    telegram_channel: null,
-    telegram_group: null
+  try {
+    const resp = await api.get<SocialLinks>('/social-links')
+    return resp.data || {
+      whatsapp_channel: null,
+      whatsapp_group: null,
+      telegram_channel: null,
+      telegram_group: null
+    }
+  } catch (e) {
+    return {
+      whatsapp_channel: null,
+      whatsapp_group: null,
+      telegram_channel: null,
+      telegram_group: null
+    }
   }
 }

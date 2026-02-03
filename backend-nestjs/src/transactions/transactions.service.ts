@@ -21,4 +21,14 @@ export class TransactionsService {
       created_at: tx.createdAt,
     }));
   }
+
+  async clearUserTransactions(userId: number) {
+    const result = await this.prisma.transaction.deleteMany({
+      where: {
+        wallet: { userId },
+      },
+    });
+
+    return { message: 'Historique supprimé', count: result.count };
+  }
 }

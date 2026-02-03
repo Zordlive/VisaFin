@@ -14,6 +14,10 @@ import { ReferralsModule } from './referrals/referrals.module';
 import { VipModule } from './vip/vip.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 import { CryptoModule } from './crypto/crypto.module';
+import { AppController } from './app.controller';
+import { OperateursModule } from './operateurs/operateurs.module';
+import { SocialLinksModule } from './social-links/social-links.module';
+import { BankAccountsModule } from './bank-accounts/bank-accounts.module';
 
 @Module({
   imports: [
@@ -33,6 +37,10 @@ import { CryptoModule } from './crypto/crypto.module';
     VipModule,
     WithdrawalsModule,
     CryptoModule,
+    OperateursModule,
+    SocialLinksModule,
+    BankAccountsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

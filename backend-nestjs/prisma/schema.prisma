@@ -14,13 +14,13 @@ model User {
   password  String
   firstName String  @default("")
   lastName  String  @default("")
+  isStaff   Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   investor Investor?
   wallets Wallet[]
-  transactions Transaction[]
   deposits Deposit[]
   trades Trade[]
   referralCode ReferralCode?
@@ -40,8 +40,8 @@ model Investor {
   id            Int @id @default(autoincrement())
   userId        Int @unique
   phone         String?
-  totalInvested Decimal @default(0) @db.Decimal(20, 2)
-  portfolioValue Decimal @default(0) @db.Decimal(20, 2)
+  totalInvested Decimal @default(0)
+  portfolioValue Decimal @default(0)
   vipLevel      Int @default(0)
   vipSince      DateTime?
   createdAt     DateTime @default(now())
@@ -56,11 +56,11 @@ model Wallet {
   id           Int @id @default(autoincrement())
   userId       Int
   currency     String @default("USDT")
-  available    Decimal @default(0) @db.Decimal(20, 2)
-  pending      Decimal @default(0) @db.Decimal(20, 2)
-  gains        Decimal @default(0) @db.Decimal(20, 2)
-  saleBalance  Decimal @default(0) @db.Decimal(20, 2)
-  invested     Decimal @default(0) @db.Decimal(20, 2)
+  available    Decimal @default(0)
+  pending      Decimal @default(0)
+  gains        Decimal @default(0)
+  saleBalance  Decimal @default(0)
+  invested     Decimal @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -74,7 +74,7 @@ model Wallet {
 model Transaction {
   id        Int @id @default(autoincrement())
   walletId  Int
-  amount    Decimal @db.Decimal(20, 2)
+  amount    Decimal
   type      String // 'deposit', 'withdraw', 'trade', 'referral', 'transfer', 'interest', 'encash'
   createdAt DateTime @default(now())
 
@@ -86,7 +86,7 @@ model Transaction {
 model Deposit {
   id         Int @id @default(autoincrement())
   userId     Int
-  amount     Decimal @db.Decimal(20, 2)
+  amount     Decimal
   currency   String @default("XAF")
   status     String @default("pending") // 'pending', 'awaiting_payment', 'completed', 'failed'
   externalId String?
@@ -102,7 +102,7 @@ model MarketOffer {
   id        Int @id @default(autoincrement())
   title     String @default("")
   description String @default("")
-  priceOffered Decimal @db.Decimal(20, 2)
+  priceOffered Decimal
   status    String @default("open") // 'open', 'close'
   expiresAt DateTime?
   createdAt DateTime @default(now())
@@ -115,9 +115,9 @@ model Trade {
   id        Int @id @default(autoincrement())
   offerId   String
   sellerId  Int
-  amount    Decimal @db.Decimal(20, 2)
-  price     Decimal @db.Decimal(20, 2)
-  surplus   Decimal @db.Decimal(20, 2)
+  amount    Decimal
+  price     Decimal
+  surplus   Decimal
   buyerInfo String? // JSON as string
   createdAt DateTime @default(now())
 
@@ -162,10 +162,10 @@ model Investment {
   id           Int @id @default(autoincrement())
   userId       Int
   walletId     Int
-  amount       Decimal @db.Decimal(20, 2)
-  dailyRate    Decimal @default(0.025) @db.Decimal(10, 6)
+  amount       Decimal
+  dailyRate    Decimal @default(0.025)
   lastAccrual  DateTime?
-  accrued      Decimal @default(0) @db.Decimal(20, 2)
+  accrued      Decimal @default(0)
   active       Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -190,9 +190,9 @@ model VIPLevel {
   id           Int @id @default(autoincrement())
   level        Int @unique
   title        String @default("")
-  price        Decimal @db.Decimal(20, 2)
-  percentage   Decimal @default(0) @db.Decimal(5, 2)
-  dailyGains   Decimal @default(0) @db.Decimal(20, 2)
+  price        Decimal
+  percentage   Decimal @default(0)
+  dailyGains   Decimal @default(0)
   delayDays    Int @default(0)
   description  String @default("")
   createdAt    DateTime @default(now())
@@ -247,7 +247,7 @@ model UserBankAccount {
 model Withdrawal {
   id        Int @id @default(autoincrement())
   userId    Int
-  amount    Decimal @db.Decimal(20, 2)
+  amount    Decimal
   status    String @default("pending") // 'pending', 'completed', 'failed'
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -262,7 +262,7 @@ model AdminNotification {
   adminId         Int
   userId          Int
   notificationType String
-  amount          Decimal? @db.Decimal(20, 2)
+  amount          Decimal?
   accountInfo     String?
   isRead          Boolean @default(false)
   createdAt       DateTime @default(now())

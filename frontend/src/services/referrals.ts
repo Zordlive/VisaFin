@@ -8,10 +8,10 @@ export async function fetchMyReferrals() {
 export async function getReferralStats() {
   try {
     const res = await api.get('/referrals/me')
-    const { code, referrals = [], stats = {} } = res.data
+    const { code, referrals = [], stats = {} } = res.data || {}
     
     return {
-      code: code?.code,
+      code: typeof code === 'string' ? code : code?.code,
       codeData: code,
       referrals,
       stats: {

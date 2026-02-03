@@ -8,8 +8,10 @@ export interface CryptoDepositPayload {
 }
 
 export function createCryptoDeposit(payload: CryptoDepositPayload) {
-  return api.post('/deposits', {
-    ...payload,
+  return api.post('/deposits/initiate', {
+    amount: payload.amount,
     currency: payload.currency || 'USDT',
+    external_id: payload.txid || null,
+    channel: payload.channel,
   })
 }

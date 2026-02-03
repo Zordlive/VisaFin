@@ -1,25 +1,30 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class LoginDto {
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  identifier?: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }
 
 export class RegisterDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @MinLength(3)
-  username: string;
+  username!: string;
 
   @IsString()
-  @MinLength(6)
-  password: string;
+  @MinLength(8)
+  password!: string;
 
   @IsString()
   firstName?: string;
@@ -30,5 +35,11 @@ export class RegisterDto {
 
 export class RefreshTokenDto {
   @IsString()
-  refresh_token: string;
+  refresh_token!: string;
+}
+
+export class GoogleOAuthDto {
+  @IsString()
+  @IsNotEmpty()
+  token!: string;
 }

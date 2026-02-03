@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav'
 import { createCryptoDeposit } from '../services/deposits'
 import { createWithdrawal } from '../services/withdrawals'
 import api, { getCryptoAddresses, type CryptoAddress } from '../services/api'
+import { fetchOperateurs } from '../services/operateurs'
 import logo from '../img/Logo à jour.png'
 import orangeLogo from '../img/Orange Monnaie.png'
 import airtelLogo from '../img/Airtel-Money-Logo-PNG.png'
@@ -143,8 +144,8 @@ export default function PortefeuillePage() {
 
   async function loadOperateurs() {
     try {
-      const response = await api.get('/operateurs/')
-      setOperateurs(Array.isArray(response.data) ? response.data : response.data.results || [])
+      const ops = await fetchOperateurs()
+      setOperateurs(Array.isArray(ops) ? ops : [])
     } catch (e) {
       console.error('Error loading operateurs:', e)
     }
@@ -378,7 +379,7 @@ export default function PortefeuillePage() {
     setLoadingFiat(true)
     try {
       // Créer le dépôt FIAT
-      await api.post('/deposits/', {
+      await api.post('/deposits/initiate', {
         amount: Number(fiatAmount),
         currency: fiatCurrency,
         operateur: fiatOperator,
@@ -795,7 +796,8 @@ export default function PortefeuillePage() {
           )}
 
           <p className="text-xs sm:text-sm text-gray-500">
-            <p>Vielleux à bien recopier le numéro du compte <b>l'erreur est humaine pas technologique !</b></p>
+            Vielleux à bien recopier le numéro du compte <b>l'erreur est humaine pas technologique !</b>
+            <br />
             ℹ️ Dépôt converti automatiquement en <b>USDT</b>.
           </p>
 

@@ -21,11 +21,8 @@ export default function WithdrawPage() {
     setError(null)
 
     try {
-      await api.post('/api/withdrawals/', {
-        amount: Number(amount),
-        bank,
-        account,
-        status: 'pending'
+      await api.post('/withdrawals', {
+        amount: Number(amount)
       })
       notify.success('Demande de retrait effectuée avec succès')
       setAccount('')

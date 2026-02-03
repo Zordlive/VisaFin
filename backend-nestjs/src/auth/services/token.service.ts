@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -15,6 +15,10 @@ export class TokenService {
       where: { id: userId },
       include: { investor: true },
     });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
     const payload = {
       sub: userId,
@@ -40,6 +44,7 @@ export class TokenService {
         username: user.username,
         first_name: user.firstName,
         last_name: user.lastName,
+        is_staff: user.isStaff,
         vip_level: user.investor?.vipLevel || 0,
         vip_since: user.investor?.vipSince,
         total_invested: user.investor?.totalInvested || 0,
@@ -54,5 +59,9 @@ export class TokenService {
 
   async comparePasswords(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
+  }
+
+  verifyToken(token: string) {
+    return this.jwt.verify(token);
   }
 }

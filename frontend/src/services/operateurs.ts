@@ -1,11 +1,19 @@
 import api from './api'
 
 export async function fetchOperateurs() {
-  const response = await api.get('/operateurs/')
-  return response.data
+  try {
+    const response = await api.get('/operateurs')
+    return response.data
+  } catch (e) {
+    return []
+  }
 }
 
 export async function fetchOperateursByType(type: 'orange' | 'airtel' | 'mpesa') {
-  const response = await api.get(`/operateurs/?operateur=${type}`)
-  return response.data
+  try {
+    const response = await api.get(`/operateurs`, { params: { operateur: type } })
+    return response.data
+  } catch (e) {
+    return []
+  }
 }

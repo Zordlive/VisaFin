@@ -67,13 +67,12 @@ export default function AdminDashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [notificationsRes, withdrawalsRes, referralsRes] = await Promise.all([
-          api.get('/api/admin-notifications/'),
-          api.get('/api/withdrawals/'),
-          api.get('/referrals/all/').catch(() => ({ data: [] }))
+        const [withdrawalsRes, referralsRes] = await Promise.all([
+          api.get('/withdrawals').catch(() => ({ data: [] })),
+          api.get('/referrals/me').catch(() => ({ data: [] }))
         ]);
-        setNotifications(notificationsRes.data.results || notificationsRes.data);
-        setWithdrawals(withdrawalsRes.data.results || withdrawalsRes.data);
+        setNotifications([]);
+        setWithdrawals(withdrawalsRes.data.results || withdrawalsRes.data || []);
         setReferrals(referralsRes.data.results || referralsRes.data || []);
         setError('');
       } catch (err: any) {
@@ -91,10 +90,7 @@ export default function AdminDashboardPage() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      await api.post(`/api/admin-notifications/${notificationId}/mark_as_read/`);
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      );
+      throw new Error('Admin notifications are not supported on this backend');
     } catch (err) {
       setError('Erreur lors du marquage de la notification');
     }
@@ -109,7 +105,7 @@ export default function AdminDashboardPage() {
         action: processAction,
         reason: processAction === 'reject' ? rejectReason : undefined,
       };
-      await api.post(`/api/withdrawals/${selectedWithdrawal.id}/process/`, payload);
+      throw new Error('Withdrawal processing is not supported on this backend');
       
       // Update local state
       setWithdrawals(prev =>
