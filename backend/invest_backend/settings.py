@@ -19,6 +19,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '.sslip.io',  # Coolify domains
     '.onrender.com',  # Render domains
+    '.vercel.app',  # Vercel frontend
     'visafin-gest.org',
     'www.visafin-gest.org',
     'api.visafin-gest.org',  # Backend API subdomain

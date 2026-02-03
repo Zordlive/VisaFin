@@ -26,14 +26,15 @@ https://...vercel.app     https://...onrender.com
 3. Connecte ton repo GitHub : `Zordlive/CryptoInvest`
 4. Config :
    - **Name** : `cryptoinvest-backend`
+   - **Root Directory** : `backend`
    - **Runtime** : Python 3.12
    - **Build Command** :
      ```
-     cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput
+     pip install -r requirements.txt && python manage.py collectstatic --noinput
      ```
    - **Start Command** :
      ```
-     cd backend && python manage.py migrate --noinput && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+     python manage.py migrate --noinput && gunicorn invest_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3
      ```
 
 ### 1.2 Variables d'environnement (Render)
