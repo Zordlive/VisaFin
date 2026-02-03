@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  username  String  @unique
+  password  String
+  firstName String  @default("")
+  lastName  String  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  investor Investor?
+  wallets Wallet[]
+  transactions Transaction[]
+  deposits Deposit[]
+  trades Trade[]
+  referralCode ReferralCode?
+  referrals Referral[]
+  investments Investment[]
+  vipSubscriptions UserVIPSubscription[]
+  bankAccounts UserBankAccount[]
+  withdrawals Withdrawal[]
+  adminNotifications AdminNotification[]
+  cryptoAddresses CryptoAddress[]
+  socialLinks SocialLinks?
+
+  @@map("auth_user")
+}
+
+model Investor {
+  id            Int @id @default(autoincrement())
+  userId        Int @unique
+  phone         String?
+  totalInvested Decimal @default(0) @db.Decimal(20, 2)
+  portfolioValue Decimal @default(0) @db.Decimal(20, 2)
+  vipLevel      Int @default(0)
+  vipSince      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_investor")
+}
+
+model Wallet {
+  id           Int @id @default(autoincrement())
+  userId       Int
+  currency     String @default("USDT")
+  available    Decimal @default(0) @db.Decimal(20, 2)
+  pending      Decimal @default(0) @db.Decimal(20, 2)
+  gains        Decimal @default(0) @db.Decimal(20, 2)
+  saleBalance  Decimal @default(0) @db.Decimal(20, 2)
+  invested     Decimal @default(0) @db.Decimal(20, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  investments Investment[]
+
+  @@map("api_wallet")
+}
+
+model Transaction {
+  id        Int @id @default(autoincrement())
+  walletId  Int
+  amount    Decimal @db.Decimal(20, 2)
+  type      String // 'deposit', 'withdraw', 'trade', 'referral', 'transfer', 'interest', 'encash'
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("api_transaction")
+}
+
+model Deposit {
+  id         Int @id @default(autoincrement())
+  userId     Int
+  amount     Decimal @db.Decimal(20, 2)
+  currency   String @default("XAF")
+  status     String @default("pending") // 'pending', 'awaiting_payment', 'completed', 'failed'
+  externalId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_deposit")
+}
+
+model MarketOffer {
+  id        Int @id @default(autoincrement())
+  title     String @default("")
+  description String @default("")
+  priceOffered Decimal @db.Decimal(20, 2)
+  status    String @default("open") // 'open', 'close'
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("api_marketoffer")
+}
+
+model Trade {
+  id        Int @id @default(autoincrement())
+  offerId   String
+  sellerId  Int
+  amount    Decimal @db.Decimal(20, 2)
+  price     Decimal @db.Decimal(20, 2)
+  surplus   Decimal @db.Decimal(20, 2)
+  buyerInfo String? // JSON as string
+  createdAt DateTime @default(now())
+
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@map("api_trade")
+}
+
+model ReferralCode {
+  id        Int @id @default(autoincrement())
+  code      String @unique
+  referrerId Int @unique
+  createdAt DateTime @default(now())
+
+  referrer User @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+
+  @@map("api_referralcode")
+}
+
+model Referral {
+  id                        Int @id @default(autoincrement())
+  codeId                    Int
+  referredUserId            Int?
+  parentReferralId          Int?
+  generation                Int @default(1) // 1, 2, 3
+  firstDepositRewardProcessed Boolean @default(false)
+  status                    String @default("pending") // 'pending', 'used', 'cancelled'
+  meta                      String? // JSON as string
+  createdAt                 DateTime @default(now())
+  usedAt                    DateTime?
+
+  code ReferralCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  referredUser User? @relation(fields: [referredUserId], references: [id], onDelete: SetNull)
+  parentReferral Referral? @relation("ReferralChildren", fields: [parentReferralId], references: [id], onDelete: SetNull)
+  childrenReferrals Referral[] @relation("ReferralChildren")
+
+  @@map("api_referral")
+}
+
+model Investment {
+  id           Int @id @default(autoincrement())
+  userId       Int
+  walletId     Int
+  amount       Decimal @db.Decimal(20, 2)
+  dailyRate    Decimal @default(0.025) @db.Decimal(10, 6)
+  lastAccrual  DateTime?
+  accrued      Decimal @default(0) @db.Decimal(20, 2)
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("api_investment")
+}
+
+model HiddenOffer {
+  id        Int @id @default(autoincrement())
+  offerId   Int
+  userId    Int?
+  hiddenUntil DateTime
+  createdAt DateTime @default(now())
+
+  @@map("api_hiddenoffer")
+}
+
+model VIPLevel {
+  id           Int @id @default(autoincrement())
+  level        Int @unique
+  title        String @default("")
+  price        Decimal @db.Decimal(20, 2)
+  percentage   Decimal @default(0) @db.Decimal(5, 2)
+  dailyGains   Decimal @default(0) @db.Decimal(20, 2)
+  delayDays    Int @default(0)
+  description  String @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions UserVIPSubscription[]
+
+  @@map("api_viplevel")
+}
+
+model UserVIPSubscription {
+  id          Int @id @default(autoincrement())
+  userId      Int
+  vipLevelId  Int
+  active      Boolean @default(true)
+  purchasedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vipLevel VIPLevel @relation(fields: [vipLevelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vipLevelId])
+  @@map("api_uservipsubscription")
+}
+
+model Operateur {
+  id        Int @id @default(autoincrement())
+  numeroAgent String @unique
+  nomAgent   String
+  operateur  String // 'orange', 'airtel', 'mpesa'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([numeroAgent, operateur])
+  @@map("api_operateur")
+}
+
+model UserBankAccount {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  bankName  String
+  accountNumber String
+  accountHolder String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_userbankaccount")
+}
+
+model Withdrawal {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  amount    Decimal @db.Decimal(20, 2)
+  status    String @default("pending") // 'pending', 'completed', 'failed'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_withdrawal")
+}
+
+model AdminNotification {
+  id              Int @id @default(autoincrement())
+  adminId         Int
+  userId          Int
+  notificationType String
+  amount          Decimal? @db.Decimal(20, 2)
+  accountInfo     String?
+  isRead          Boolean @default(false)
+  createdAt       DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("api_adminnotification")
+}
+
+model CryptoAddress {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  coin      String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_cryptoaddress")
+}
+
+model SocialLinks {
+  id        Int @id @default(autoincrement())
+  userId    Int @unique
+  twitter   String?
+  linkedin  String?
+  facebook  String?
+  instagram String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_sociallinks")
+}
