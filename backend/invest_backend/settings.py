@@ -17,12 +17,6 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.sslip.io',  # Coolify domains
-    '.onrender.com',  # Render domains
-    '.vercel.app',  # Vercel frontend
-    'visafin-gest.org',
-    'www.visafin-gest.org',
-    'api.visafin-gest.org',  # Backend API subdomain
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -156,28 +150,11 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    # Production (HTTPS uniquement)
-    'https://visafin-gest.org',
-    'https://www.visafin-gest.org',
 ]
 
-# In production, also allow Render and Coolify domains
-if not DEBUG:
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^https://.*\.onrender\.com$",
-          r"^https://.*\.vercel\.app$",
-          r"^https://.*\.sslip\.io$",
-    ]
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
-
-# CSRF trusted origins for HTTPS deployments
-CSRF_TRUSTED_ORIGINS = [
-    'https://visafin-gest.org',
-    'https://www.visafin-gest.org',
-    'https://api.visafin-gest.org',
-]
 
 # Respect reverse proxy SSL headers (Coolify/Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
