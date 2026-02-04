@@ -229,14 +229,20 @@ export default function PortefeuillePage() {
   }
 
   /* ===================== DATA ===================== */
-  const wallets = data?.wallets || data || []
+  const wallets = Array.isArray(data?.wallets)
+    ? data.wallets
+    : Array.isArray(data)
+      ? data
+      : []
   const mainWallet = wallets[0]
 
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
-  const totalExpenses = transactions
-    .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
-    .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
+  const totalExpenses = Array.isArray(transactions)
+    ? transactions
+        .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
+        .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
+    : 0
 
   if (isLoading)
     return (

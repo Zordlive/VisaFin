@@ -103,9 +103,11 @@ export default function DashboardPage() {
     ? `${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}/register?ref=${code}`
     : ''
 
-  const totalExpenses = transactions
-    .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
-    .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
+  const totalExpenses = Array.isArray(transactions)
+    ? transactions
+        .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
+        .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
+    : 0
 
   const loadDashboard = (mountedRef?: { current: boolean }) => {
     return Promise.all([

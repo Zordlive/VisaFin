@@ -109,6 +109,11 @@ const TradeSignals: React.FC = () => {
     return `M${points.join(' L')}`
   }
 
+  const safeSignals = Array.isArray(signals) ? signals : []
+  const precision = safeSignals.length
+    ? (safeSignals.reduce((acc, s) => acc + s.strength, 0) / safeSignals.length).toFixed(0)
+    : '0'
+
   return (
     <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl shadow-2xl overflow-hidden mb-6 border border-purple-500/30">
       {/* Fond animé */}
@@ -142,7 +147,7 @@ const TradeSignals: React.FC = () => {
 
         {/* Grille des signaux - 4 colonnes responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {signals.map((signal, idx) => (
+          {safeSignals.map((signal, idx) => (
             <div
               key={signal.id}
               className={`group relative transform transition-all duration-500 ${
@@ -280,19 +285,19 @@ const TradeSignals: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
             <span className="text-xs sm:text-sm text-gray-300">
-              {signals.filter(s => s.action === 'BUY').length} Achats
+              {safeSignals.filter(s => s.action === 'BUY').length} Achats
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
             <span className="text-xs sm:text-sm text-gray-300">
-              {signals.filter(s => s.action === 'SELL').length} Ventes
+              {safeSignals.filter(s => s.action === 'SELL').length} Ventes
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></div>
             <span className="text-xs sm:text-sm text-gray-300">
-              {(signals.reduce((acc, s) => acc + s.strength, 0) / signals.length).toFixed(0)}% Précision
+              {precision}% Précision
             </span>
           </div>
         </div>
