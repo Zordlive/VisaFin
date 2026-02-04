@@ -171,10 +171,11 @@ export default function PortefeuillePage() {
   async function loadBankAccounts() {
     try {
       const accounts = await fetchBankAccounts()
-      setBankAccounts(accounts)
+      const safeAccounts = Array.isArray(accounts) ? accounts : []
+      setBankAccounts(safeAccounts)
       
       // Auto-sélectionner le compte par défaut s'il existe
-      const defaultAccount = accounts.find(acc => acc.is_default)
+      const defaultAccount = safeAccounts.find(acc => acc.is_default)
       if (defaultAccount) {
         setSelectedAccountId(defaultAccount.id)
       }
