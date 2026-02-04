@@ -31,8 +31,10 @@ export default function DashboardPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const [referrals, setReferrals] = useState<any[]>([])
   const [showReferralsModal, setShowReferralsModal] = useState(false)
-  const maxVIPLevel = vipSubscriptions.length > 0 
-    ? Math.max(...vipSubscriptions.map((s: any) => s.vip_level?.level || 0))
+  const safeVipSubscriptions = Array.isArray(vipSubscriptions) ? vipSubscriptions : []
+  const safeReferrals = Array.isArray(referrals) ? referrals : []
+  const maxVIPLevel = safeVipSubscriptions.length > 0 
+    ? Math.max(...safeVipSubscriptions.map((s: any) => s.vip_level?.level || 0))
     : 0
 
   const [showOfferDetails, setShowOfferDetails] = useState<any>(null)
@@ -61,6 +63,7 @@ export default function DashboardPage() {
 
   // COMPTES BANCAIRES
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const safeBankAccounts = Array.isArray(bankAccounts) ? bankAccounts : []
   const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [showBankList, setShowBankList] = useState(false)
   const [showOperatorList, setShowOperatorList] = useState(false)
@@ -117,7 +120,7 @@ export default function DashboardPage() {
         }).catch(() => {})
       }),
       api.get('/investments').then(res => {
-        if (mountedRef?.current !== false) setInvestments(res.data || [])
+        if (mountedRef?.current !== false) setInvestments(Array.isArray(res.data) ? res.data : [])
       }).catch(() => {}),
       api.get('/transactions').then(res => {
         if (mountedRef?.current !== false) setTransactions(Array.isArray(res.data) ? res.data : [])
@@ -129,7 +132,8 @@ export default function DashboardPage() {
       }),
       api.get('/referrals/me').then(res => {
         if (mountedRef?.current !== false && res.data) {
-          setReferrals(res.data.referrals || [])
+          const refs = res.data.referrals
+          setReferrals(Array.isArray(refs) ? refs : [])
         }
       }).catch(() => {})
     ])
@@ -180,7 +184,7 @@ export default function DashboardPage() {
   async function loadBankAccounts() {
     try {
       const accounts = await fetchBankAccounts()
-      setBankAccounts(accounts)
+      setBankAccounts(Array.isArray(accounts) ? accounts : [])
     } catch (e) {
       console.error('Error loading bank accounts:', e)
     }
@@ -660,7 +664,7 @@ export default function DashboardPage() {
               <div className="mb-6">
                 <h4 className="font-semibold text-base mb-3">Vos comptes enregistrés</h4>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {bankAccounts.map((account) => (
+                  {safeBankAccounts.map((account) => (
                     <div key={account.id} className="bg-gray-50 p-3 rounded-lg flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -1214,7 +1218,7 @@ export default function DashboardPage() {
 
             {referrals && referrals.length > 0 ? (
               <div className="space-y-3">
-                {referrals.map((ref: any, idx: number) => (
+                {safeReferrals.map((ref: any, idx: number) => (
                   <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">

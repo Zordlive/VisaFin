@@ -8,9 +8,10 @@ export default function HeaderActions() {
   const { user, logout } = useAuth()
   const { t } = useTranslation()
   const { notifications, markRead, markAllRead } = useNotifications()
+  const safeNotifications = Array.isArray(notifications) ? notifications : []
 
   const [open, setOpen] = React.useState(false)
-  const unread = notifications.filter(n => !n.read).length
+  const unread = safeNotifications.filter(n => !n.read).length
 
   return (
     <div className="flex items-center gap-4 relative">
@@ -57,13 +58,13 @@ export default function HeaderActions() {
           </div>
 
           <div className="max-h-60 overflow-auto">
-            {notifications.length === 0 && (
+            {safeNotifications.length === 0 && (
               <p className="px-4 py-3 text-sm text-gray-500">
                 {t('notifications.none') ?? 'Aucune notification'}
               </p>
             )}
 
-            {notifications.map(n => (
+            {safeNotifications.map(n => (
               <div
                 key={n.id}
                 onClick={() => markRead(n.id)}
