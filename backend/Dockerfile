@@ -5,10 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY backend/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend /app
+COPY . /app
 
 ENV DJANGO_SETTINGS_MODULE=invest_backend.settings
 RUN python manage.py collectstatic --noinput
