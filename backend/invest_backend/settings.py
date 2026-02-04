@@ -14,10 +14,10 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-]
+def _split_env_list(value: str):
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+ALLOWED_HOSTS = _split_env_list(os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1'))
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -144,13 +144,17 @@ REST_FRAMEWORK = {
 # CORS - allow frontend local dev and Coolify deployment
 # For security, don't use wildcard when the frontend sends credentials.
 # Allow only the dev frontend origin and allow credentials (cookies).
-CORS_ALLOWED_ORIGINS = [
+_cors_env = os.environ.get('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGINS = _split_env_list(_cors_env) if _cors_env else [
     # Development
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
+
+_csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = _split_env_list(_csrf_env) if _csrf_env else []
 
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
