@@ -52,6 +52,10 @@ export default function VIPPage() {
       
       notify.success(`🎉 Niveau ${level.level} acheté avec succès`)
       setShowModal(false)
+      
+      // Dispatch wallet refresh event to update balances across all pages
+      window.dispatchEvent(new CustomEvent('wallets:refresh'))
+      
       await loadData()
     } catch (e: any) {
       notify.error(

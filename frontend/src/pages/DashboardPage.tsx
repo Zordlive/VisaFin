@@ -104,39 +104,56 @@ export default function DashboardPage() {
     : ''
 
   const totalExpenses = transactions
-    .filter((tx: any) => ['withdraw', 'trade', 'transfer'].includes(tx?.type))
+    .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
     .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
 
-  useEffect(() => {
-    let mounted = true
-
-    Promise.all([
+  const loadDashboard = (mountedRef?: { current: boolean }) => {
+    return Promise.all([
       import('../services/Investments').then(({ fetchWallets }) => {
         return fetchWallets().then((data: any) => {
-          if (mounted && Array.isArray(data)) setWallet(data[0])
+          if (mountedRef?.current !== false && Array.isArray(data)) setWallet(data[0])
         }).catch(() => {})
       }),
       api.get('/investments').then(res => {
-        if (mounted) setInvestments(res.data || [])
+        if (mountedRef?.current !== false) setInvestments(res.data || [])
       }).catch(() => {}),
       api.get('/transactions').then(res => {
-        if (mounted) setTransactions(Array.isArray(res.data) ? res.data : [])
+        if (mountedRef?.current !== false) setTransactions(Array.isArray(res.data) ? res.data : [])
       }).catch(() => {}),
       import('../services/vip').then(({ fetchUserVIPSubscriptions }) => {
         return fetchUserVIPSubscriptions().then((data: any) => {
-          if (mounted) setVipSubscriptions(Array.isArray(data) ? data : [])
+          if (mountedRef?.current !== false) setVipSubscriptions(Array.isArray(data) ? data : [])
         }).catch(() => {})
       }),
       api.get('/referrals/me').then(res => {
-        if (mounted && res.data) {
+        if (mountedRef?.current !== false && res.data) {
           setReferrals(res.data.referrals || [])
         }
       }).catch(() => {})
-    ]).finally(() => {
-      if (mounted) setPageLoading(false)
+    ])
+  }
+
+  useEffect(() => {
+    const mountedRef = { current: true }
+
+    loadDashboard(mountedRef).finally(() => {
+      if (mountedRef.current) setPageLoading(false)
     })
 
-    return () => { mounted = false }
+    const onRefresh = () => {
+      loadDashboard(mountedRef)
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('wallets:refresh', onRefresh)
+    }
+
+    return () => {
+      mountedRef.current = false
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('wallets:refresh', onRefresh)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -397,7 +414,7 @@ export default function DashboardPage() {
           {/* Statistiques rapides */}
           <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
-              <div className="text-white/70 text-xs md:text-sm mb-1">Total dépensé</div>
+              <div className="text-white/70 text-xs md:text-sm mb-1">Total investi</div>
               <div className="text-white text-lg md:text-xl lg:text-2xl font-bold">
                 ${Number(totalExpenses).toLocaleString()}
               </div>

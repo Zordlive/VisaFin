@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
+import api from '../services/api'
 import logo from '../img/Logo à jour.png'
 
 export default function QuantificationPage() {
   const notify = useNotify()
-  const quantificationEnabled = false
+  const quantificationEnabled = true
 
   const [gains, setGains] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -38,6 +39,7 @@ export default function QuantificationPage() {
       setPageLoading(false)
       return
     }
+    loadGains()
     checkClaimAvailability()
     setPageLoading(false)
     // Update timer every second
@@ -90,8 +92,7 @@ export default function QuantificationPage() {
 
   async function loadGains() {
     try {
-      const { getQuantificationGains } = await import('../services/vip')
-      const data = await getQuantificationGains()
+      const { data } = await api.get('/quantification/gains')
       setGains(data)
     } catch (e: any) {
       console.error('Error loading gains:', e)
@@ -108,16 +109,18 @@ export default function QuantificationPage() {
     setClaimingGains(true)
 
     try {
-      const { claimGains } = await import('../services/vip')
-      const result = await claimGains()
+      const { data: result } = await api.post('/quantification/claim')
 
       // Save the current time to localStorage
       localStorage.setItem('lastClaimedAt', new Date().toISOString())
       
       notify.success(`✅ ${Number(result.amount).toLocaleString()} USDT encaissés`)
       setShowModal(false)
-      setGains(null)
+      setGains(result)
       checkClaimAvailability()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wallets:refresh'))
+      }
     } catch (e: any) {
       notify.error(
         e?.response?.data?.message ||
@@ -221,7 +224,7 @@ export default function QuantificationPage() {
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm">
               <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Gains VIP quotidiens</div>
               <div className="text-xl sm:text-2xl md:text-3xl font-bold text-violet-600">
-                ~0 USDT
+                ~{Number(gains?.vip_gains_total || 0).toLocaleString()} USDT
               </div>
               <p className="text-xs sm:text-sm text-gray-500 mt-2">
                 À partir de tes niveaux VIP
@@ -231,7 +234,7 @@ export default function QuantificationPage() {
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm">
               <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Gains investissements quotidiens</div>
               <div className="text-xl sm:text-2xl md:text-3xl font-bold text-violet-600">
-                ~0 USDT
+                ~{Number(gains?.investment_gains?.total || 0).toLocaleString()} USDT
               </div>
               <p className="text-xs sm:text-sm text-gray-500 mt-2">
                 À partir de tes investissements

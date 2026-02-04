@@ -123,6 +123,23 @@ export default function PortefeuillePage() {
     loadTransactions()
   }, [])
 
+  useEffect(() => {
+    const onRefresh = () => {
+      refetch()
+      loadTransactions()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('wallets:refresh', onRefresh)
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('wallets:refresh', onRefresh)
+      }
+    }
+  }, [refetch])
+
   // Charger les opérateurs au démarrage
   useEffect(() => {
     loadOperateurs()
@@ -218,7 +235,7 @@ export default function PortefeuillePage() {
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
   const totalExpenses = transactions
-    .filter((tx: any) => ['withdraw', 'trade', 'transfer'].includes(tx?.type))
+    .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
     .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
 
   if (isLoading)
@@ -448,7 +465,7 @@ export default function PortefeuillePage() {
               </div>
             </div>
             <div>
-              <div className="text-gray-500 text-xs">Total dépensé</div>
+              <div className="text-gray-500 text-xs">Solde investi</div>
               <div className="font-bold text-sm sm:text-base">
                 {totalExpenses.toLocaleString()} {mainWallet?.currency || 'USDT'}
               </div>

@@ -38,12 +38,24 @@ interface Withdrawal {
   updated_at: string;
 }
 
+interface MarketOffer {
+  id: number;
+  title: string;
+  description: string;
+  price_offered: number;
+  status: string;
+  availability_hours: number | null;
+  created_at: string;
+  expires_at: string | null;
+}
+
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
+  const [marketOffers, setMarketOffers] = useState<MarketOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('notifications');
@@ -52,6 +64,12 @@ export default function AdminDashboardPage() {
   const [processAction, setProcessAction] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  const [offerTitle, setOfferTitle] = useState('');
+  const [offerDescription, setOfferDescription] = useState('');
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerAvailabilityHours, setOfferAvailabilityHours] = useState('');
+  const [creatingOffer, setCreatingOffer] = useState(false);
 
   // Redirect if not staff
   useEffect(() => {
@@ -67,13 +85,15 @@ export default function AdminDashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [withdrawalsRes, referralsRes] = await Promise.all([
+        const [withdrawalsRes, referralsRes, offersRes] = await Promise.all([
           api.get('/withdrawals').catch(() => ({ data: [] })),
-          api.get('/referrals/me').catch(() => ({ data: [] }))
+          api.get('/referrals/me').catch(() => ({ data: [] })),
+          api.get('/market/offers').catch(() => ({ data: [] }))
         ]);
         setNotifications([]);
         setWithdrawals(withdrawalsRes.data.results || withdrawalsRes.data || []);
         setReferrals(referralsRes.data.results || referralsRes.data || []);
+        setMarketOffers(Array.isArray(offersRes.data) ? offersRes.data : []);
         setError('');
       } catch (err: any) {
         setError(err.response?.data?.detail || 'Erreur lors du chargement des données');
@@ -130,6 +150,38 @@ export default function AdminDashboardPage() {
   }
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const handleCreateOffer = async () => {
+    if (!offerTitle.trim() || !offerPrice) {
+      setError('Titre et prix requis');
+      return;
+    }
+
+    setCreatingOffer(true);
+    setError('');
+    try {
+      const payload: any = {
+        title: offerTitle.trim(),
+        description: offerDescription.trim(),
+        price_offered: Number(offerPrice),
+      };
+
+      if (offerAvailabilityHours) {
+        payload.availability_hours = Number(offerAvailabilityHours);
+      }
+
+      const res = await api.post('/market/offers', payload);
+      setMarketOffers((prev) => [res.data, ...prev]);
+      setOfferTitle('');
+      setOfferDescription('');
+      setOfferPrice('');
+      setOfferAvailabilityHours('');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erreur lors de la création de l\'offre');
+    } finally {
+      setCreatingOffer(false);
+    }
+  };
 
   return (
     <div style={{ backgroundColor: '#F4EDDE' }} className="min-h-screen">
@@ -206,6 +258,16 @@ export default function AdminDashboardPage() {
                 }`}
               >
                 Parrainages ({referrals.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('offers')}
+                className={`pb-4 px-4 font-semibold transition ${
+                  activeTab === 'offers'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Offres
               </button>
             </div>
 
@@ -478,6 +540,92 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           )}
+
+            {activeTab === 'offers' && (
+              <div className="grid gap-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Créer une offre</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                      <input
+                        value={offerTitle}
+                        onChange={(e) => setOfferTitle(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                        placeholder="Ex: Offre VIP 30 jours"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prix</label>
+                      <input
+                        type="number"
+                        value={offerPrice}
+                        onChange={(e) => setOfferPrice(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                        placeholder="Montant"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                      <textarea
+                        value={offerDescription}
+                        onChange={(e) => setOfferDescription(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                        rows={3}
+                        placeholder="Description de l'offre"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Durée (heures)</label>
+                      <input
+                        type="number"
+                        value={offerAvailabilityHours}
+                        onChange={(e) => setOfferAvailabilityHours(e.target.value)}
+                        className="w-full border rounded-md px-3 py-2"
+                        placeholder="Ex: 24"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCreateOffer}
+                    disabled={creatingOffer}
+                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {creatingOffer ? 'Création...' : 'Créer l\'offre'}
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold mb-4">Offres existantes</h3>
+                  {marketOffers.length === 0 ? (
+                    <div className="text-gray-500">Aucune offre</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {marketOffers.map((offer) => (
+                        <div key={offer.id} className="border rounded-md p-4">
+                          <div className="flex justify-between gap-4">
+                            <div>
+                              <div className="font-semibold">{offer.title}</div>
+                              <div className="text-sm text-gray-600">{offer.description}</div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                Durée: {offer.availability_hours ? `${offer.availability_hours}h` : '—'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Expire: {offer.expires_at ? new Date(offer.expires_at).toLocaleString('fr-FR') : '—'}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-blue-600">{offer.price_offered} USD</div>
+                              <div className="text-xs text-gray-500">{offer.status}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
         </div>
       )}
     </div>

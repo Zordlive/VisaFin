@@ -104,6 +104,7 @@ model MarketOffer {
   description String @default("")
   priceOffered Decimal
   status    String @default("open") // 'open', 'close'
+  availabilityHours Int?
   expiresAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

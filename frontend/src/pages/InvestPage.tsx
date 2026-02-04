@@ -116,6 +116,9 @@ export default function InvestPage() {
 
       notify.success('🎉 Investissement approuvé avec succès')
       setSelected(false)
+      
+      // Dispatch wallet refresh event to update balances across all pages
+      window.dispatchEvent(new CustomEvent('wallets:refresh'))
     } catch (e: any) {
       notify.error(
         e?.response?.data?.message ||
@@ -220,10 +223,10 @@ export default function InvestPage() {
               </div>
             ))}
 
-            {/* COUNTDOWN */}
+            {/* AVAILABILITY HOURS */}
             {selectedOffer && (
               <p className="text-center text-sm md:text-base text-red-600 font-medium">
-                ⏰ Offre disponible : {getTimeLeft(selectedOffer.expires_at)}
+                ⏰ Offre disponible : {selectedOffer.availability_hours || 'Durée indéfinie'} heure(s)
               </p>
             )}
           </div>
