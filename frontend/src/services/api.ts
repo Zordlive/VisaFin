@@ -9,7 +9,7 @@ if (!BASE && typeof window !== 'undefined') {
   if (hostname === 'visafin-gest.org' || hostname === 'www.visafin-gest.org') {
     BASE = 'https://api.visafin-gest.org/api'
   } else {
-    BASE = 'http://localhost:3000/api'
+    BASE = 'http://localhost:8000/api'
   }
 }
 

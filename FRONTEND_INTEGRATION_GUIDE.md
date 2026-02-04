@@ -1,12 +1,12 @@
 # 🔗 Frontend Integration Guide
 
-## Connecting Your React Frontend to NestJS Backend
+## Connecting Your React Frontend to Django Backend
 
 ---
 
 ## 🎯 Overview
 
-Your React frontend is **100% compatible** with this NestJS backend. No changes to your React code are needed - just update the API URL!
+Your React frontend is **100% compatible** with this Django (DRF) backend. No changes to your React code are needed - just update the API URL!
 
 ---
 
@@ -25,7 +25,7 @@ frontend/src/utils/api.ts
 
 **Development:**
 ```typescript
-export const API_URL = 'http://localhost:3000'
+export const API_URL = 'http://localhost:8000'
 ```
 
 **Production (Hostinger):**
@@ -38,7 +38,7 @@ export const API_URL = 'https://api.yourdomain.com'
 ```typescript
 // src/services/api.ts
 
-export const API_URL = process.env.VITE_API_URL || 'http://localhost:3000'
+export const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 
 export async function login(email: string, password: string) {
   const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -208,20 +208,20 @@ const investment = await investResponse.json()
 ### Create `.env` in Frontend Root
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:8000
 ```
 
 ### Use in Code
 
 ```typescript
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 ```
 
 ### For Different Environments
 
 **`.env.development`**
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:8000
 ```
 
 **`.env.production`**
@@ -235,9 +235,9 @@ VITE_API_URL=https://api.cryptoinvest.com
 
 ### 1. Start Backend
 ```bash
-cd backend-nestjs
-npm run start:dev
-# Should log: Application is running on: http://localhost:3000
+cd backend
+python manage.py runserver
+# Should log: Starting development server at http://127.0.0.1:8000/
 ```
 
 ### 2. Start Frontend
@@ -303,7 +303,7 @@ console.log('Token length:', token?.length)
 
 ## ✅ Integration Checklist
 
-- [ ] Backend running on `http://localhost:3000`
+- [ ] Backend running on `http://localhost:8000`
 - [ ] API_URL updated in frontend
 - [ ] Can register new user
 - [ ] Can login and get token
@@ -357,12 +357,12 @@ GET  /api/market/offers/:id
 
 ### VIP
 ```
-GET  /api/vip/levels
-GET  /api/vip/subscriptions/me
-POST /api/vip/subscriptions/purchase  { vip_level_id }
+GET  /api/vip-levels
+GET  /api/vip-subscriptions/me
+POST /api/vip-subscriptions/purchase  { vip_level_id }
 ```
 
-See [API_EXAMPLES.md](./backend-nestjs/API_EXAMPLES.md) for complete reference.
+See [backend/api/urls.py](backend/api/urls.py) and [backend/api/models.py](backend/api/models.py) for complete reference.
 
 ---
 
@@ -375,9 +375,13 @@ Access to XMLHttpRequest blocked by CORS policy
 
 **Cause**: Frontend URL not in allowed origins
 
-**Fix**: Ensure `FRONTEND_URL` in backend `.env` matches your frontend URL
-```env
-FRONTEND_URL="http://localhost:5173"
+**Fix**: Ensure `CORS_ALLOWED_ORIGINS` in the backend settings includes your frontend URL
+```python
+# backend/invest_backend/settings.py
+CORS_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+]
 ```
 
 ### Issue: 401 Unauthorized
@@ -414,10 +418,9 @@ FRONTEND_URL="http://localhost:5173"
 
 ## 💡 Pro Tips
 
-1. **Use Postman** - Import `postman_collection.json` to test all endpoints
-2. **Check Console** - Browser DevTools Network tab shows all API calls
-3. **Save Token** - Keep token in localStorage for persistence
-4. **Refresh Tokens** - Implement automatic refresh before token expires
+1. **Check Console** - Browser DevTools Network tab shows all API calls
+2. **Save Token** - Keep token in localStorage for persistence
+3. **Refresh Tokens** - Implement automatic refresh before token expires
 5. **Error Handling** - Always handle 4xx and 5xx responses
 
 ---
@@ -490,13 +493,13 @@ export function LoginForm() {
 
 ## ✨ You're Connected!
 
-Your React frontend is now connected to the NestJS backend. All API calls will use the correct endpoints and authentication.
+Your React frontend is now connected to the Django backend. All API calls will use the correct endpoints and authentication.
 
 **Next**: Test your application thoroughly before deploying!
 
 ---
 
 For more details, see:
-- [API_EXAMPLES.md](./backend-nestjs/API_EXAMPLES.md) - Complete API reference
-- [README.md](./backend-nestjs/README.md) - Backend documentation
-- [BEST_PRACTICES.md](./backend-nestjs/BEST_PRACTICES.md) - Best practices
+- [README.md](README.md) - Project overview
+- [backend/api/urls.py](backend/api/urls.py) - API routes
+- [backend/api/models.py](backend/api/models.py) - Data models

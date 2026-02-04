@@ -7,38 +7,49 @@ Write-Host ""
 Write-Host "⚙️  CryptoInvest - Setup Script" -ForegroundColor Cyan
 Write-Host ""
 
-# Step 1: Check Node.js
-Write-Host "Step 1: Checking Node.js..." -ForegroundColor Yellow
-$nodeVersion = & node --version
+# Step 1: Check Python
+Write-Host "Step 1: Checking Python..." -ForegroundColor Yellow
+$pythonVersion = & python --version
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ Node.js $nodeVersion found" -ForegroundColor Green
+    Write-Host "✅ $pythonVersion found" -ForegroundColor Green
 } else {
-    Write-Host "❌ Node.js not found! Please install Node.js 18+" -ForegroundColor Red
-    Write-Host "Download from: https://nodejs.org/" -ForegroundColor Yellow
+    Write-Host "❌ Python not found! Please install Python 3.10+" -ForegroundColor Red
+    Write-Host "Download from: https://www.python.org/downloads/" -ForegroundColor Yellow
     exit 1
 }
 Write-Host ""
 
 # Step 2: Setup Backend
 Write-Host "Step 2: Setting up backend..." -ForegroundColor Yellow
-$backendPath = Join-Path -Path $PSScriptRoot -ChildPath "backend-nestjs"
+$backendPath = Join-Path -Path $PSScriptRoot -ChildPath "backend"
 
 if (-not (Test-Path -Path $backendPath)) {
-    Write-Host "❌ Error: backend-nestjs folder not found!" -ForegroundColor Red
+    Write-Host "❌ Error: backend folder not found!" -ForegroundColor Red
     exit 1
 }
 
 Push-Location $backendPath
 
 # Install backend dependencies
-npm install
+pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Backend npm install failed!" -ForegroundColor Red
+    Write-Host "❌ Backend pip install failed!" -ForegroundColor Red
     Pop-Location
     exit 1
 }
 
 Write-Host "✅ Backend dependencies installed" -ForegroundColor Green
+Write-Host ""
+
+# Run migrations
+Write-Host "Applying migrations..." -ForegroundColor Yellow
+python manage.py migrate
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Django migrations failed!" -ForegroundColor Red
+    Pop-Location
+    exit 1
+}
+Write-Host "✅ Migrations applied" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Setup Frontend
@@ -66,15 +77,15 @@ Write-Host "Step 4: Checking environment..." -ForegroundColor Yellow
 $backendEnv = Join-Path -Path $backendPath -ChildPath ".env"
 
 if (-not (Test-Path -Path $backendEnv)) {
-    Write-Host "⚠️  .env file not found in backend-nestjs" -ForegroundColor Yellow
+    Write-Host "⚠️  .env file not found in backend" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Create a .env file with:" -ForegroundColor Yellow
     Write-Host ""
+    Write-Host "DEBUG=True" -ForegroundColor Gray
     Write-Host "DATABASE_URL=postgresql://user:password@localhost:5432/cryptoinvest" -ForegroundColor Gray
-    Write-Host "JWT_SECRET=your-secret-key-here-min-32-characters" -ForegroundColor Gray
-    Write-Host "JWT_REFRESH_SECRET=your-refresh-secret-here-min-32-characters" -ForegroundColor Gray
-    Write-Host "PORT=3000" -ForegroundColor Gray
-    Write-Host "NODE_ENV=development" -ForegroundColor Gray
+    Write-Host "DJANGO_SECRET_KEY=your-secret-key" -ForegroundColor Gray
+    Write-Host "ALLOWED_HOSTS=localhost,127.0.0.1" -ForegroundColor Gray
+    Write-Host "SITE_URL=http://localhost:8000" -ForegroundColor Gray
     Write-Host ""
 } else {
     Write-Host "✅ .env file found" -ForegroundColor Green
@@ -82,13 +93,9 @@ if (-not (Test-Path -Path $backendEnv)) {
 
 Write-Host ""
 
-# Step 5: Setup Prisma
-Write-Host "Step 5: Setting up database..." -ForegroundColor Yellow
-Push-Location $backendPath
-
-npx prisma generate 2>&1 | Out-Null
-Write-Host "✅ Prisma configured" -ForegroundColor Green
-
+# Step 5: Done
+Write-Host "Step 5: Backend ready" -ForegroundColor Yellow
+Write-Host "✅ Django configured" -ForegroundColor Green
 Write-Host ""
 
 # Summary
@@ -101,11 +108,11 @@ Write-Host ""
 Write-Host "📚 Next steps:" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "1️⃣  Configure .env file (if not already done):" -ForegroundColor Yellow
-Write-Host "   nano backend-nestjs/.env" -ForegroundColor Gray
+Write-Host "   notepad backend/.env" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2️⃣  Setup database:" -ForegroundColor Yellow
-Write-Host "   cd backend-nestjs" -ForegroundColor Gray
-Write-Host "   npx prisma db push" -ForegroundColor Gray
+Write-Host "   cd backend" -ForegroundColor Gray
+Write-Host "   python manage.py migrate" -ForegroundColor Gray
 Write-Host ""
 Write-Host "3️⃣  Start backend:" -ForegroundColor Yellow
 Write-Host "   .\start-server.ps1" -ForegroundColor Gray
@@ -114,14 +121,8 @@ Write-Host "4️⃣  Start frontend (in another terminal):" -ForegroundColor Yel
 Write-Host "   cd frontend" -ForegroundColor Gray
 Write-Host "   npm run dev" -ForegroundColor Gray
 Write-Host ""
-Write-Host "5️⃣  Test API:" -ForegroundColor Yellow
-Write-Host "   cd backend-nestjs" -ForegroundColor Gray
-Write-Host "   node test-api.js" -ForegroundColor Gray
-Write-Host ""
 Write-Host "📖 Documentation:" -ForegroundColor Cyan
 Write-Host "   - README.md (general overview)" -ForegroundColor Gray
-Write-Host "   - backend-nestjs/README-EXPRESS.md (backend guide)" -ForegroundColor Gray
-Write-Host "   - MIGRATION_EXPRESS.md (migration details)" -ForegroundColor Gray
 Write-Host ""
 
 Pop-Location

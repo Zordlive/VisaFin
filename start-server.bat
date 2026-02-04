@@ -1,23 +1,23 @@
 @echo off
-REM Script de démarrage du serveur Express pour Windows
+REM Script de démarrage du serveur Django pour Windows
 
-cd /d "%~dp0backend-nestjs"
+cd /d "%~dp0backend"
 
 echo.
 echo ==============================================
-echo  CryptoInvest - Serveur Express
+echo  CryptoInvest - Serveur Django
 echo ==============================================
 echo.
 
 echo Demarrage du serveur...
-node node_modules/ts-node/dist/bin.js src/start.ts
+python manage.py runserver
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo Erreur: Le serveur n'a pas pu demarrer
     echo Verifiez:
-    echo - Les dependances: npm install
-    echo - La base de donnees: npx prisma db push
+    echo - Les dependances: pip install -r requirements.txt
+    echo - La base de donnees: python manage.py migrate
     echo - Le fichier .env
     pause
     exit /b 1
