@@ -13,8 +13,14 @@ if (!BASE && typeof window !== 'undefined') {
   }
 }
 
-// Normalize base URL (ensure it ends with /api and no trailing slash)
+// Normalize base URL (ensure protocol, ends with /api, no trailing slash)
 if (BASE) {
+  // If BASE is missing protocol, assume same protocol as current page
+  if (!/^https?:\/\//i.test(BASE)) {
+    const proto = typeof window !== 'undefined' ? window.location.protocol : 'https:'
+    BASE = `${proto}//${BASE}`
+  }
+
   BASE = BASE.replace(/\/+$/, '')
   if (!BASE.endsWith('/api')) {
     BASE = `${BASE}/api`
