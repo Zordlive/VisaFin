@@ -11,7 +11,7 @@ export async function fetchUserVIPSubscriptions() {
 }
 
 export async function purchaseVIPLevel(levelId: number) {
-  const res = await api.post('/vip-subscriptions/purchase', { vip_level_id: levelId })
+  const res = await api.post('/vip-subscriptions/purchase', { level_id: levelId })
   return res.data
 }
 
