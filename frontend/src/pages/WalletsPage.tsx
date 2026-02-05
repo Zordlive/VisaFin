@@ -634,7 +634,8 @@ export default function PortefeuillePage() {
     <div
       className="
         bg-white rounded-2xl w-full
-        max-w-[96vw] sm:max-w-md md:max-w-lg
+        max-w-[98vw] sm:max-w-md md:max-w-lg
+        h-[92vh] sm:h-auto
         max-h-[92vh] sm:max-h-[90vh]
         p-3 sm:p-5 md:p-6
         flex flex-col
@@ -647,7 +648,7 @@ export default function PortefeuillePage() {
       </div>
 
       {/* TABS */}
-      <div className="flex bg-gray-100 rounded-full p-1 mb-3 sm:mb-4">
+      <div className="flex bg-gray-100 rounded-full p-1 mb-3 sm:mb-4 flex-shrink-0">
         <button
           onClick={() => setDepositType('FIAT')}
           className={`flex-1 py-2.5 rounded-full text-xs sm:text-sm font-medium
@@ -668,7 +669,8 @@ export default function PortefeuillePage() {
 
       {/* ================= FIAT ================= */}
       {depositType === 'FIAT' && (
-        <div className="space-y-3 sm:space-y-4 overflow-y-auto pr-1 sm:pr-0 pb-3">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-0">
+          <div className="space-y-3 sm:space-y-4 pb-4">
           <select
             className="w-full bg-gray-100 rounded-xl px-3 py-2 sm:px-3 sm:py-2.5 text-xs sm:text-sm"
             value={fiatCurrency}
@@ -826,7 +828,7 @@ export default function PortefeuillePage() {
             ℹ️ Dépôt converti automatiquement en <b>USDT</b>.
           </p>
 
-          <div className="sticky bottom-0 bg-white pt-2">
+          <div className="sticky bottom-0 bg-white pt-2 pb-1">
             <button
               onClick={handleFiatSubmit}
               disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
@@ -839,12 +841,14 @@ export default function PortefeuillePage() {
               {loadingFiat ? 'Traitement...' : '✓ Confirmé votre Transaction'}
             </button>
           </div>
+          </div>
         </div>
       )}
 
       {/* ================= CRYPTO ================= */}
       {depositType === 'CRYPTO' && (
-        <div className="space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-0">
+          <div className="space-y-4 pb-4">
           <select
             value={selectedCryptoNetwork}
             onChange={(e) => setSelectedCryptoNetwork(e.target.value)}
@@ -898,6 +902,7 @@ export default function PortefeuillePage() {
           {depositError && (
             <p className="text-red-600 text-sm">{depositError}</p>
           )}
+          </div>
         </div>
       )}
     </div>
