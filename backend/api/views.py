@@ -1179,7 +1179,7 @@ class UserVIPSubscriptionsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        subscriptions = UserVIPSubscription.objects.filter(user=request.user, active=True).order_by('vip_level__level')
+        subscriptions = UserVIPSubscription.objects.filter(user=request.user).order_by('-active', 'vip_level__level')
         serializer = UserVIPSubscriptionSerializer(subscriptions, many=True)
         return Response(serializer.data)
 
@@ -1215,6 +1215,9 @@ class PurchaseVIPLevelView(APIView):
         try:
             from django.db import transaction as db_transaction
             with db_transaction.atomic():
+                # Deactivate previous VIP subscriptions (close prior levels)
+                UserVIPSubscription.objects.filter(user=request.user, active=True).update(active=False)
+
                 # Deduct from wallet
                 wallet.available -= vip_level.price
                 wallet.save()

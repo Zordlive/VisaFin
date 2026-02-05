@@ -26,7 +26,7 @@ export default function VIPPage() {
       setVipLevels(Array.isArray(levels) ? levels : [])
 
       const subscriptions = await fetchUserVIPSubscriptions()
-      setUserSubscriptions(Array.isArray(subscriptions) ? subscriptions.map((s: any) => s.vip_level.level) : [])
+      setUserSubscriptions(Array.isArray(subscriptions) ? subscriptions : [])
     } catch (e) {
       console.error('Error loading VIP data:', e)
       notify.error('Erreur lors du chargement des niveaux VIP')
@@ -36,9 +36,22 @@ export default function VIPPage() {
   }
 
   function canPurchaseLevel(level: any): boolean {
-    if (userSubscriptions.includes(level.level)) return false
+    const purchasedLevels = userSubscriptions.map((s: any) => s.vip_level?.level).filter(Boolean)
+    if (purchasedLevels.includes(level.level)) return false
     if (level.level === 1) return true
-    return userSubscriptions.includes(level.level - 1)
+    return purchasedLevels.includes(level.level - 1)
+  }
+
+  function isPurchased(level: any): boolean {
+    return userSubscriptions.some((s: any) => s.vip_level?.level === level.level)
+  }
+
+  function isClosed(level: any): boolean {
+    return userSubscriptions.some((s: any) => s.vip_level?.level === level.level && s.active === false)
+  }
+
+  function isActive(level: any): boolean {
+    return userSubscriptions.some((s: any) => s.vip_level?.level === level.level && s.active === true)
   }
 
   async function handlePurchase(level: any) {
@@ -101,20 +114,31 @@ export default function VIPPage() {
         {/* VIP LEVELS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
           {vipLevels.map((level) => {
-            const isPurchased = userSubscriptions.includes(level.level)
+            const purchased = isPurchased(level)
+            const active = isActive(level)
+            const closed = isClosed(level)
             const canPurchase = canPurchaseLevel(level)
 
             return (
               <div
                 key={level.id}
                 className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-sm transition hover:shadow-md ${
-                  isPurchased ? 'bg-green-50 border-2 border-green-500' : 'bg-white border border-gray-200'
+                  active
+                    ? 'bg-green-50 border-2 border-green-500'
+                    : closed
+                    ? 'bg-gray-50 border-2 border-gray-400'
+                    : 'bg-white border border-gray-200'
                 }`}
               >
                 {/* Badge si acheté */}
-                {isPurchased && (
+                {active && (
                   <div className="inline-block mb-2 sm:mb-3 px-2 sm:px-3 py-1 bg-green-500 text-white text-[10px] sm:text-xs rounded-full font-medium">
-                    ✓ Acheté
+                    ✓ Actif
+                  </div>
+                )}
+                {closed && (
+                  <div className="inline-block mb-2 sm:mb-3 px-2 sm:px-3 py-1 bg-gray-500 text-white text-[10px] sm:text-xs rounded-full font-medium">
+                    ⛔ Fermé
                   </div>
                 )}
 
@@ -151,17 +175,19 @@ export default function VIPPage() {
 
                 <button
                   onClick={() => handlePurchase(level)}
-                  disabled={!canPurchase || isPurchased || loading}
+                  disabled={!canPurchase || purchased || loading}
                   className={`w-full py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm md:text-base font-semibold text-white transition ${
-                    isPurchased
+                    purchased
                       ? 'bg-gray-400 cursor-not-allowed'
                       : canPurchase
                       ? 'bg-violet-600 hover:bg-violet-700 active:scale-95'
                       : 'bg-gray-300 cursor-not-allowed'
                   }`}
                 >
-                  {isPurchased
-                    ? 'Déjà acheté'
+                  {purchased
+                    ? active
+                      ? 'Actif'
+                      : 'Fermé'
                     : canPurchase
                     ? loading ? 'Chargement...' : 'Acheter'
                     : 'Niveau précédent requis'}
@@ -237,14 +263,14 @@ export default function VIPPage() {
               onClick={() => {
                 handlePurchase(selectedLevel)
               }}
-              disabled={loading || userSubscriptions.includes(selectedLevel.level)}
+              disabled={loading || isPurchased(selectedLevel)}
               className={`w-full py-2.5 sm:py-3 md:py-3.5 rounded-lg sm:rounded-xl text-white font-bold text-sm sm:text-base md:text-lg transition active:scale-95 ${
-                userSubscriptions.includes(selectedLevel.level)
+                isPurchased(selectedLevel)
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg'
               }`}
             >
-              {loading ? 'Traitement en cours...' : userSubscriptions.includes(selectedLevel.level) ? 'Déjà acheté ✓' : `Acheter pour ${Number(selectedLevel.price).toLocaleString()} USDT`}
+              {loading ? 'Traitement en cours...' : isPurchased(selectedLevel) ? (isActive(selectedLevel) ? 'Actif ✓' : 'Fermé ✓') : `Acheter pour ${Number(selectedLevel.price).toLocaleString()} USDT`}
             </button>
           </div>
         </div>
