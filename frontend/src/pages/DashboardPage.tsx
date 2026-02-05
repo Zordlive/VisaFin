@@ -177,12 +177,17 @@ export default function DashboardPage() {
     }
   }, [user])
 
+  const getProfileImageKey = () => {
+    const userId = user?.id || user?.username || 'anonymous'
+    return `profile_image:${userId}`
+  }
+
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('profile_image')
+      const stored = localStorage.getItem(getProfileImageKey())
       if (stored) setProfileImage(stored)
     } catch (e) {}
-  }, [])
+  }, [user])
 
   // Charger les comptes bancaires et opérateurs
   useEffect(() => {
@@ -319,7 +324,7 @@ export default function DashboardPage() {
       if (!result) return
       setProfileImage(result)
       try {
-        localStorage.setItem('profile_image', result)
+        localStorage.setItem(getProfileImageKey(), result)
       } catch (e) {}
     }
     reader.readAsDataURL(file)
@@ -328,7 +333,7 @@ export default function DashboardPage() {
   function handleRemoveProfileImage() {
     setProfileImage(null)
     try {
-      localStorage.removeItem('profile_image')
+      localStorage.removeItem(getProfileImageKey())
     } catch (e) {}
   }
 
