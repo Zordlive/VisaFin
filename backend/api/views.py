@@ -12,11 +12,18 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 from django.db.models import Count, Avg, Max, Sum, Q
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@ensure_csrf_cookie
+def csrf(request):
+    return JsonResponse({'detail': 'CSRF cookie set'})
 
 
 def compute_vip_level(total_invested):

@@ -1,9 +1,23 @@
-import api, { setAuthToken } from './api'
+import api, { getCsrfToken, setAuthToken } from './api'
+
+async function ensureCsrfCookie() {
+  try {
+    await api.get('/csrf/', { withCredentials: true })
+  } catch (e) {
+    // ignore if backend doesn't enforce CSRF
+  }
+}
+
+function csrfHeader() {
+  const token = getCsrfToken()
+  return token ? { 'X-CSRFToken': token } : undefined
+}
 
 export const authService = {
   async login(payload: { identifier: string; password: string }) {
+    await ensureCsrfCookie()
     const email = payload.identifier
-    const res = await api.post('/auth/login', { email, password: payload.password })
+    const res = await api.post('/auth/login', { email, password: payload.password }, { headers: csrfHeader() })
     const access_token = res.data.access_token || res.data.token || null
     const refresh_token = res.data.refresh_token || res.data.refresh || null
     const user = res.data.user
@@ -13,7 +27,8 @@ export const authService = {
   },
   async loginWithGoogle(googleToken: string) {
     // Google login not supported on this backend
-     const res = await api.post('/auth/google', { token: googleToken })
+     await ensureCsrfCookie()
+     const res = await api.post('/auth/google', { token: googleToken }, { headers: csrfHeader() })
      const access_token = res.data.access_token || res.data.token || null
      const refresh_token = res.data.refresh_token || res.data.refresh || null
      const user = res.data.user
@@ -22,6 +37,7 @@ export const authService = {
      return { user, access_token }
   },
   async register(payload: { name: string; email?: string; phone?: string; password: string; [key: string]: any }) {
+    await ensureCsrfCookie()
     const fullName = (payload.name || '').trim()
     const [firstName, ...rest] = fullName.split(' ')
     const lastName = rest.join(' ')
@@ -34,7 +50,7 @@ export const authService = {
       password: payload.password,
       firstName: firstName || '',
       lastName: lastName || ''
-    })
+    }, { headers: csrfHeader() })
     const access_token = res.data.access_token || res.data.token || null
     const refresh_token = res.data.refresh_token || res.data.refresh || null
     const user = res.data.user

@@ -31,6 +31,14 @@ console.log('🔗 API Base URL:', BASE)
 
 let authToken: string | null = null
 
+export function getCsrfToken() {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('csrftoken='))
+  return match ? decodeURIComponent(match.split('=')[1]) : null
+}
+
 export function setAuthToken(token: string | null) {
   authToken = token
   try {
