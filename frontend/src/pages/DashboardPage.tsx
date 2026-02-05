@@ -316,6 +316,9 @@ export default function DashboardPage() {
         : 'Compte opérateur ajouté avec succès'
       notify.success(successMessage)
       await loadBankAccounts()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bank-accounts:refresh'))
+      }
       
       // Reset form
       setAccountNumber('')

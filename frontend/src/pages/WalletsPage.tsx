@@ -140,6 +140,22 @@ export default function PortefeuillePage() {
     }
   }, [refetch])
 
+  useEffect(() => {
+    const onAccountsRefresh = () => {
+      loadBankAccounts()
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('bank-accounts:refresh', onAccountsRefresh)
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('bank-accounts:refresh', onAccountsRefresh)
+      }
+    }
+  }, [])
+
   // Charger les opérateurs au démarrage
   useEffect(() => {
     loadOperateurs()
