@@ -158,7 +158,8 @@ CSRF_TRUSTED_ORIGINS = _split_env_list(_csrf_env) if _csrf_env else []
 
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True
+# JWT-only API: no cookies required
+CORS_ALLOW_CREDENTIALS = False
 
 # Respect reverse proxy SSL headers (Coolify/Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

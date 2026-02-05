@@ -31,14 +31,6 @@ console.log('🔗 API Base URL:', BASE)
 
 let authToken: string | null = null
 
-export function getCsrfToken() {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('csrftoken='))
-  return match ? decodeURIComponent(match.split('=')[1]) : null
-}
-
 export function setAuthToken(token: string | null) {
   authToken = token
   try {
@@ -49,8 +41,7 @@ export function setAuthToken(token: string | null) {
 
 const api = axios.create({
   baseURL: BASE,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true
+  headers: { 'Content-Type': 'application/json' }
 })
 
 // Initialize authToken from localStorage so page reloads keep the session (dev convenience)
@@ -102,11 +93,7 @@ api.interceptors.response.use(
         // call refresh endpoint with a plain axios instance to avoid interceptors
         let refreshToken: string | null = null
         try { refreshToken = localStorage.getItem('refresh_token') } catch (e) {}
-        const resp = await axios.post(
-          `${BASE}/auth/refresh`,
-          { refresh_token: refreshToken },
-          { withCredentials: true }
-        )
+        const resp = await axios.post(`${BASE}/auth/refresh`, { refresh_token: refreshToken })
         const newToken = (resp.data && (resp.data.access_token || resp.data.token)) || null
         setAuthToken(newToken)
         processQueue(null, newToken)

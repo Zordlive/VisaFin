@@ -12,18 +12,11 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
 from django.core.mail import send_mail
-from django.http import JsonResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 from django.db.models import Count, Avg, Max, Sum, Q
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-@ensure_csrf_cookie
-def csrf(request):
-    return JsonResponse({'detail': 'CSRF cookie set'})
 
 
 def compute_vip_level(total_invested):
@@ -363,7 +356,6 @@ class LoginView(APIView):
         user_data = UserSerializer(user).data
         # include refresh token in response body for development convenience
         resp = Response({'user': user_data, 'access_token': access_token, 'refresh_token': refresh_token})
-        set_refresh_cookie(resp, refresh_token)
         return resp
 
 
@@ -492,7 +484,6 @@ class RegisterView(APIView):
             'investor_created': investor_created,
             'referral_bonus': referral_bonus if 'referral_bonus' in locals() else 0
         })
-        set_refresh_cookie(resp, refresh_token)
         return resp
 
 
@@ -556,7 +547,6 @@ class GoogleLoginView(APIView):
                 'refresh_token': refresh_token,
                 'referral_bonus': 0
             })
-            set_refresh_cookie(resp, refresh_token)
             return resp
             
         except Exception as e:
@@ -568,8 +558,13 @@ class RefreshTokenFromCookieView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Accept refresh token from cookie (httpOnly) or from JSON body (dev convenience)
-        refresh_token = request.COOKIES.get('refresh') or request.data.get('refresh') or request.data.get('token')
+        # Accept refresh token from JSON body (dev convenience). Cookie support optional.
+        refresh_token = (
+            request.data.get('refresh_token')
+            or request.data.get('refresh')
+            or request.data.get('token')
+            or request.COOKIES.get('refresh')
+        )
         if not refresh_token:
             return Response({'message': 'no refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
         try:
@@ -633,7 +628,6 @@ class VerifyEmailView(APIView):
             refresh_token = str(refresh)
             user_data = UserSerializer(user).data
             resp = Response({'user': user_data, 'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
-            set_refresh_cookie(resp, refresh_token)
             return resp
         return Response({'detail': 'Lien expiré ou invalide.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -652,7 +646,6 @@ class SetPasswordView(APIView):
         refresh_token = str(refresh)
         user_data = UserSerializer(user).data
         resp = Response({'user': user_data, 'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
-        set_refresh_cookie(resp, refresh_token)
         return resp
 
 

@@ -17,8 +17,6 @@ router.register(r'social-links', views.SocialLinksViewSet, basename='social-link
 urlpatterns = [
     path('', include(router.urls)),
 
-    # csrf cookie endpoint
-    path('csrf/', views.csrf, name='csrf'),
 
     # market endpoints matching frontend expectations
     path('market/offers', views.MarketOfferViewSet.as_view({'get': 'list'}), name='market-offers-list'),
