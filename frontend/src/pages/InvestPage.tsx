@@ -66,14 +66,14 @@ export default function InvestPage() {
   /* =====================
      CALCULATE DURATION DAYS
   ===================== */
-  const calculateDurationDays = (createdAt: string): number => {
-    // Default to 180 days if not calculable
-    if (!createdAt) return 180
+  const calculateDurationDays = (createdAt: string, expiresAt: string | null): number | null => {
+    if (!createdAt || !expiresAt) return null
     try {
-      // Assuming a standard 180 day duration or calculate from created_at
-      return 180
+      const diff = new Date(expiresAt).getTime() - new Date(createdAt).getTime()
+      if (diff <= 0) return 0
+      return Math.ceil(diff / (1000 * 60 * 60 * 24))
     } catch {
-      return 180
+      return null
     }
   }
 
@@ -107,7 +107,7 @@ export default function InvestPage() {
       const { createInvestment, fetchWallets } =
         await import('../services/Investments')
 
-      await createInvestment(Number(selectedOffer.price_offered))
+      await createInvestment(Number(selectedOffer.price_offered), selectedOffer.id)
 
       const data = await fetchWallets()
       if (Array.isArray(data) && data.length > 0) {
@@ -175,60 +175,87 @@ export default function InvestPage() {
             <p className="text-gray-600">Aucune offre d'investissement disponible</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {offers.map((offer) => (
-              <div
-                key={offer.id}
-                className="bg-white rounded-2xl p-4 md:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:shadow-md transition"
-                onClick={() => setSelectedOffer(offer)}
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800 text-base md:text-lg">
-                    {offer.title}
-                  </p>
-                  <p className="text-sm md:text-base text-gray-500">
-                    ⏳ {calculateDurationDays(offer.created_at)} jours
-                  </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {offers.map((offer) => {
+              const timeLeft = getTimeLeft(offer.expires_at)
+              const durationDays = calculateDurationDays(offer.created_at, offer.expires_at)
+              const isSelected = selectedOffer?.id === offer.id
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedOffer(offer)
-                      setShowDetails(true)
-                    }}
-                    className="text-xs md:text-sm text-violet-600 mt-1 hover:underline"
-                  >
-                    Détails
-                  </button>
+              return (
+                <div
+                  key={offer.id}
+                  className={`group relative rounded-2xl p-4 md:p-5 shadow-sm border transition-all cursor-pointer overflow-hidden ${
+                    isSelected
+                      ? 'border-violet-400 bg-violet-50/60 shadow-md'
+                      : 'border-gray-200 bg-white hover:shadow-md hover:-translate-y-0.5'
+                  }`}
+                  onClick={() => setSelectedOffer(offer)}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-violet-50/40 to-transparent"></div>
+
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                          {offer.status === 'open' ? 'Ouvert' : 'Fermé'}
+                        </span>
+                        <span className="text-[11px] text-gray-500">
+                          {new Date(offer.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 text-base md:text-lg">
+                        {offer.title || 'Offre d\'investissement'}
+                      </h3>
+                      {offer.description && (
+                        <p className="text-xs md:text-sm text-gray-600 mt-1 line-clamp-2">
+                          {offer.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">Prix offert</div>
+                      <div className="text-lg md:text-xl font-bold text-violet-700">
+                        {Number(offer.price_offered).toLocaleString()} {wallet?.currency || 'USDT'}
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-1">{timeLeft}</div>
+                    </div>
+                  </div>
+
+                  <div className="relative mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs md:text-sm text-gray-600">
+                      <span>⏳</span>
+                      <span>
+                        {durationDays !== null ? `${durationDays} jours` : 'Durée indéfinie'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedOffer(offer)
+                          setShowDetails(true)
+                        }}
+                        className="text-xs md:text-sm text-violet-600 hover:underline"
+                      >
+                        Détails
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedOffer(offer)
+                          setSelected(true)
+                        }}
+                        className="px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 shadow-sm"
+                      >
+                        J'investis
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="text-right w-full sm:w-auto">
-                  <p className="text-lg md:text-xl font-bold text-gray-800">
-                    {Number(offer.price_offered).toLocaleString()}{' '}
-                    {wallet?.currency || 'USDT'}
-                  </p>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedOffer(offer)
-                      setSelected(true)
-                    }}
-                    className="mt-2 px-4 py-1.5 md:px-6 md:py-2 rounded-full text-sm md:text-base font-medium
-                      bg-violet-500 text-white hover:bg-violet-600"
-                  >
-                    J'investis
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* AVAILABILITY HOURS */}
-            {selectedOffer && (
-              <p className="text-center text-sm md:text-base text-red-600 font-medium">
-                ⏰ Offre disponible : {selectedOffer.availability_hours || 'Durée indéfinie'} heure(s)
-              </p>
-            )}
+              )
+            })}
           </div>
         )}
       </div>
@@ -255,7 +282,7 @@ export default function InvestPage() {
               </div>
               <div className="bg-gray-100 rounded-xl p-3 text-center">
                 ⏳ <br />
-                <b>{calculateDurationDays(selectedOffer.created_at)} jours</b>
+                <b>{calculateDurationDays(selectedOffer.created_at, selectedOffer.expires_at) ?? '—'} jours</b>
               </div>
             </div>
 
