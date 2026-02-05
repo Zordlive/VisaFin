@@ -618,7 +618,7 @@ export default function PortefeuillePage() {
               ))}
             </div>
 
-            {transactions.length > 5 && (
+            {transactions.length > 0 && (
               <button
                 onClick={() => setShowAllTransactions(true)}
                 className="w-full mt-4 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base text-violet-600 hover:text-violet-700 font-medium hover:underline"
@@ -634,9 +634,10 @@ export default function PortefeuillePage() {
     <div
       className="
         bg-white rounded-2xl w-full
-        max-w-[95vw] sm:max-w-md md:max-w-lg
-        max-h-[88vh] sm:max-h-[90vh] overflow-y-auto
+        max-w-[96vw] sm:max-w-md md:max-w-lg
+        max-h-[92vh] sm:max-h-[90vh]
         p-3 sm:p-5 md:p-6
+        flex flex-col
       "
     >
       {/* HEADER */}
@@ -667,7 +668,7 @@ export default function PortefeuillePage() {
 
       {/* ================= FIAT ================= */}
       {depositType === 'FIAT' && (
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 sm:space-y-4 overflow-y-auto pr-1 sm:pr-0 pb-3">
           <select
             className="w-full bg-gray-100 rounded-xl px-3 py-2 sm:px-3 sm:py-2.5 text-xs sm:text-sm"
             value={fiatCurrency}
@@ -825,17 +826,19 @@ export default function PortefeuillePage() {
             ℹ️ Dépôt converti automatiquement en <b>USDT</b>.
           </p>
 
-          <button
-            onClick={handleFiatSubmit}
-            disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
-            className={`w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
-              ${!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 shadow-md'}
-            `}
-          >
-            {loadingFiat ? 'Traitement...' : '✓ Confirmé votre Transaction'}
-          </button>
+          <div className="sticky bottom-0 bg-white pt-2">
+            <button
+              onClick={handleFiatSubmit}
+              disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
+              className={`w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
+                ${!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700 shadow-md'}
+              `}
+            >
+              {loadingFiat ? 'Traitement...' : '✓ Confirmé votre Transaction'}
+            </button>
+          </div>
         </div>
       )}
 
