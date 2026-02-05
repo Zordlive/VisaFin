@@ -163,9 +163,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Respect reverse proxy SSL headers (Coolify/Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Secure cookies when DEBUG=False
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# Secure cookies when DEBUG=False (override via env if needed)
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', str(not DEBUG)) == 'True'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', str(not DEBUG)) == 'True'
 
 # SameSite policy (set to None for cross-domain setups)
 CSRF_COOKIE_SAMESITE = os.environ.get('CSRF_COOKIE_SAMESITE', 'Lax')
