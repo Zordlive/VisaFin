@@ -141,8 +141,20 @@ export default function PortefeuillePage() {
   }, [refetch])
 
   useEffect(() => {
-    const onAccountsRefresh = () => {
-      loadBankAccounts()
+    const onAccountsRefresh = (event: Event) => {
+      const customEvent = event as CustomEvent<{ account?: BankAccount }>
+      const created = customEvent.detail?.account
+      if (created) {
+        setBankAccounts((prev) => {
+          const next = [created, ...prev.filter((acc) => acc.id !== created.id)]
+          return next
+        })
+        if (created.is_default || !selectedAccountId) {
+          setSelectedAccountId(created.id)
+        }
+      } else {
+        loadBankAccounts()
+      }
     }
 
     if (typeof window !== 'undefined') {
@@ -154,7 +166,7 @@ export default function PortefeuillePage() {
         window.removeEventListener('bank-accounts:refresh', onAccountsRefresh)
       }
     }
-  }, [])
+  }, [selectedAccountId])
 
   // Charger les opérateurs au démarrage
   useEffect(() => {

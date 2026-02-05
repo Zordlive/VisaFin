@@ -320,7 +320,7 @@ export default function DashboardPage() {
 
     setSavingAccount(true)
     try {
-      await createBankAccount({
+      const created = await createBankAccount({
         account_type: accountType,
         bank_name: accountType === 'bank' ? selectedBank : undefined,
         operator_name: accountType === 'operator' ? selectedOperator : undefined,
@@ -334,9 +334,13 @@ export default function DashboardPage() {
         : 'Compte opérateur ajouté avec succès'
       notify.success(successMessage)
       setAccountSuccess(successMessage)
+      setBankAccounts((prev) => {
+        const next = [created, ...prev.filter((acc) => acc.id !== created.id)]
+        return next
+      })
       await loadBankAccounts()
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('bank-accounts:refresh'))
+        window.dispatchEvent(new CustomEvent('bank-accounts:refresh', { detail: { account: created } }))
       }
       
       // Reset form
