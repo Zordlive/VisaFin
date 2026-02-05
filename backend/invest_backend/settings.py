@@ -169,7 +169,7 @@ REST_FRAMEWORK = {
 }
 
 # Frontend URL (used for CORS/CSRF defaults)
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://bkosgcok800kwkccss4og0s0.72.62.213.226.sslip.io')
 
 # CORS - allow frontend local dev and Coolify deployment
 # For security, don't use wildcard when the frontend sends credentials.
@@ -181,7 +181,7 @@ else:
     _cors_list = [
         # Development
         FRONTEND_URL,
-        'http://127.0.0.1:5173',
+        'http://bkosgcok800kwkccss4og0s0.72.62.213.226.sslip.io',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
     ]
