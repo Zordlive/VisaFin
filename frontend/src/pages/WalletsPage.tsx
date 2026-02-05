@@ -147,6 +147,13 @@ export default function PortefeuillePage() {
     loadCryptoAddresses()
   }, [])
 
+  // Refresh bank accounts when opening withdraw modal
+  useEffect(() => {
+    if (showWithdraw) {
+      loadBankAccounts()
+    }
+  }, [showWithdraw])
+
   async function loadCryptoAddresses() {
     setLoadingCryptoAddresses(true)
     try {
