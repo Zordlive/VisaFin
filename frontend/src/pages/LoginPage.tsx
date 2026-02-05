@@ -27,6 +27,9 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [showError, setShowError] = useState(false)
 
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+  const googleOriginHelp = `Google Sign-In bloqué. Ajoute cette origin dans Google Cloud Console → OAuth → Authorized JavaScript origins : ${currentOrigin}`
+
   // Initialize Google Sign-In
   useEffect(() => {
     const initializeGoogle = () => {
@@ -118,7 +121,12 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error('Google login error:', error)
       setGoogleLoading(false)
-      setErrorMessage(error.message || 'Erreur lors de la connexion avec Google')
+      const msg = String(error?.message || '')
+      if (msg.toLowerCase().includes('origin') && msg.toLowerCase().includes('not allowed')) {
+        setErrorMessage(googleOriginHelp)
+      } else {
+        setErrorMessage(msg || 'Erreur lors de la connexion avec Google')
+      }
       setShowError(true)
       setTimeout(() => setShowError(false), 5000)
     }
@@ -131,7 +139,7 @@ export default function LoginPage() {
         console.log('Prompt notification:', notification)
         if (notification.isNotDisplayed()) {
           console.log('❌ Prompt not displayed - showing fallback')
-          setErrorMessage('Veuillez configurer votre compte Google. Assurez-vous que localhost:5173 est autorisé dans Google Cloud Console.')
+          setErrorMessage(googleOriginHelp)
           setShowError(true)
           setTimeout(() => setShowError(false), 5000)
         } else if (notification.isSkippedMoment()) {

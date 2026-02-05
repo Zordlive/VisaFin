@@ -44,6 +44,8 @@ urlpatterns = [
     # auth endpoints expected by frontend (they are under /api/auth/... because api base is /api)
     path('auth/login', views.LoginView.as_view(), name='auth-login'),
     path('auth/register', views.RegisterView.as_view(), name='auth-register'),
+    path('auth/google', views.GoogleLoginView.as_view(), name='auth-google'),
+    path('auth/google/', views.GoogleLoginView.as_view(), name='auth-google-slash'),
     path('auth/google-login', views.GoogleLoginView.as_view(), name='auth-google-login'),
     path('auth/refresh', views.RefreshTokenFromCookieView.as_view(), name='auth-refresh'),
     path('auth/logout', views.LogoutView.as_view(), name='auth-logout'),
