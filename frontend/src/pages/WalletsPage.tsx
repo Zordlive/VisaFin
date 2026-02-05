@@ -730,6 +730,15 @@ export default function PortefeuillePage() {
           {/* Guide de processus */}
           {selectedOperateurData && (
             <div className="bg-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs sm:text-sm font-semibold text-blue-900">
+                  Guide de dépôt ({fiatOperator?.toUpperCase()})
+                </h3>
+                <span className="text-[10px] sm:text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                  Étapes
+                </span>
+              </div>
+
               <div className="flex justify-between items-start gap-2 sm:gap-3">
                 <div className="flex-1">
                   <p className="text-xs sm:text-sm font-semibold text-gray-700">
@@ -751,7 +760,7 @@ export default function PortefeuillePage() {
                 <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2.5">
                   Guide USSD
                 </p>
-                <div className="text-xs sm:text-sm text-blue-800 space-y-1.5 font-medium">
+                <div className="text-[11px] sm:text-sm text-blue-800 space-y-1.5 font-medium max-h-48 sm:max-h-56 overflow-y-auto pr-1">
                   {fiatOperator === 'orange' && (
                     <>
                       <p><b>1.</b> Composez <b>*144#</b></p>
