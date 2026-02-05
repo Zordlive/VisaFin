@@ -122,76 +122,92 @@ export default function VIPPage() {
             return (
               <div
                 key={level.id}
-                className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-sm transition hover:shadow-md ${
+                className={`group relative rounded-2xl p-4 sm:p-5 md:p-6 border shadow-sm transition-all duration-300 overflow-hidden ${
                   active
-                    ? 'bg-green-50 border-2 border-green-500'
+                    ? 'border-green-400 bg-gradient-to-br from-green-50 to-white'
                     : closed
-                    ? 'bg-gray-50 border-2 border-gray-400'
-                    : 'bg-white border border-gray-200'
-                }`}
+                    ? 'border-gray-300 bg-gradient-to-br from-gray-50 to-white'
+                    : 'border-violet-200 bg-gradient-to-br from-white to-violet-50/40'
+                } hover:shadow-md hover:-translate-y-1`}
               >
-                {/* Badge si acheté */}
-                {active && (
-                  <div className="inline-block mb-2 sm:mb-3 px-2 sm:px-3 py-1 bg-green-500 text-white text-[10px] sm:text-xs rounded-full font-medium">
-                    ✓ Actif
-                  </div>
-                )}
-                {closed && (
-                  <div className="inline-block mb-2 sm:mb-3 px-2 sm:px-3 py-1 bg-gray-500 text-white text-[10px] sm:text-xs rounded-full font-medium">
-                    ⛔ Fermé
-                  </div>
-                )}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_20%_20%,rgba(139,92,246,0.12),transparent_40%)]" />
 
-                <h3 className="font-bold text-base sm:text-lg md:text-xl mb-2 sm:mb-3 text-gray-800">
-                  Niveau {level.level}
-                </h3>
+                <div className="relative flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-violet-600/10 text-violet-700 flex items-center justify-center font-bold">
+                      {level.level}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-900">
+                        Niveau VIP
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-gray-500">Accès progressif</p>
+                    </div>
+                  </div>
+                  {active && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-green-500 text-white">
+                      ✓ Actif
+                    </span>
+                  )}
+                  {closed && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-gray-500 text-white">
+                      ⛔ Fermé
+                    </span>
+                  )}
+                </div>
 
                 {level.title && (
-                  <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-2 sm:mb-3 line-clamp-2">
+                  <p className="relative text-xs sm:text-sm md:text-base text-gray-600 mb-3 line-clamp-2">
                     {level.title}
                   </p>
                 )}
 
-                <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                  <div className="flex justify-between text-xs sm:text-sm md:text-base">
-                    <span className="text-gray-600">Prix:</span>
-                    <strong className="text-gray-900">{Number(level.price).toLocaleString()} USDT</strong>
+                <div className="relative grid grid-cols-2 gap-2 sm:gap-3 mb-3">
+                  <div className="rounded-xl bg-white/80 border border-gray-100 p-2 sm:p-3">
+                    <div className="text-[10px] sm:text-xs text-gray-500">Prix</div>
+                    <div className="font-bold text-sm sm:text-base text-gray-900">
+                      {Number(level.price).toLocaleString()} USDT
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs sm:text-sm md:text-base">
-                    <span className="text-gray-600">Gains/jour:</span>
-                    <strong className="text-green-600">{Number(level.daily_gains).toLocaleString()} USDT</strong>
+                  <div className="rounded-xl bg-white/80 border border-gray-100 p-2 sm:p-3">
+                    <div className="text-[10px] sm:text-xs text-gray-500">Gains/jour</div>
+                    <div className="font-bold text-sm sm:text-base text-green-600">
+                      {Number(level.daily_gains).toLocaleString()} USDT
+                    </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedLevel(level)
-                    setShowModal(true)
-                  }}
-                  className="text-xs sm:text-sm md:text-base text-violet-600 mb-2 sm:mb-3 hover:underline font-medium"
-                >
-                  Voir détails
-                </button>
+                <div className="relative flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setSelectedLevel(level)
+                      setShowModal(true)
+                    }}
+                    className="text-xs sm:text-sm text-violet-600 hover:underline font-medium"
+                  >
+                    Voir détails
+                  </button>
 
-                <button
-                  onClick={() => handlePurchase(level)}
-                  disabled={!canPurchase || purchased || loading}
-                  className={`w-full py-2 sm:py-2.5 md:py-3 rounded-lg text-xs sm:text-sm md:text-base font-semibold text-white transition ${
-                    purchased
-                      ? 'bg-gray-400 cursor-not-allowed'
+                  <button
+                    onClick={() => handlePurchase(level)}
+                    disabled={!canPurchase || purchased || loading}
+                    className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white transition-all active:scale-95 ${
+                      purchased
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : canPurchase
+                        ? 'bg-violet-600 hover:bg-violet-700 shadow-sm'
+                        : 'bg-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    {purchased
+                      ? active
+                        ? 'Actif'
+                        : 'Fermé'
                       : canPurchase
-                      ? 'bg-violet-600 hover:bg-violet-700 active:scale-95'
-                      : 'bg-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  {purchased
-                    ? active
-                      ? 'Actif'
-                      : 'Fermé'
-                    : canPurchase
-                    ? loading ? 'Chargement...' : 'Acheter'
-                    : 'Niveau précédent requis'}
-                </button>
+                      ? loading ? 'Chargement...' : 'Acheter'
+                      : 'Niveau précédent requis'}
+                  </button>
+                </div>
               </div>
             )
           })}
