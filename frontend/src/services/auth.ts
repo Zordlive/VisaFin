@@ -43,13 +43,19 @@ export const authService = {
     const lastName = rest.join(' ')
     const email = payload.email || ''
     const username = (payload.username || email.split('@')[0] || fullName.replace(/\s+/g, '').toLowerCase())
+    const referralCode = payload.referralCode || payload.ref || ''
 
     const res = await api.post('/auth/register', {
+      name: payload.name,
       email,
       username,
       password: payload.password,
       firstName: firstName || '',
-      lastName: lastName || ''
+      lastName: lastName || '',
+      phone: payload.phone,
+      countryCode: payload.countryCode,
+      referralCode,
+      ref: referralCode
     }, { headers: csrfHeader() })
     const access_token = res.data.access_token || res.data.token || null
     const refresh_token = res.data.refresh_token || res.data.refresh || null

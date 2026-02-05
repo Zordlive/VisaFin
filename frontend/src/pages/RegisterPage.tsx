@@ -55,8 +55,79 @@ export default function RegisterPage() {
   const { setUser } = useAuth()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+  const googleOriginHelp = `Google Sign-In bloqué. Ajoute cette origin dans Google Cloud Console → OAuth → Authorized JavaScript origins : ${currentOrigin}`
 
   const password = watch('password')
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initializeGoogle = () => {
+      if ((window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+          callback: handleGoogleRegister,
+        })
+
+        const renderGoogleButton = () => {
+          const buttonDiv = document.getElementById('google-signup-button')
+          if (buttonDiv) {
+            buttonDiv.innerHTML = ''
+            const containerWidth = buttonDiv.offsetWidth
+            const buttonWidth = Math.min(containerWidth, 400)
+            ;(window as any).google.accounts.id.renderButton(buttonDiv, {
+              theme: 'outline',
+              size: 'large',
+              width: buttonWidth,
+              text: 'continue_with',
+              locale: 'fr',
+              shape: 'pill',
+            })
+          }
+        }
+
+        renderGoogleButton()
+
+        let resizeTimeout: any
+        const handleResize = () => {
+          clearTimeout(resizeTimeout)
+          resizeTimeout = setTimeout(renderGoogleButton, 300)
+        }
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+      }
+    }
+
+    const timers = [500, 1500, 3000].map((delay) => setTimeout(initializeGoogle, delay))
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  async function handleGoogleRegister(response: any) {
+    if (!response?.credential) {
+      alert('Erreur: pas de credential Google')
+      return
+    }
+
+    setGoogleLoading(true)
+    setLoading(true)
+
+    try {
+      const res = await authService.loginWithGoogle(response.credential)
+      setUser(res.user)
+      navigate('/dashboard')
+    } catch (error: any) {
+      const msg = String(error?.message || '')
+      if (msg.toLowerCase().includes('origin') && msg.toLowerCase().includes('not allowed')) {
+        alert(googleOriginHelp)
+      } else {
+        alert(msg || 'Erreur lors de la connexion avec Google')
+      }
+    } finally {
+      setGoogleLoading(false)
+      setLoading(false)
+    }
+  }
 
   // Pré-remplir le code de parrainage depuis l'URL
   useEffect(() => {
@@ -118,6 +189,20 @@ export default function RegisterPage() {
               Créez votre compte en quelques étapes
             </p>
           </div>
+        </div>
+
+        {/* Google Sign-Up */}
+        <div className="mb-4">
+          <div id="google-signup-button" className="w-full" />
+          {googleLoading && (
+            <p className="mt-2 text-xs text-center text-gray-500">Connexion Google en cours…</p>
+          )}
+        </div>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">ou</span>
+          <div className="h-px flex-1 bg-gray-200" />
         </div>
 
         {/* Form */}
