@@ -184,7 +184,9 @@ export default function LoginPage() {
   return (
     <>
       {/* Loading Screen Modal */}
-      {loading && <LoadingScreen isModal={true} userName={(user as any)?.first_name} />}
+      {(loading || googleLoading) && (
+        <LoadingScreen isModal={true} userName={(user as any)?.first_name} />
+      )}
 
       {/* Error Notification Toast */}
       {showError && (
