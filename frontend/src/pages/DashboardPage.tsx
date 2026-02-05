@@ -74,6 +74,8 @@ export default function DashboardPage() {
   const [accountHolderName, setAccountHolderName] = useState('')
   const [operateurs, setOperateurs] = useState<any[]>([])
   const [savingAccount, setSavingAccount] = useState(false)
+  const [accountSuccess, setAccountSuccess] = useState<string | null>(null)
+  const [accountError, setAccountError] = useState<string | null>(null)
 
   // Liste des banques disponibles (remplacée par crypto networks)
   const banks = [
@@ -285,18 +287,26 @@ export default function DashboardPage() {
   }
 
   async function handleSaveBankAccount() {
+    setAccountSuccess(null)
+    setAccountError(null)
     if (!accountNumber.trim() || !accountHolderName.trim()) {
-      notify.error('Veuillez remplir tous les champs')
+      const msg = 'Veuillez remplir tous les champs'
+      notify.error(msg)
+      setAccountError(msg)
       return
     }
 
     if (accountType === 'bank' && !selectedBank) {
-      notify.error('Veuillez sélectionner un réseau crypto')
+      const msg = 'Veuillez sélectionner un réseau crypto'
+      notify.error(msg)
+      setAccountError(msg)
       return
     }
 
     if (accountType === 'operator' && !selectedOperator) {
-      notify.error('Veuillez sélectionner un opérateur')
+      const msg = 'Veuillez sélectionner un opérateur'
+      notify.error(msg)
+      setAccountError(msg)
       return
     }
 
@@ -315,6 +325,7 @@ export default function DashboardPage() {
         ? 'Portefeuille crypto ajouté avec succès' 
         : 'Compte opérateur ajouté avec succès'
       notify.success(successMessage)
+      setAccountSuccess(successMessage)
       await loadBankAccounts()
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('bank-accounts:refresh'))
@@ -328,7 +339,9 @@ export default function DashboardPage() {
       setAccountType('bank')
       setShowCompleteAccount(false)
     } catch (e: any) {
-      notify.error(e?.response?.data?.message || 'Erreur lors de l\'ajout du compte')
+      const msg = e?.response?.data?.message || 'Erreur lors de l\'ajout du compte'
+      notify.error(msg)
+      setAccountError(msg)
     } finally {
       setSavingAccount(false)
     }
@@ -704,6 +717,16 @@ export default function DashboardPage() {
             )}
 
             <div className="border-t pt-4">
+              {accountSuccess && (
+                <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs md:text-sm text-green-700">
+                  {accountSuccess}
+                </div>
+              )}
+              {accountError && (
+                <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs md:text-sm text-red-700">
+                  {accountError}
+                </div>
+              )}
               <h4 className="font-semibold text-base mb-4">Ajouter un nouveau compte</h4>
 
               {/* Onglets Type de compte - Animations professionnelles */}
