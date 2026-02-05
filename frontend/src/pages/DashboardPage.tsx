@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [editProfile, setEditProfile] = useState(false)
   const [showCompleteAccount, setShowCompleteAccount] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
 
   // COMPTES BANCAIRES
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
@@ -175,6 +176,13 @@ export default function DashboardPage() {
       })
     }
   }, [user])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('profile_image')
+      if (stored) setProfileImage(stored)
+    } catch (e) {}
+  }, [])
 
   // Charger les comptes bancaires et opérateurs
   useEffect(() => {
@@ -292,6 +300,36 @@ export default function DashboardPage() {
     } finally {
       setLoadingChat(false)
     }
+  }
+
+  function handleProfileImageChange(file?: File | null) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      notify.error('Veuillez sélectionner une image valide')
+      return
+    }
+    const maxSizeMb = 2
+    if (file.size > maxSizeMb * 1024 * 1024) {
+      notify.error('L\'image ne doit pas dépasser 2 MB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null
+      if (!result) return
+      setProfileImage(result)
+      try {
+        localStorage.setItem('profile_image', result)
+      } catch (e) {}
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleRemoveProfileImage() {
+    setProfileImage(null)
+    try {
+      localStorage.removeItem('profile_image')
+    } catch (e) {}
   }
 
   async function handleSaveBankAccount() {
@@ -423,8 +461,16 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 mb-6">
             {/* Avatar avec badge VIP */}
             <div className="relative group">
-              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-white to-gray-100 rounded-2xl flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white transform transition-transform group-hover:scale-105">
-                👤
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-white to-gray-100 rounded-2xl flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white transform transition-transform group-hover:scale-105 overflow-hidden">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Photo de profil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  '👤'
+                )}
               </div>
               {maxVIPLevel > 0 && (
                 <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white rounded-xl px-3 py-1 flex items-center gap-1 text-xs md:text-sm font-bold shadow-lg border-2 border-white animate-pulse">
@@ -956,6 +1002,35 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center px-4">
           <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md space-y-3">
             <h3 className="font-semibold text-lg md:text-xl">Modifier vos informations</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gray-100 border overflow-hidden flex items-center justify-center">
+                {profileImage ? (
+                  <img src={profileImage} alt="Photo de profil" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl">👤</span>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <label className="inline-flex items-center gap-2 text-xs md:text-sm font-medium text-violet-700 hover:text-violet-800 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleProfileImageChange(e.target.files?.[0] || null)}
+                  />
+                  <span className="px-3 py-1.5 rounded-lg bg-violet-50 border border-violet-200">Importer une photo</span>
+                </label>
+                {profileImage && (
+                  <button
+                    onClick={handleRemoveProfileImage}
+                    className="text-xs md:text-sm text-red-600 hover:underline"
+                  >
+                    Supprimer la photo
+                  </button>
+                )}
+                <p className="text-[11px] md:text-xs text-gray-500">PNG/JPG • Max 2 MB</p>
+              </div>
+            </div>
             <input
               type="text"
               placeholder="Nom"
