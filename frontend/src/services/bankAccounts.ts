@@ -23,8 +23,14 @@ export interface CreateBankAccountData {
 
 export async function fetchBankAccounts(): Promise<BankAccount[]> {
   try {
-    const response = await api.get('/bank-accounts')
-    return response.data
+    const response = await api.get<BankAccount[] | { results?: BankAccount[] }>('/bank-accounts')
+    if (Array.isArray(response.data)) {
+      return response.data
+    }
+    if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results
+    }
+    return []
   } catch (e) {
     return []
   }

@@ -183,6 +183,14 @@ export default function DashboardPage() {
     loadSocialLinks()
   }, [])
 
+  useEffect(() => {
+    if (showCompleteAccount) {
+      setAccountSuccess(null)
+      setAccountError(null)
+      loadBankAccounts()
+    }
+  }, [showCompleteAccount])
+
   async function loadBankAccounts() {
     try {
       const accounts = await fetchBankAccounts()
@@ -337,7 +345,6 @@ export default function DashboardPage() {
       setSelectedBank('')
       setSelectedOperator('')
       setAccountType('bank')
-      setShowCompleteAccount(false)
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Erreur lors de l\'ajout du compte'
       notify.error(msg)
