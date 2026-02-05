@@ -176,7 +176,7 @@ REST_FRAMEWORK = {
 }
 
 # Frontend URL (used for CORS/CSRF defaults)
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://bkosgcok800kwkccss4og0s0.72.62.213.226.sslip.io')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 _frontend_is_https = FRONTEND_URL.startswith('https://')
 
 # CORS - allow frontend local dev and Coolify deployment
@@ -189,7 +189,8 @@ else:
     _cors_list = [
         # Development
         FRONTEND_URL,
-        'http://bkosgcok800kwkccss4og0s0.72.62.213.226.sslip.io',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
     ]
@@ -202,7 +203,13 @@ _csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if _csrf_env:
     _csrf_list = _split_env_list(_csrf_env)
 else:
-    _csrf_list = [FRONTEND_URL]
+    _csrf_list = [
+        FRONTEND_URL,
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+    ]
 
 CSRF_TRUSTED_ORIGINS = _dedupe_list(
     [o for origin in _csrf_list for o in _expand_origin(origin)]
