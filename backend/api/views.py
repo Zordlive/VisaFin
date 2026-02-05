@@ -339,20 +339,14 @@ class LoginView(APIView):
         if not identifier or not password:
             return Response({'message': 'identifier and password required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # try username then email
-        user = None
-        try:
-            user = User.objects.get(username=identifier)
-        except User.DoesNotExist:
-            try:
-                user = User.objects.get(email=identifier)
-            except User.DoesNotExist:
-                    # try phone number via Investor
-                    try:
-                        inv = Investor.objects.get(phone=identifier)
-                        user = inv.user
-                    except Investor.DoesNotExist:
-                        user = None
+        # try username/email/phone; use filter().first() to avoid MultipleObjectsReturned
+        user = (
+            User.objects.filter(username=identifier).first()
+            or User.objects.filter(email=identifier).first()
+        )
+        if user is None:
+            inv = Investor.objects.filter(phone=identifier).select_related('user').first()
+            user = inv.user if inv else None
 
         if user is None or not user.check_password(password):
             return Response({'message': 'invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
