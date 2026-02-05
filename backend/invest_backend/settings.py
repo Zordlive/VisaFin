@@ -44,6 +44,13 @@ def _dedupe_list(items):
             seen.add(item)
     return out
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return str(value).lower() in ('1', 'true', 'yes', 'on')
+
 ALLOWED_HOSTS = _split_env_list(os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1'))
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -170,6 +177,7 @@ REST_FRAMEWORK = {
 
 # Frontend URL (used for CORS/CSRF defaults)
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://bkosgcok800kwkccss4og0s0.72.62.213.226.sslip.io')
+_frontend_is_https = FRONTEND_URL.startswith('https://')
 
 # CORS - allow frontend local dev and Coolify deployment
 # For security, don't use wildcard when the frontend sends credentials.
@@ -208,13 +216,17 @@ CORS_ALLOW_CREDENTIALS = True
 # Respect reverse proxy SSL headers (Coolify/Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Secure cookies when DEBUG=False (override via env if needed)
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', str(not DEBUG)) == 'True'
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', str(not DEBUG)) == 'True'
+# Redirect HTTP -> HTTPS when frontend is HTTPS (override via env)
+SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', _frontend_is_https and not DEBUG)
 
-# SameSite policy (set to None for cross-domain setups)
-CSRF_COOKIE_SAMESITE = os.environ.get('CSRF_COOKIE_SAMESITE', 'Lax')
-SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+# Secure cookies when HTTPS is used (override via env if needed)
+SESSION_COOKIE_SECURE = _env_bool('SESSION_COOKIE_SECURE', (not DEBUG) or _frontend_is_https)
+CSRF_COOKIE_SECURE = _env_bool('CSRF_COOKIE_SECURE', (not DEBUG) or _frontend_is_https)
+
+# SameSite policy (use None for cross-domain HTTPS)
+_default_samesite = 'None' if _frontend_is_https else 'Lax'
+CSRF_COOKIE_SAMESITE = os.environ.get('CSRF_COOKIE_SAMESITE', _default_samesite)
+SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', _default_samesite)
 
 # CSRF cookie readable by JS when needed
 CSRF_COOKIE_HTTPONLY = os.environ.get('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
