@@ -141,25 +141,30 @@ REST_FRAMEWORK = {
     ),
 }
 
+# Frontend URL (used for CORS/CSRF defaults)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+
 # CORS - allow frontend local dev and Coolify deployment
 # For security, don't use wildcard when the frontend sends credentials.
-# Allow only the dev frontend origin and allow credentials (cookies).
+# Allow only the frontend origin and allow credentials (cookies).
 _cors_env = os.environ.get('CORS_ALLOWED_ORIGINS')
 CORS_ALLOWED_ORIGINS = _split_env_list(_cors_env) if _cors_env else [
     # Development
-    'http://localhost:5173',
+    FRONTEND_URL,
     'http://127.0.0.1:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
 
 _csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS')
-CSRF_TRUSTED_ORIGINS = _split_env_list(_csrf_env) if _csrf_env else []
+CSRF_TRUSTED_ORIGINS = _split_env_list(_csrf_env) if _csrf_env else [
+    FRONTEND_URL,
+]
 
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
-# JWT-only API: no cookies required
-CORS_ALLOW_CREDENTIALS = False
+# Allow credentials for CSRF/session-based flows
+CORS_ALLOW_CREDENTIALS = True
 
 # Respect reverse proxy SSL headers (Coolify/Traefik)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
