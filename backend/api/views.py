@@ -661,6 +661,56 @@ class SetPasswordView(APIView):
         return resp
 
 
+class TestLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        if not getattr(settings, 'ALLOW_TEST_LOGIN', False):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create or reuse a test superuser
+        username = 'testadmin'
+        email = 'testadmin@example.com'
+        password = 'TestAdmin123!'
+
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={
+                'email': email,
+                'is_staff': True,
+                'is_superuser': True,
+                'is_active': True,
+            }
+        )
+        if created:
+            user.set_password(password)
+            user.save()
+        else:
+            # Ensure permissions in case user already existed
+            if not user.is_staff or not user.is_superuser:
+                user.is_staff = True
+                user.is_superuser = True
+                user.is_active = True
+                user.save()
+
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+        user_data = UserSerializer(user).data
+
+        resp = Response({
+            'user': user_data,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'test_credentials': {
+                'username': username,
+                'password': password,
+            }
+        }, status=status.HTTP_200_OK)
+        set_refresh_cookie(resp, refresh_token)
+        return resp
+
+
 class MeView(APIView):
     """Return the current authenticated user."""
     permission_classes = [IsAuthenticated]

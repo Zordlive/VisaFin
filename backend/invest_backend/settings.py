@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -16,6 +17,32 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 def _split_env_list(value: str):
     return [item.strip() for item in value.split(',') if item.strip()]
+
+
+def _expand_origin(origin: str):
+    if not origin:
+        return []
+    origin = origin.strip()
+    if not origin:
+        return []
+    parsed = urlparse(origin)
+    if parsed.scheme in ('http', 'https') and parsed.netloc:
+        host = parsed.netloc
+        return [f"http://{host}", f"https://{host}"]
+    # If scheme missing, treat as host
+    host = origin.replace('http://', '').replace('https://', '')
+    host = host.strip('/')
+    return [f"http://{host}", f"https://{host}"]
+
+
+def _dedupe_list(items):
+    seen = set()
+    out = []
+    for item in items:
+        if item not in seen:
+            out.append(item)
+            seen.add(item)
+    return out
 
 ALLOWED_HOSTS = _split_env_list(os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1'))
 
@@ -148,18 +175,30 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 # For security, don't use wildcard when the frontend sends credentials.
 # Allow only the frontend origin and allow credentials (cookies).
 _cors_env = os.environ.get('CORS_ALLOWED_ORIGINS')
-CORS_ALLOWED_ORIGINS = _split_env_list(_cors_env) if _cors_env else [
-    # Development
-    FRONTEND_URL,
-    'http://127.0.0.1:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+if _cors_env:
+    _cors_list = _split_env_list(_cors_env)
+else:
+    _cors_list = [
+        # Development
+        FRONTEND_URL,
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+    ]
+
+CORS_ALLOWED_ORIGINS = _dedupe_list(
+    [o for origin in _cors_list for o in _expand_origin(origin)]
+)
 
 _csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS')
-CSRF_TRUSTED_ORIGINS = _split_env_list(_csrf_env) if _csrf_env else [
-    FRONTEND_URL,
-]
+if _csrf_env:
+    _csrf_list = _split_env_list(_csrf_env)
+else:
+    _csrf_list = [FRONTEND_URL]
+
+CSRF_TRUSTED_ORIGINS = _dedupe_list(
+    [o for origin in _csrf_list for o in _expand_origin(origin)]
+)
 
 # Do not allow all origins in production; keep explicit allowlist
 CORS_ALLOW_ALL_ORIGINS = False
@@ -179,6 +218,9 @@ SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
 
 # CSRF cookie readable by JS when needed
 CSRF_COOKIE_HTTPONLY = os.environ.get('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
+
+# Optional test-login toggle (disabled by default)
+ALLOW_TEST_LOGIN = os.environ.get('ALLOW_TEST_LOGIN', 'False') == 'True'
 
 
 # Logging: use console/stderr in production (Docker), files in development

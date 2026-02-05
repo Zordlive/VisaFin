@@ -49,6 +49,7 @@ urlpatterns = [
     path('auth/google-login', views.GoogleLoginView.as_view(), name='auth-google-login'),
     path('auth/refresh', views.RefreshTokenFromCookieView.as_view(), name='auth-refresh'),
     path('auth/logout', views.LogoutView.as_view(), name='auth-logout'),
+    path('auth/test-login', views.TestLoginView.as_view(), name='auth-test-login'),
     path('me', views.MeView.as_view(), name='me'),
     path('user', views.UserUpdateView.as_view(), name='user-update'),
     # admin recompute VIP endpoint removed
