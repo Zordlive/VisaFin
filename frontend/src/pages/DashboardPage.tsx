@@ -350,7 +350,15 @@ export default function DashboardPage() {
       setSelectedOperator('')
       setAccountType('bank')
     } catch (e: any) {
-      const msg = e?.response?.data?.message || 'Erreur lors de l\'ajout du compte'
+      const errorData = e?.response?.data
+      let msg = errorData?.message
+      if (!msg && errorData && typeof errorData === 'object') {
+        const firstKey = Object.keys(errorData)[0]
+        const firstVal = firstKey ? (errorData as any)[firstKey] : null
+        if (Array.isArray(firstVal) && firstVal.length > 0) msg = firstVal[0]
+        else if (firstVal) msg = String(firstVal)
+      }
+      if (!msg) msg = 'Erreur lors de l\'ajout du compte'
       notify.error(msg)
       setAccountError(msg)
     } finally {
