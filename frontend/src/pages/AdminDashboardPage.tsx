@@ -172,6 +172,7 @@ export default function AdminDashboardPage() {
   const processWithdrawal = async () => {
     const withdrawal = selectedWithdrawal;
     if (!withdrawal || !processAction) return;
+    const withdrawalId = withdrawal.id;
     
     try {
       setProcessing(true);
@@ -184,7 +185,7 @@ export default function AdminDashboardPage() {
       // Update local state
       setWithdrawals(prev =>
         prev.map(w => 
-          w.id === withdrawal.id
+          w.id === withdrawalId
             ? { ...w, status: processAction === 'complete' ? 'completed' : 'rejected' }
             : w
         )

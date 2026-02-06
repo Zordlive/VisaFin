@@ -89,6 +89,7 @@ export default function PortefeuillePage() {
   const [savingAccount, setSavingAccount] = useState(false)
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null)
   const [accountError, setAccountError] = useState<string | null>(null)
+  const [makeDefault, setMakeDefault] = useState(false)
   const [showBankList, setShowBankList] = useState(false)
   const [showOperatorList, setShowOperatorList] = useState(false)
 
@@ -258,7 +259,7 @@ export default function PortefeuillePage() {
         operator_name: accountType === 'operator' ? selectedOperator : undefined,
         account_number: accountNumber,
         account_holder_name: accountHolderName,
-        is_default: bankAccounts.length === 0
+        is_default: makeDefault || bankAccounts.length === 0
       })
 
       const successMessage = accountType === 'bank'
@@ -274,6 +275,7 @@ export default function PortefeuillePage() {
       setSelectedBank('')
       setSelectedOperator('')
       setAccountType('bank')
+      setMakeDefault(false)
     } catch (e: any) {
       const errorData = e?.response?.data
       let msg = errorData?.message
@@ -1241,7 +1243,10 @@ export default function PortefeuillePage() {
               <div className="mb-6">
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
                   <button
-                    onClick={() => setAccountType('bank')}
+                    onClick={() => {
+                      setAccountType('bank')
+                      setSelectedOperator('')
+                    }}
                     className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-300 transform ${
                       accountType === 'bank'
                         ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg scale-105'
@@ -1251,7 +1256,10 @@ export default function PortefeuillePage() {
                     🪙 Crypto Networks
                   </button>
                   <button
-                    onClick={() => setAccountType('operator')}
+                    onClick={() => {
+                      setAccountType('operator')
+                      setSelectedBank('')
+                    }}
                     className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-300 transform ${
                       accountType === 'operator'
                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
@@ -1347,6 +1355,19 @@ export default function PortefeuillePage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <input
+                  id="make-default-account-withdraw"
+                  type="checkbox"
+                  checked={makeDefault}
+                  onChange={(e) => setMakeDefault(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                />
+                <label htmlFor="make-default-account-withdraw" className="text-sm text-gray-600">
+                  Définir ce compte comme défaut
+                </label>
               </div>
 
               <div className="flex gap-3 mt-6 pt-4 border-t">

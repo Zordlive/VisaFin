@@ -82,6 +82,7 @@ export default function DashboardPage() {
   const [savingAccount, setSavingAccount] = useState(false)
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null)
   const [accountError, setAccountError] = useState<string | null>(null)
+  const [makeDefault, setMakeDefault] = useState(false)
 
   // Liste des banques disponibles (remplacée par crypto networks)
   const banks = [
@@ -394,7 +395,7 @@ export default function DashboardPage() {
         operator_name: accountType === 'operator' ? selectedOperator : undefined,
         account_number: accountNumber,
         account_holder_name: accountHolderName,
-        is_default: bankAccounts.length === 0
+        is_default: makeDefault || bankAccounts.length === 0
       })
 
       const successMessage = accountType === 'bank' 
@@ -417,6 +418,7 @@ export default function DashboardPage() {
       setSelectedBank('')
       setSelectedOperator('')
       setAccountType('bank')
+      setMakeDefault(false)
     } catch (e: any) {
       const errorData = e?.response?.data
       let msg = errorData?.message
