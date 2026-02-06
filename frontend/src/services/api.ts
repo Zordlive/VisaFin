@@ -3,14 +3,19 @@ import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } fro
 // Use environment variable, or detect from window.location for production
 let BASE = (import.meta.env.VITE_API_BASE_URL as string) || ''
 
-// Fallback: if in production and no env var, use api subdomain
+// Fallback: if in production and no env var, use current origin or known API subdomain
 if (!BASE && typeof window !== 'undefined') {
   const hostname = window.location.hostname
   if (hostname === 'visafin-gest.org' || hostname === 'www.visafin-gest.org') {
     BASE = 'https://api.visafin-gest.org/api'
   } else {
-    BASE = 'http://localhost:8000/api'
+    BASE = `${window.location.origin}/api`
   }
+}
+
+// Final fallback (SSR/dev)
+if (!BASE) {
+  BASE = 'http://localhost:8000/api'
 }
 
 // Normalize base URL (ensure protocol, ends with /api, no trailing slash)
