@@ -263,6 +263,20 @@ class SocialLinksAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('created_at', 'updated_at')
 
+    def has_whatsapp(self, obj):
+        return bool(obj.whatsapp_channel or obj.whatsapp_group)
+    has_whatsapp.boolean = True
+    has_whatsapp.short_description = 'WhatsApp configuré'
+
+    def has_telegram(self, obj):
+        return bool(obj.telegram_channel or obj.telegram_group)
+    has_telegram.boolean = True
+    has_telegram.short_description = 'Telegram configuré'
+
+    def has_add_permission(self, request):
+        # Limiter à une seule instance
+        return not SocialLinks.objects.exists()
+
 class AboutPageAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'updated_at')
     search_fields = ('title', 'subtitle', 'historique', 'mission', 'vision', 'values')
@@ -273,20 +287,10 @@ class AboutPageAdmin(admin.ModelAdmin):
         ('Image', {'fields': ('image',)}),
         ('Horodatage', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
-    
-    def has_whatsapp(self, obj):
-        return bool(obj.whatsapp_channel or obj.whatsapp_group)
-    has_whatsapp.boolean = True
-    has_whatsapp.short_description = 'WhatsApp configuré'
-    
-    def has_telegram(self, obj):
-        return bool(obj.telegram_channel or obj.telegram_group)
-    has_telegram.boolean = True
-    has_telegram.short_description = 'Telegram configuré'
-    
+
     def has_add_permission(self, request):
         # Limiter à une seule instance
-        return not SocialLinks.objects.exists()
+        return not AboutPage.objects.exists()
 
 
 class ReferralRewardAdmin(admin.ModelAdmin):
