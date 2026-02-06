@@ -114,11 +114,7 @@ export default function DashboardPage() {
     ? `${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}/register?ref=${code}`
     : ''
 
-  const totalExpenses = Array.isArray(transactions)
-    ? transactions
-        .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
-        .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
-    : 0
+  const totalInvested = Number(wallet?.invested || 0)
 
   const aboutValues = (aboutPage?.values || '')
     .split(/\r?\n|,/)
@@ -543,7 +539,7 @@ export default function DashboardPage() {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">
               <div className="text-white/70 text-xs md:text-sm mb-1">Total investi</div>
               <div className="text-white text-lg md:text-xl lg:text-2xl font-bold">
-                ${Number(totalExpenses).toLocaleString()}
+                ${Number(totalInvested).toLocaleString()}
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20">

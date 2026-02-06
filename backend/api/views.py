@@ -1242,8 +1242,16 @@ class PurchaseVIPLevelView(APIView):
                 # Deactivate previous VIP subscriptions (close prior levels)
                 UserVIPSubscription.objects.filter(user=request.user, active=True).update(active=False)
 
-                # Deduct from wallet
+                # Deduct from wallet and track invested amount
                 wallet.available -= vip_level.price
+                try:
+                    wallet.invested = (wallet.invested + vip_level.price)
+                except Exception:
+                    wallet.invested = vip_level.price
+                try:
+                    wallet.sale_balance = (wallet.sale_balance + vip_level.price)
+                except Exception:
+                    wallet.sale_balance = vip_level.price
                 wallet.save()
 
                 # Create transaction
