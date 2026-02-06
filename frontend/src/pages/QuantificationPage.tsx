@@ -226,12 +226,21 @@ export default function QuantificationPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm">
               <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">Gains VIP quotidiens</div>
-              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-violet-600">
-                ~{Number(gains?.vip_gains_total || 0).toLocaleString()} USDT
-              </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                À partir de tes niveaux VIP
-              </p>
+              {(() => {
+                const entries = Object.entries(gains?.vip_gains || {})
+                const [vipKey, vipValue] = entries[0] || []
+                const vipLabel = vipKey ? vipKey.replace('VIP_Level_', 'Niveau ') : 'Aucun niveau VIP'
+                return (
+                  <>
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-violet-600">
+                      ~{Number(vipValue || 0).toLocaleString()} USDT
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-2">
+                      {vipLabel}
+                    </p>
+                  </>
+                )
+              })()}
             </div>
 
             <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm">
@@ -240,7 +249,7 @@ export default function QuantificationPage() {
                 ~{Number(gains?.investment_gains?.total || 0).toLocaleString()} USDT
               </div>
               <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                À partir de tes investissements
+                À partir de tes investissements actifs
               </p>
             </div>
           </div>
