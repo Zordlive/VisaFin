@@ -106,6 +106,7 @@ export default function PortefeuillePage() {
   const [selectedOperateurData, setSelectedOperateurData] = useState<any>(null)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [countdownSeconds, setCountdownSeconds] = useState(20)
+  const [fiatSubmitExpanded, setFiatSubmitExpanded] = useState(false)
 
   const [cryptoChannel, setCryptoChannel] = useState<any>('')
   const [depositAmount, setDepositAmount] = useState('')
@@ -189,6 +190,12 @@ export default function PortefeuillePage() {
       loadBankAccounts()
     }
   }, [showManageAccounts])
+
+  useEffect(() => {
+    if (!showDeposit || depositType !== 'FIAT') {
+      setFiatSubmitExpanded(false)
+    }
+  }, [showDeposit, depositType])
 
   async function loadCryptoAddresses() {
     setLoadingCryptoAddresses(true)
@@ -974,17 +981,39 @@ export default function PortefeuillePage() {
           </p>
 
           <div className="sticky bottom-0 bg-white pt-2 pb-1">
-            <button
-              onClick={handleFiatSubmit}
-              disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
-              className={`w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-white transition duration-200 text-xs sm:text-sm
-                ${!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 shadow-md'}
-              `}
-            >
-              {loadingFiat ? 'Traitement...' : '✓ Confirmé votre Transaction'}
-            </button>
+            <div className="relative flex justify-end">
+              <button
+                onClick={() => {
+                  if (!fiatSubmitExpanded) {
+                    setFiatSubmitExpanded(true)
+                    return
+                  }
+                  handleFiatSubmit()
+                }}
+                disabled={!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat}
+                className={`group flex items-center justify-center gap-2 h-12 sm:h-14 rounded-full font-bold text-white transition-all duration-300 shadow-lg
+                  ${fiatSubmitExpanded ? 'px-5 sm:px-6 w-auto' : 'w-12 sm:w-14'}
+                  ${!fiatOperator || !fiatPhone || fiatPhone.length !== 10 || !fiatAmount || Number(fiatAmount) < (fiatCurrency === 'USD' ? 3 : 5000) || loadingFiat
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'}
+                `}
+                title={fiatSubmitExpanded ? 'Cliquer pour confirmer' : 'Appuyer pour déployer'}
+              >
+                <span className={`text-lg sm:text-xl transition-transform duration-300 ${fiatSubmitExpanded ? '' : 'group-hover:scale-110'}`}>
+                  💳
+                </span>
+                {fiatSubmitExpanded && (
+                  <span className="text-xs sm:text-sm whitespace-nowrap">
+                    {loadingFiat ? 'Traitement...' : 'Confirmé votre transaction'}
+                  </span>
+                )}
+              </button>
+            </div>
+            {!fiatSubmitExpanded && (
+              <p className="mt-2 text-[11px] sm:text-xs text-gray-500 text-right">
+                Appuyez pour déployer, puis confirmez.
+              </p>
+            )}
           </div>
           </div>
         </div>
