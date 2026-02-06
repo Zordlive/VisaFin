@@ -79,6 +79,7 @@ export default function PortefeuillePage() {
   const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null)
+  const [bankAccountsError, setBankAccountsError] = useState<string | null>(null)
   const [showManageAccounts, setShowManageAccounts] = useState(false)
   const [accountType, setAccountType] = useState<'bank' | 'operator'>('bank')
   const [selectedBank, setSelectedBank] = useState('')
@@ -209,6 +210,7 @@ export default function PortefeuillePage() {
 
   async function loadBankAccounts() {
     try {
+      setBankAccountsError(null)
       const accounts = await fetchBankAccounts()
       const safeAccounts = Array.isArray(accounts) ? accounts : []
       setBankAccounts(safeAccounts)
@@ -220,6 +222,7 @@ export default function PortefeuillePage() {
       }
     } catch (e) {
       console.error('Error loading bank accounts:', e)
+      setBankAccountsError('Impossible de charger vos comptes. Vérifiez votre connexion et réessayez.')
     }
   }
 
@@ -1057,6 +1060,11 @@ export default function PortefeuillePage() {
       </div>
 
       <div className="space-y-4">
+        {bankAccountsError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-lg px-3 py-2">
+            {bankAccountsError}
+          </div>
+        )}
         {bankAccounts.length === 0 ? (
           <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-200 rounded-lg p-3">
             <p className="text-xs sm:text-sm text-violet-700">
