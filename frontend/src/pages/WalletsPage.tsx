@@ -903,7 +903,7 @@ export default function PortefeuillePage() {
                 <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2.5">
                   Guide USSD
                 </p>
-                <div className="text-[11px] sm:text-sm text-blue-800 space-y-1.5 font-medium max-h-48 sm:max-h-56 overflow-y-auto pr-1">
+                <div className="text-xs sm:text-sm md:text-base text-blue-800 space-y-2 font-medium max-h-52 sm:max-h-60 overflow-y-auto pr-1">
                   {fiatOperator === 'orange' && (
                     <>
                       <p><b>1.</b> Composez <b>*144#</b></p>
