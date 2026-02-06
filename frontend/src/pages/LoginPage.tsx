@@ -33,13 +33,33 @@ export default function LoginPage() {
   const [googleReady, setGoogleReady] = useState(false)
 
   useEffect(() => {
-    const checkGoogle = () => {
-      if ((window as any).google?.accounts?.id) {
-        setGoogleReady(true)
+    const initializeGoogle = () => {
+      if (!(window as any).google?.accounts?.id) return
+
+      ;(window as any).google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+        callback: handleGoogleLogin
+      })
+
+      const buttonDiv = document.getElementById('google-signin-button')
+      if (buttonDiv) {
+        buttonDiv.innerHTML = ''
+        const containerWidth = buttonDiv.offsetWidth
+        const buttonWidth = Math.min(containerWidth, 400)
+        ;(window as any).google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+          width: buttonWidth,
+          text: 'continue_with',
+          locale: 'fr',
+          shape: 'pill'
+        })
       }
+
+      setGoogleReady(true)
     }
 
-    const timers = [500, 1500, 3000].map((delay) => setTimeout(checkGoogle, delay))
+    const timers = [500, 1500, 3000].map((delay) => setTimeout(initializeGoogle, delay))
     return () => timers.forEach(clearTimeout)
   }, [])
 
@@ -86,31 +106,10 @@ export default function LoginPage() {
   }
 
   const handleGoogleClick = () => {
-    console.log('🔘 Google button clicked')
-    if (!(window as any).google?.accounts?.id) {
-      console.error('❌ Google Identity Services not loaded')
-      setErrorMessage('Google Sign-In non disponible. Veuillez recharger la page.')
-      setShowError(true)
-      setTimeout(() => setShowError(false), 5000)
-      return
-    }
-
-    ;(window as any).google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-      callback: handleGoogleLogin,
-    })
-
-    ;(window as any).google.accounts.id.prompt((notification: any) => {
-      console.log('Prompt notification:', notification)
-      if (notification.isNotDisplayed()) {
-        console.log('❌ Prompt not displayed - showing fallback')
-        setErrorMessage(googleOriginHelp)
-        setShowError(true)
-        setTimeout(() => setShowError(false), 5000)
-      } else if (notification.isSkippedMoment()) {
-        console.log('⏭️ User previously dismissed the prompt')
-      }
-    })
+    if (googleReady) return
+    setErrorMessage('Google Sign-In non disponible. Veuillez recharger la page.')
+    setShowError(true)
+    setTimeout(() => setShowError(false), 5000)
   }
 
   async function onSubmit(data: FormData) {
@@ -257,14 +256,11 @@ export default function LoginPage() {
 
           {/* Google Sign-In Button */}
           <div className="mt-4 sm:mt-6 w-full px-0">
-            <button
-              type="button"
+            <div
+              id="google-signin-button"
+              className="w-full flex justify-center items-center min-h-[48px]"
               onClick={handleGoogleClick}
-              disabled={googleLoading || !googleReady}
-              className="w-full rounded-xl sm:rounded-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 py-3 sm:py-4 text-sm sm:text-base font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>Continuer avec Google</span>
-            </button>
+            />
             {!googleReady && (
               <p className="mt-2 text-xs text-center text-gray-500">Chargement de Google…</p>
             )}
