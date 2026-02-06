@@ -37,7 +37,14 @@ export async function fetchBankAccounts(): Promise<BankAccount[]> {
 }
 
 export async function createBankAccount(data: CreateBankAccountData): Promise<BankAccount> {
-  const response = await api.post('/bank-accounts', data)
+  const payload = {
+    ...data,
+    account_number: data.account_number?.trim(),
+    account_holder_name: data.account_holder_name?.trim(),
+    bank_name: data.bank_name?.trim(),
+    operator_name: data.operator_name?.trim()
+  }
+  const response = await api.post('/bank-accounts', payload)
   return response.data
 }
 

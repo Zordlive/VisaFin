@@ -1184,6 +1184,12 @@ class UserBankAccountViewSet(viewsets.ModelViewSet):
         return UserBankAccount.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        # If user has no accounts yet, set default automatically
+        is_default = serializer.validated_data.get('is_default')
+        if is_default is None:
+            has_any = UserBankAccount.objects.filter(user=self.request.user).exists()
+            if not has_any:
+                serializer.validated_data['is_default'] = True
         serializer.save(user=self.request.user)
 
     @action(detail=True, methods=['post'])

@@ -187,6 +187,16 @@ class UserBankAccountSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at',)
 
     def validate(self, data):
+        # Normalize input
+        if 'account_number' in data and isinstance(data.get('account_number'), str):
+            data['account_number'] = data['account_number'].strip()
+        if 'account_holder_name' in data and isinstance(data.get('account_holder_name'), str):
+            data['account_holder_name'] = data['account_holder_name'].strip()
+        if 'bank_name' in data and isinstance(data.get('bank_name'), str):
+            data['bank_name'] = data['bank_name'].strip()
+        if 'operator_name' in data and isinstance(data.get('operator_name'), str):
+            data['operator_name'] = data['operator_name'].strip()
+
         # Validation: si account_type est 'bank', bank_name est requis
         if data.get('account_type') == 'bank' and not data.get('bank_name'):
             raise serializers.ValidationError({'bank_name': 'Le nom de la banque est requis pour un compte bancaire.'})
