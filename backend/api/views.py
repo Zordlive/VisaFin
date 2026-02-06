@@ -412,23 +412,8 @@ class RegisterView(APIView):
         except Exception:
             investor_created = False
 
-        # create default wallets for the new investor if none exist
+        # Do not auto-create wallets on registration
         wallets_created = []
-        try:
-            # create default wallets for the new investor if none exist
-            wallets_created = []
-            try:
-                # determine currency from provided country code (frontend sends 'countryCode')
-                desired_currency = country_code_to_currency(country_code)
-                if not Wallet.objects.filter(user=user, currency=desired_currency).exists():
-                    w = Wallet.objects.create(user=user, currency=desired_currency)
-                    wallets_created.append(w.currency)
-            except Exception:
-                # swallow wallet creation errors but continue
-                wallets_created = []
-        except Exception:
-            # swallow wallet creation errors but continue
-            wallets_created = []
 
         # create a referral code for this new user if not exists
         try:
@@ -530,9 +515,6 @@ class GoogleLoginView(APIView):
             if created:
                 try:
                     Investor.objects.create(user=user)
-                    # Create default wallets
-                    Wallet.objects.create(user=user, currency='USD')
-                    Wallet.objects.create(user=user, currency='CDF')
                 except Exception:
                     pass
             
