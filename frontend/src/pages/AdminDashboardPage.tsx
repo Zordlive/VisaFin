@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import logo from '../img/Logo à jour.png';
@@ -186,18 +186,20 @@ export default function AdminDashboardPage() {
   return (
     <div style={{ backgroundColor: '#F4EDDE' }} className="min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="w-12 h-12" />
-            <h1 className="text-white text-2xl font-bold">Tableau de Bord Admin</h1>
+      <div className="sticky top-0 z-50">
+        <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <Link to="/dashboard" className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
+              <h1 className="text-gray-900 text-xl sm:text-2xl font-bold">Tableau de Bord Admin</h1>
+            </Link>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="bg-white text-violet-700 px-4 py-2 rounded-lg font-semibold hover:bg-violet-50 transition"
+            >
+              Retour
+            </button>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50"
-          >
-            Retour
-          </button>
         </div>
       </div>
 
