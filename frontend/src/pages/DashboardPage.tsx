@@ -44,6 +44,7 @@ export default function DashboardPage() {
 
   // Floating buttons modals
   const [showChatModal, setShowChatModal] = useState(false)
+  const [showChatEntryModal, setShowChatEntryModal] = useState(false)
   const [showSocialModal, setShowSocialModal] = useState(false)
   const [showWhatsAppSubModal, setShowWhatsAppSubModal] = useState(false)
   const [showTelegramSubModal, setShowTelegramSubModal] = useState(false)
@@ -191,6 +192,25 @@ export default function DashboardPage() {
       if (poll) window.clearInterval(poll)
     }
   }, [showChatModal])
+
+  const buildWhatsAppLink = (link: string, text: string) => {
+    const encoded = encodeURIComponent(text)
+    if (link.includes('wa.me')) {
+      return link.includes('?') ? `${link}&text=${encoded}` : `${link}?text=${encoded}`
+    }
+    if (link.includes('api.whatsapp.com')) {
+      return link.includes('?') ? `${link}&text=${encoded}` : `${link}?text=${encoded}`
+    }
+    return link
+  }
+
+  const buildTelegramLink = (link: string, text: string) => {
+    const encoded = encodeURIComponent(text)
+    if (link.includes('t.me')) {
+      return link.includes('?') ? `${link}&text=${encoded}` : `${link}?text=${encoded}`
+    }
+    return link
+  }
 
 
   async function loadSocialLinks() {
@@ -765,7 +785,7 @@ export default function DashboardPage() {
       {/* FLOATING BUTTONS */}
       <div className="fixed bottom-20 right-4 flex flex-col gap-3 z-40">
         <button
-          onClick={() => setShowChatModal(true)}
+          onClick={() => setShowChatEntryModal(true)}
           className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl"
           title="Chat avec l'admin"
         >
@@ -786,6 +806,64 @@ export default function DashboardPage() {
           <img src={aproposIcon} alt="À propos" className="w-6 h-6" />
         </button>
       </div>
+
+      {/* MODAL CHAT - OPTIONS */}
+      {showChatEntryModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm md:max-w-md shadow-2xl p-5 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-lg md:text-xl">Contacter l'admin</h3>
+                <p className="text-xs md:text-sm text-gray-500">Choisissez un canal de discussion</p>
+              </div>
+              <button
+                onClick={() => setShowChatEntryModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  const link = socialLinks?.whatsapp_channel || socialLinks?.whatsapp_group
+                  if (!link) return notify.error('Aucun lien WhatsApp disponible')
+                  const url = buildWhatsAppLink(link, 'Bonjour, j\'ai besoin d\'assistance.')
+                  window.open(url, '_blank')
+                }}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl text-sm md:text-base font-semibold flex items-center justify-center gap-3 shadow-lg"
+              >
+                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                WhatsApp
+              </button>
+
+              <button
+                onClick={() => {
+                  const link = socialLinks?.telegram_channel || socialLinks?.telegram_group
+                  if (!link) return notify.error('Aucun lien Telegram disponible')
+                  const url = buildTelegramLink(link, 'Bonjour, j\'ai besoin d\'assistance.')
+                  window.open(url, '_blank')
+                }}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-xl text-sm md:text-base font-semibold flex items-center justify-center gap-3 shadow-lg"
+              >
+                <img src={telegramIcon} alt="Telegram" className="w-5 h-5" />
+                Telegram
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowChatEntryModal(false)
+                  setShowChatModal(true)
+                }}
+                className="w-full border border-gray-300 hover:bg-gray-50 py-3 rounded-xl text-sm md:text-base font-semibold text-gray-700"
+              >
+                Ouvrir l'historique interne
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CHAT ADMIN */}
       {showChatModal && (
