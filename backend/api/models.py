@@ -444,6 +444,37 @@ class SocialLinks(models.Model):
         super().save(*args, **kwargs)
 
 
+class AboutPage(models.Model):
+    """Modèle pour gérer le contenu de la page À propos."""
+    title = models.CharField('titre', max_length=200, blank=True)
+    subtitle = models.CharField('sous-titre', max_length=255, blank=True)
+    historique = models.TextField('historique', blank=True)
+    mission = models.TextField('mission', blank=True)
+    vision = models.TextField('vision', blank=True)
+    values = models.TextField('valeurs', blank=True)
+    founded_year = models.IntegerField('année de création', null=True, blank=True)
+    headquarters = models.CharField('siège', max_length=200, blank=True)
+    contact_email = models.EmailField('email de contact', blank=True)
+    contact_phone = models.CharField('téléphone de contact', max_length=50, blank=True)
+    image = models.ImageField('image', upload_to='about/', null=True, blank=True)
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de modification', auto_now=True)
+
+    class Meta:
+        verbose_name = 'À propos'
+        verbose_name_plural = 'À propos'
+
+    def __str__(self):
+        return f"À propos (ID: {self.id})"
+
+    def save(self, *args, **kwargs):
+        # Garantir qu'il n'y a qu'une seule instance
+        if not self.pk and AboutPage.objects.exists():
+            existing = AboutPage.objects.first()
+            self.pk = existing.pk
+        super().save(*args, **kwargs)
+
+
 class UserNotification(models.Model):
     """Notifications pour les utilisateurs concernant leurs demandes de retrait et dépôt."""
     NOTIFICATION_TYPES = (

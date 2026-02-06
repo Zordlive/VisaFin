@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
+import { getAboutPage, updateAboutPage, type AboutPage } from '../services/aboutPage';
 import logo from '../img/Logo à jour.png';
 
 interface AdminNotification {
@@ -58,7 +59,7 @@ export default function AdminDashboardPage() {
   const [marketOffers, setMarketOffers] = useState<MarketOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'notifications' | 'withdrawals' | 'referrals' | 'offers'>('notifications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'withdrawals' | 'referrals' | 'offers' | 'about'>('notifications');
   const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [processAction, setProcessAction] = useState('');
@@ -70,6 +71,26 @@ export default function AdminDashboardPage() {
   const [offerPrice, setOfferPrice] = useState('');
   const [offerAvailabilityHours, setOfferAvailabilityHours] = useState('');
   const [creatingOffer, setCreatingOffer] = useState(false);
+
+  const [aboutPage, setAboutPage] = useState<AboutPage | null>(null);
+  const [aboutForm, setAboutForm] = useState<AboutPage>({
+    title: '',
+    subtitle: '',
+    historique: '',
+    mission: '',
+    vision: '',
+    values: '',
+    founded_year: null,
+    headquarters: '',
+    contact_email: '',
+    contact_phone: '',
+    image: null,
+    image_url: null,
+  });
+  const [aboutImageFile, setAboutImageFile] = useState<File | null>(null);
+  const [aboutPreview, setAboutPreview] = useState<string | null>(null);
+  const [aboutSaving, setAboutSaving] = useState(false);
+  const [aboutLoading, setAboutLoading] = useState(false);
 
   // Redirect if not staff
   useEffect(() => {
@@ -106,6 +127,38 @@ export default function AdminDashboardPage() {
     // Refresh every 10 seconds
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !user.is_staff) return;
+    const loadAbout = async () => {
+      try {
+        setAboutLoading(true);
+        const data = await getAboutPage();
+        setAboutPage(data);
+        setAboutForm({
+          title: data.title || '',
+          subtitle: data.subtitle || '',
+          historique: data.historique || '',
+          mission: data.mission || '',
+          vision: data.vision || '',
+          values: data.values || '',
+          founded_year: data.founded_year ?? null,
+          headquarters: data.headquarters || '',
+          contact_email: data.contact_email || '',
+          contact_phone: data.contact_phone || '',
+          image: data.image || null,
+          image_url: data.image_url || null,
+        });
+        setAboutPreview(data.image_url || null);
+      } catch (err: any) {
+        setError(err.response?.data?.detail || 'Erreur lors du chargement de À propos');
+      } finally {
+        setAboutLoading(false);
+      }
+    };
+
+    loadAbout();
   }, [user]);
 
   const markAsRead = async (notificationId: number) => {
@@ -181,6 +234,51 @@ export default function AdminDashboardPage() {
       setError(err.response?.data?.message || 'Erreur lors de la création de l\'offre');
     } finally {
       setCreatingOffer(false);
+    }
+  };
+
+  const handleSaveAbout = async () => {
+    if (!aboutPage?.id) {
+      setError('Aucune entrée À propos disponible');
+      return;
+    }
+    setAboutSaving(true);
+    setError('');
+    try {
+      const payload = {
+        title: aboutForm.title?.trim() || '',
+        subtitle: aboutForm.subtitle?.trim() || '',
+        historique: aboutForm.historique?.trim() || '',
+        mission: aboutForm.mission?.trim() || '',
+        vision: aboutForm.vision?.trim() || '',
+        values: aboutForm.values?.trim() || '',
+        founded_year: aboutForm.founded_year ?? null,
+        headquarters: aboutForm.headquarters?.trim() || '',
+        contact_email: aboutForm.contact_email?.trim() || '',
+        contact_phone: aboutForm.contact_phone?.trim() || '',
+      };
+      const updated = await updateAboutPage(aboutPage.id, payload, aboutImageFile);
+      setAboutPage(updated);
+      setAboutForm({
+        title: updated.title || '',
+        subtitle: updated.subtitle || '',
+        historique: updated.historique || '',
+        mission: updated.mission || '',
+        vision: updated.vision || '',
+        values: updated.values || '',
+        founded_year: updated.founded_year ?? null,
+        headquarters: updated.headquarters || '',
+        contact_email: updated.contact_email || '',
+        contact_phone: updated.contact_phone || '',
+        image: updated.image || null,
+        image_url: updated.image_url || null,
+      });
+      setAboutPreview(updated.image_url || null);
+      setAboutImageFile(null);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Erreur lors de la mise à jour de À propos');
+    } finally {
+      setAboutSaving(false);
     }
   };
 
@@ -271,6 +369,16 @@ export default function AdminDashboardPage() {
                 }`}
               >
                 Offres
+              </button>
+              <button
+                onClick={() => setActiveTab('about')}
+                className={`pb-4 px-4 font-semibold transition ${
+                  activeTab === 'about'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                À propos
               </button>
             </div>
 
@@ -543,92 +651,246 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
 
-            {activeTab === 'offers' && (
-              <div className="grid gap-6">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold mb-4">Créer une offre</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
-                      <input
-                        value={offerTitle}
-                        onChange={(e) => setOfferTitle(e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
-                        placeholder="Ex: Offre VIP 30 jours"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prix</label>
-                      <input
-                        type="number"
-                        value={offerPrice}
-                        onChange={(e) => setOfferPrice(e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
-                        placeholder="Montant"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                      <textarea
-                        value={offerDescription}
-                        onChange={(e) => setOfferDescription(e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
-                        rows={3}
-                        placeholder="Description de l'offre"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Durée (heures)</label>
-                      <input
-                        type="number"
-                        value={offerAvailabilityHours}
-                        onChange={(e) => setOfferAvailabilityHours(e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
-                        placeholder="Ex: 24"
-                      />
+      {/* Offers Tab */}
+      {activeTab === 'offers' && (
+        <div className="grid gap-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Créer une offre</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                <input
+                  value={offerTitle}
+                  onChange={(e) => setOfferTitle(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: Offre VIP 30 jours"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prix</label>
+                <input
+                  type="number"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Montant"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={offerDescription}
+                  onChange={(e) => setOfferDescription(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2"
+                  rows={3}
+                  placeholder="Description de l'offre"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Durée (heures)</label>
+                <input
+                  type="number"
+                  value={offerAvailabilityHours}
+                  onChange={(e) => setOfferAvailabilityHours(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: 24"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleCreateOffer}
+              disabled={creatingOffer}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {creatingOffer ? 'Création...' : 'Créer l\'offre'}
+            </button>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Offres existantes</h3>
+            {marketOffers.length === 0 ? (
+              <div className="text-gray-500">Aucune offre</div>
+            ) : (
+              <div className="space-y-3">
+                {marketOffers.map((offer) => (
+                  <div key={offer.id} className="border rounded-md p-4">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <div className="font-semibold">{offer.title}</div>
+                        <div className="text-sm text-gray-600">{offer.description}</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          Durée: {offer.availability_hours ? `${offer.availability_hours}h` : '—'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Expire: {offer.expires_at ? new Date(offer.expires_at).toLocaleString('fr-FR') : '—'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-blue-600">{offer.price_offered} USD</div>
+                        <div className="text-xs text-gray-500">{offer.status}</div>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={handleCreateOffer}
-                    disabled={creatingOffer}
-                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {creatingOffer ? 'Création...' : 'Créer l\'offre'}
-                  </button>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold mb-4">Offres existantes</h3>
-                  {marketOffers.length === 0 ? (
-                    <div className="text-gray-500">Aucune offre</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {marketOffers.map((offer) => (
-                        <div key={offer.id} className="border rounded-md p-4">
-                          <div className="flex justify-between gap-4">
-                            <div>
-                              <div className="font-semibold">{offer.title}</div>
-                              <div className="text-sm text-gray-600">{offer.description}</div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                Durée: {offer.availability_hours ? `${offer.availability_hours}h` : '—'}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Expire: {offer.expires_at ? new Date(offer.expires_at).toLocaleString('fr-FR') : '—'}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-blue-600">{offer.price_offered} USD</div>
-                              <div className="text-xs text-gray-500">{offer.status}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* About Tab */}
+      {activeTab === 'about' && (
+        <div className="grid gap-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Contenu À propos</h3>
+              {aboutLoading && <span className="text-sm text-gray-500">Chargement...</span>}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                <input
+                  value={aboutForm.title}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: À propos de VISAFINANCE"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sous-titre</label>
+                <input
+                  value={aboutForm.subtitle}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, subtitle: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: Investissement digital sécurisé"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Année de création</label>
+                <input
+                  type="number"
+                  value={aboutForm.founded_year ?? ''}
+                  onChange={(e) => setAboutForm((prev) => ({
+                    ...prev,
+                    founded_year: e.target.value ? Number(e.target.value) : null
+                  }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: 2020"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Siège</label>
+                <input
+                  value={aboutForm.headquarters}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, headquarters: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="Ex: Kinshasa"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email de contact</label>
+                <input
+                  type="email"
+                  value={aboutForm.contact_email}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, contact_email: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="contact@visafinance.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone de contact</label>
+                <input
+                  value={aboutForm.contact_phone}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  placeholder="+243 XXX XXX XXX"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Historique</label>
+                <textarea
+                  value={aboutForm.historique}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, historique: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  rows={4}
+                  placeholder="Racontez l'histoire de la plateforme"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mission</label>
+                <textarea
+                  value={aboutForm.mission}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, mission: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  rows={4}
+                  placeholder="Votre mission"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vision</label>
+                <textarea
+                  value={aboutForm.vision}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, vision: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  rows={4}
+                  placeholder="Votre vision"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valeurs (une par ligne)</label>
+                <textarea
+                  value={aboutForm.values}
+                  onChange={(e) => setAboutForm((prev) => ({ ...prev, values: e.target.value }))}
+                  className="w-full border rounded-md px-3 py-2"
+                  rows={4}
+                  placeholder="Transparence\nSécurité\nInnovation"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ajout image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setAboutImageFile(file);
+                  if (file) {
+                    const previewUrl = URL.createObjectURL(file);
+                    setAboutPreview(previewUrl);
+                  } else {
+                    setAboutPreview(aboutForm.image_url || null);
+                  }
+                }}
+                className="block w-full text-sm text-gray-700"
+              />
+              {aboutPreview && (
+                <div className="mt-3">
+                  <img
+                    src={aboutPreview}
+                    alt="Aperçu À propos"
+                    className="w-full max-h-64 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleSaveAbout}
+              disabled={aboutSaving}
+              className="mt-6 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {aboutSaving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
       )}
     </div>

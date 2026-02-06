@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
@@ -48,7 +49,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -69,9 +70,17 @@ from .serializers import (
     AdminNotificationSerializer,
     CryptoAddressSerializer,
     SocialLinksSerializer,
+    AboutPageSerializer,
 )
 
 User = get_user_model()
+
+
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return bool(request.user and request.user.is_authenticated and request.user.is_staff)
 
 
 class MarketOfferViewSet(viewsets.ModelViewSet):
@@ -1149,6 +1158,21 @@ class SocialLinksViewSet(viewsets.ReadOnlyModelViewSet):
             'telegram_channel': None,
             'telegram_group': None
         })
+
+
+class AboutPageViewSet(viewsets.ModelViewSet):
+    """Retrieve and manage the About page content."""
+    queryset = AboutPage.objects.all()
+    serializer_class = AboutPageSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def list(self, request, *args, **kwargs):
+        instance = AboutPage.objects.first()
+        if instance is None:
+            instance = AboutPage.objects.create()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class UserBankAccountViewSet(viewsets.ModelViewSet):

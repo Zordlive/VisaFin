@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.html import format_html
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
 from .models import ReferralCode, Referral, ReferralReward, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
-from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, UserNotification
+from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, UserNotification, AboutPage
 
 
 class MarketOfferAdmin(admin.ModelAdmin):
@@ -262,6 +262,17 @@ class SocialLinksAdmin(admin.ModelAdmin):
         ('Horodatage', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
     readonly_fields = ('created_at', 'updated_at')
+
+class AboutPageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'updated_at')
+    search_fields = ('title', 'subtitle', 'historique', 'mission', 'vision', 'values')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Contenu', {'fields': ('title', 'subtitle', 'historique', 'mission', 'vision', 'values')}),
+        ('Informations', {'fields': ('founded_year', 'headquarters', 'contact_email', 'contact_phone')}),
+        ('Image', {'fields': ('image',)}),
+        ('Horodatage', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
     
     def has_whatsapp(self, obj):
         return bool(obj.whatsapp_channel or obj.whatsapp_group)
@@ -380,5 +391,6 @@ admin.site.register(AdminNotification, AdminNotificationAdmin)
 admin.site.register(UserNotification, UserNotificationAdmin)
 admin.site.register(CryptoAddress, CryptoAddressAdmin)
 admin.site.register(SocialLinks, SocialLinksAdmin)
+admin.site.register(AboutPage, AboutPageAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Group, GroupAdmin)

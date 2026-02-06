@@ -8,9 +8,9 @@ import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import TradeSignals from '../components/TradeSignals'
 import api, { getSocialLinks, type SocialLinks } from '../services/api'
+import { getAboutPage, type AboutPage } from '../services/aboutPage'
 import logo from '../img/Logo à jour.png'
 import propos1 from '../img/About.png'
-import propos2 from '../img/about 2.png'
 import chatIcon from '../img/chat.png'
 import aproposIcon from '../img/a-propos.png'
 import reseauxIcon from '../img/resaux.png'
@@ -52,6 +52,10 @@ export default function DashboardPage() {
 
   // Social links data
   const [socialLinks, setSocialLinks] = useState<SocialLinks | null>(null)
+
+  // About page data
+  const [aboutPage, setAboutPage] = useState<AboutPage | null>(null)
+  const [aboutLoading, setAboutLoading] = useState(false)
 
   // Chat
   const [chatMessage, setChatMessage] = useState('')
@@ -115,6 +119,11 @@ export default function DashboardPage() {
         .filter((tx: any) => ['withdraw', 'trade'].includes(tx?.type))
         .reduce((sum: number, tx: any) => sum + Number(tx?.amount || 0), 0)
     : 0
+
+  const aboutValues = (aboutPage?.values || '')
+    .split(/\r?\n|,/)
+    .map((val) => val.trim())
+    .filter(Boolean)
 
   const loadDashboard = (mountedRef?: { current: boolean }) => {
     return Promise.all([
@@ -195,6 +204,7 @@ export default function DashboardPage() {
     loadBankAccounts()
     loadOperateurs()
     loadSocialLinks()
+    loadAboutPage()
   }, [])
 
   useEffect(() => {
@@ -204,6 +214,12 @@ export default function DashboardPage() {
       loadBankAccounts()
     }
   }, [showCompleteAccount])
+
+  useEffect(() => {
+    if (showAboutModal) {
+      loadAboutPage()
+    }
+  }, [showAboutModal])
 
   async function loadBankAccounts() {
     try {
@@ -229,6 +245,18 @@ export default function DashboardPage() {
       setSocialLinks(links)
     } catch (e) {
       console.error('Error loading social links:', e)
+    }
+  }
+
+  async function loadAboutPage() {
+    try {
+      setAboutLoading(true)
+      const about = await getAboutPage()
+      setAboutPage(about)
+    } catch (e) {
+      console.error('Error loading about page:', e)
+    } finally {
+      setAboutLoading(false)
     }
   }
 
@@ -1305,28 +1333,84 @@ export default function DashboardPage() {
       {/* MODAL A PROPOS */}
       {showAboutModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-lg md:text-xl mb-4 text-center">À propos de nous</h3>
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <img src={propos1} alt="À propos 1" className="w-full md:w-1/2 h-48 object-cover rounded-lg" />
-                <img src={propos2} alt="À propos 2" className="w-full md:w-1/2 h-48 object-cover rounded-lg" />
-              </div>
-              <div className="text-sm md:text-base text-gray-700 space-y-3">
-                <p>
-                  <strong>Notre histoire commence en 2020,</strong> lorsque notre équipe visionnaire a identifié une opportunité unique dans le domaine des investissements numériques. Face à la volatilité des marchés traditionnels, nous avons décidé de créer une plateforme qui démocratise l'accès aux investissements rentables pour tous.
-                </p>
-                <p>
-                  <strong>Avec plus de 3 ans d'expérience,</strong> nous avons aidé des milliers d'utilisateurs à atteindre leurs objectifs financiers grâce à nos stratégies d'investissement éprouvées et notre approche transparente. Notre plateforme offre des rendements stables de 5% par jour sur 180 jours, garantissant sécurité et fiabilité.
-                </p>
-                <p>
-                  <strong>Notre mission :</strong> Rendre l'investissement accessible à tous, en éliminant les barrières financières et techniques. Nous croyons que chacun mérite la chance de construire un avenir prospère, et nous nous engageons à fournir les outils et le support nécessaires pour y parvenir.
-                </p>
-                <p>
-                  <strong>Rejoignez notre communauté</strong> et commencez votre voyage vers la liberté financière dès aujourd'hui !
+          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="relative overflow-hidden rounded-2xl mb-6">
+              <img
+                src={aboutPage?.image_url || propos1}
+                alt="À propos"
+                className="w-full h-40 md:h-56 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              <div className="absolute bottom-3 left-4 right-4">
+                <h3 className="text-white text-xl md:text-2xl font-bold">
+                  {aboutPage?.title || 'À propos de VISAFINANCE'}
+                </h3>
+                <p className="text-white/80 text-sm md:text-base">
+                  {aboutPage?.subtitle || 'Investissement digital sécurisé'}
                 </p>
               </div>
             </div>
+
+            {aboutLoading ? (
+              <div className="text-center py-8 text-gray-500">Chargement...</div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-xl p-3 border">
+                    <div className="text-xs text-gray-500">Année de création</div>
+                    <div className="font-semibold text-gray-900">
+                      {aboutPage?.founded_year || '—'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 border">
+                    <div className="text-xs text-gray-500">Siège</div>
+                    <div className="font-semibold text-gray-900">
+                      {aboutPage?.headquarters || '—'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3 border">
+                    <div className="text-xs text-gray-500">Contact</div>
+                    <div className="font-semibold text-gray-900">
+                      {aboutPage?.contact_email || aboutPage?.contact_phone || '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white border rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Historique</h4>
+                    <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
+                      {aboutPage?.historique || 'Aucune information fournie pour le moment.'}
+                    </p>
+                  </div>
+                  <div className="bg-white border rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Mission</h4>
+                    <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
+                      {aboutPage?.mission || 'Aucune mission définie pour le moment.'}
+                    </p>
+                  </div>
+                  <div className="bg-white border rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Vision</h4>
+                    <p className="text-sm md:text-base text-gray-700 whitespace-pre-line">
+                      {aboutPage?.vision || 'Aucune vision définie pour le moment.'}
+                    </p>
+                  </div>
+                  <div className="bg-white border rounded-xl p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Valeurs</h4>
+                    {aboutValues.length > 0 ? (
+                      <ul className="text-sm md:text-base text-gray-700 space-y-1 list-disc list-inside">
+                        {aboutValues.map((value, idx) => (
+                          <li key={idx}>{value}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm md:text-base text-gray-700">Aucune valeur renseignée.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => setShowAboutModal(false)}
               className="w-full border py-2 rounded-lg text-sm md:text-base mt-4"

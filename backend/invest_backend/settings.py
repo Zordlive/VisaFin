@@ -147,6 +147,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Media uploads (About page images, etc.)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Serve project-level static files during development
 from decimal import Decimal
 REFERRAL_MIN_DEPOSIT = Decimal('1000.00')
