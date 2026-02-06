@@ -9,6 +9,7 @@ import { createCryptoDeposit } from '../services/deposits'
 import { createWithdrawal } from '../services/withdrawals'
 import api, { getCryptoAddresses, type CryptoAddress } from '../services/api'
 import { fetchOperateurs } from '../services/operateurs'
+import { createBankAccount, fetchBankAccounts, type BankAccount } from '../services/bankAccounts'
 import logo from '../img/Logo à jour.png'
 import orangeLogo from '../img/Orange Monnaie.png'
 import airtelLogo from '../img/Airtel-Money-Logo-PNG.png'
@@ -59,11 +60,22 @@ export default function PortefeuillePage() {
 
   /* ===== RETRAIT ===== */
   const [showWithdraw, setShowWithdraw] = useState(false)
-  const [bank, setBank] = useState('')
-  const [account, setAccount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [loadingWithdraw, setLoadingWithdraw] = useState(false)
   const [withdrawError, setWithdrawError] = useState<string | null>(null)
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null)
+  const [bankAccountsError, setBankAccountsError] = useState<string | null>(null)
+
+  const [showBankModal, setShowBankModal] = useState(false)
+  const [bankTab, setBankTab] = useState<'crypto' | 'mobile'>('crypto')
+  const [mobileOperator, setMobileOperator] = useState('')
+  const [mobileAccountNumber, setMobileAccountNumber] = useState('')
+  const [mobileAccountHolder, setMobileAccountHolder] = useState('')
+  const [cryptoAccount, setCryptoAccount] = useState('')
+  const [cryptoAccountId, setCryptoAccountId] = useState('')
+  const [addingBank, setAddingBank] = useState(false)
+  const [addBankError, setAddBankError] = useState<string | null>(null)
 
   /* ===== DEPOT ===== */
   const [showDeposit, setShowDeposit] = useState(false)
@@ -145,7 +157,14 @@ export default function PortefeuillePage() {
   useEffect(() => {
     loadOperateurs()
     loadCryptoAddresses()
+    loadBankAccounts()
   }, [])
+
+  useEffect(() => {
+    if (showWithdraw) {
+      loadBankAccounts()
+    }
+  }, [showWithdraw])
 
   useEffect(() => {
     if (!showDeposit || depositType !== 'FIAT') {
@@ -171,6 +190,23 @@ export default function PortefeuillePage() {
       setOperateurs(Array.isArray(ops) ? ops : [])
     } catch (e) {
       console.error('Error loading operateurs:', e)
+    }
+  }
+
+  async function loadBankAccounts() {
+    try {
+      setBankAccountsError(null)
+      const accounts = await fetchBankAccounts()
+      const safeAccounts = Array.isArray(accounts) ? accounts : []
+      setBankAccounts(safeAccounts)
+
+      const defaultAccount = safeAccounts.find(acc => acc.is_default)
+      if (defaultAccount) {
+        setSelectedAccountId(defaultAccount.id)
+      }
+    } catch (e) {
+      console.error('Error loading bank accounts:', e)
+      setBankAccountsError('Impossible de charger vos comptes. Vérifiez votre connexion et réessayez.')
     }
   }
 
@@ -273,8 +309,26 @@ export default function PortefeuillePage() {
   }
 
   const handleWithdraw = async () => {
-    if (!bank.trim() || !account.trim()) {
-      notify.error('Veuillez renseigner la banque et le numéro de compte')
+    if (!selectedAccountId) {
+      notify.error('Veuillez sélectionner un compte')
+      return
+    }
+
+    const selectedAccount = bankAccounts.find(acc => acc.id === selectedAccountId)
+    if (!selectedAccount) {
+      notify.error('Compte invalide')
+      return
+    }
+
+    const bankLabel = selectedAccount.account_type === 'crypto'
+      ? selectedAccount.crypto_account
+      : selectedAccount.operator_name
+    const accountValue = selectedAccount.account_type === 'crypto'
+      ? selectedAccount.crypto_account_id
+      : selectedAccount.account_number
+
+    if (!bankLabel || !accountValue) {
+      notify.error('Compte invalide')
       return
     }
 
@@ -282,19 +336,16 @@ export default function PortefeuillePage() {
     try {
       await createWithdrawal({
         amount: Number(withdrawAmount),
-        bank: bank.trim(),
-        account: account.trim()
+        bank: bankLabel,
+        account: accountValue
       })
     } catch (e: any) {
-      // Ne pas afficher d'erreur, la demande est toujours transférée à l'admin
       console.log('Demande de retrait envoyée à l\'admin pour validation')
     } finally {
-      // Toujours afficher le succès et fermer le modal
       notify.success('Votre demande de retrait a été envoyée. L\'administrateur la traitera dans les plus brefs délais.')
       setShowWithdraw(false)
       setWithdrawAmount('')
-      setBank('')
-      setAccount('')
+      setSelectedAccountId(null)
       setWithdrawError(null)
       setLoadingWithdraw(false)
       refetch()
@@ -417,6 +468,57 @@ export default function PortefeuillePage() {
       setLoadingFiat(false)
     }
   }
+
+  const handleAddBankAccount = async () => {
+    setAddBankError(null)
+
+    if (bankTab === 'mobile') {
+      if (!mobileOperator || !mobileAccountNumber.trim() || !mobileAccountHolder.trim()) {
+        setAddBankError('Veuillez compléter tous les champs Mobile Money.')
+        return
+      }
+    }
+
+    if (bankTab === 'crypto') {
+      if (!cryptoAccount || !cryptoAccountId.trim()) {
+        setAddBankError('Veuillez compléter tous les champs Crypto.')
+        return
+      }
+    }
+
+    setAddingBank(true)
+    try {
+      if (bankTab === 'mobile') {
+        await createBankAccount({
+          account_type: 'mobile',
+          operator_name: mobileOperator,
+          account_number: mobileAccountNumber,
+          account_holder_name: mobileAccountHolder
+        })
+      } else {
+        await createBankAccount({
+          account_type: 'crypto',
+          crypto_account: cryptoAccount,
+          crypto_account_id: cryptoAccountId
+        })
+      }
+
+      await loadBankAccounts()
+      setShowBankModal(false)
+      setMobileOperator('')
+      setMobileAccountNumber('')
+      setMobileAccountHolder('')
+      setCryptoAccount('')
+      setCryptoAccountId('')
+      notify.success('Compte enregistré avec succès')
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Erreur lors de l\'enregistrement'
+      setAddBankError(msg)
+      notify.error(msg)
+    } finally {
+      setAddingBank(false)
+    }
+  }
   return (
     <div
       className="
@@ -463,6 +565,25 @@ export default function PortefeuillePage() {
                 {totalInvested.toLocaleString()} {mainWallet?.currency || 'USDT'}
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ENREGISTRER VOS BANQUES */}
+        <section className="bg-gray-50 rounded-lg sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-sm">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-600">Enregistrez vos banques</h3>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Complétez votre compte pour faciliter vos retraits.
+          </p>
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">
+              {bankAccounts.length} compte{bankAccounts.length > 1 ? 's' : ''} enregistré{bankAccounts.length > 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={() => setShowBankModal(true)}
+              className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-semibold"
+            >
+              Ajout
+            </button>
           </div>
         </section>
 
@@ -615,6 +736,135 @@ export default function PortefeuillePage() {
           </>
         )}
       </section>
+      {showBankModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-3 sm:px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md overflow-hidden shadow-2xl">
+            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-lg md:text-xl">Enregistrer un compte</h3>
+                <p className="text-xs md:text-sm text-gray-500">Ajoutez un compte pour vos retraits</p>
+              </div>
+              <button
+                onClick={() => setShowBankModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-4 md:px-6 pt-4">
+              <div className="flex bg-gray-100 rounded-full p-1 mb-4">
+                <button
+                  onClick={() => setBankTab('crypto')}
+                  className={`flex-1 py-2 rounded-full text-xs sm:text-sm font-semibold ${
+                    bankTab === 'crypto' ? 'bg-white shadow' : 'text-gray-500'
+                  }`}
+                >
+                  Crypto
+                </button>
+                <button
+                  onClick={() => setBankTab('mobile')}
+                  className={`flex-1 py-2 rounded-full text-xs sm:text-sm font-semibold ${
+                    bankTab === 'mobile' ? 'bg-white shadow' : 'text-gray-500'
+                  }`}
+                >
+                  MobileMonnaie
+                </button>
+              </div>
+
+              {bankTab === 'crypto' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Compte</label>
+                    <select
+                      value={cryptoAccount}
+                      onChange={(e) => setCryptoAccount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                    >
+                      <option value="">Sélectionner</option>
+                      {cryptoNetworks.map((network) => (
+                        <option key={network.id} value={network.name}>
+                          {network.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">ID compte</label>
+                    <input
+                      type="text"
+                      placeholder="Entrez l'ID du compte"
+                      value={cryptoAccountId}
+                      onChange={(e) => setCryptoAccountId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {bankTab === 'mobile' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Opérateur</label>
+                    <select
+                      value={mobileOperator}
+                      onChange={(e) => setMobileOperator(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                    >
+                      <option value="">Sélectionner</option>
+                      {operators.map((op) => (
+                        <option key={op.id} value={op.label}>
+                          {op.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Numéro de compte</label>
+                    <input
+                      type="text"
+                      placeholder="Entrez le numéro"
+                      value={mobileAccountNumber}
+                      onChange={(e) => setMobileAccountNumber(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Nom du titulaire</label>
+                    <input
+                      type="text"
+                      placeholder="Entrez le nom"
+                      value={mobileAccountHolder}
+                      onChange={(e) => setMobileAccountHolder(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {addBankError && (
+                <div className="mt-3 text-xs text-red-600">{addBankError}</div>
+              )}
+            </div>
+
+            <div className="px-4 md:px-6 py-4 border-t flex gap-3">
+              <button
+                onClick={() => setShowBankModal(false)}
+                className="flex-1 border py-2 rounded-lg text-sm"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleAddBankAccount}
+                disabled={addingBank}
+                className="flex-1 bg-violet-600 text-white py-2 rounded-lg text-sm disabled:opacity-50"
+              >
+                {addingBank ? 'Enregistrement...' : 'Ajouter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showDeposit && (
   <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-2 sm:px-4 py-4">
     <div
@@ -941,27 +1191,68 @@ export default function PortefeuillePage() {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">Banque / Opérateur</label>
-          <input
-            type="text"
-            placeholder="Ex: Equity, Orange, Airtel"
-            value={bank}
-            onChange={(e) => setBank(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
-          />
-        </div>
+        {bankAccountsError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-lg px-3 py-2">
+            {bankAccountsError}
+          </div>
+        )}
 
-        <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">Numéro de compte</label>
-          <input
-            type="text"
-            placeholder="Entrez le numéro de compte"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
-          />
-        </div>
+        {bankAccounts.length === 0 ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+            <p className="font-medium mb-2">Aucun compte enregistré</p>
+            <p className="text-xs">Ajoutez un compte pour continuer.</p>
+            <button
+              onClick={() => {
+                setShowWithdraw(false)
+                setShowBankModal(true)
+              }}
+              className="mt-3 w-full py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm"
+            >
+              Ajouter un compte
+            </button>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Sélectionnez un compte</label>
+            <div className="space-y-2">
+              {bankAccounts.filter(acc => acc.is_active).map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => setSelectedAccountId(account.id)}
+                  className={`w-full text-left p-3 rounded-lg border-2 transition ${
+                    selectedAccountId === account.id
+                      ? 'border-violet-600 bg-violet-50'
+                      : 'border-gray-200 hover:border-violet-300'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm md:text-base">
+                          {account.account_type === 'crypto' ? account.crypto_account : account.operator_name}
+                        </span>
+                        {account.is_default && (
+                          <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded">Défaut</span>
+                        )}
+                      </div>
+                      {account.account_type === 'crypto' ? (
+                        <div className="text-xs md:text-sm text-gray-500">ID: {account.crypto_account_id}</div>
+                      ) : (
+                        <>
+                          <div className="text-xs md:text-sm text-gray-600">{account.account_holder_name}</div>
+                          <div className="text-xs md:text-sm text-gray-500">{account.account_number}</div>
+                        </>
+                      )}
+                    </div>
+                    {selectedAccountId === account.id && (
+                      <div className="text-violet-600 text-xl">✓</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Montant du retrait */}
         <div>
@@ -981,9 +1272,9 @@ export default function PortefeuillePage() {
 
         <button
           onClick={handleWithdraw}
-          disabled={!bank.trim() || !account.trim() || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw}
+          disabled={!selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw}
           className={`w-full py-3 rounded-xl font-semibold text-white text-sm md:text-base
-            ${loadingWithdraw || !bank.trim() || !account.trim() || !withdrawAmount || Number(withdrawAmount) <= 0
+            ${loadingWithdraw || !selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0
               ? 'bg-red-300 cursor-not-allowed'
               : 'bg-red-600 hover:bg-red-700'}
           `}

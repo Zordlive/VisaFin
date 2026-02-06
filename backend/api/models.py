@@ -298,6 +298,46 @@ class Operateur(models.Model):
         return f"{self.get_operateur_display()} - {self.nom_agent} ({self.numero_agent})"
 
 
+class UserBankAccount(models.Model):
+    ACCOUNT_TYPE_CHOICES = (
+        ('crypto', 'Crypto'),
+        ('mobile', 'Mobile money'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='bank_accounts')
+    account_type = models.CharField('type de compte', max_length=20, choices=ACCOUNT_TYPE_CHOICES)
+
+    # Mobile money
+    operator_name = models.CharField('opérateur', max_length=50, blank=True, null=True)
+    account_number = models.CharField('numéro de compte', max_length=100, blank=True, null=True)
+    account_holder_name = models.CharField('nom du titulaire', max_length=200, blank=True, null=True)
+
+    # Crypto
+    crypto_account = models.CharField('compte crypto', max_length=100, blank=True, null=True)
+    crypto_account_id = models.CharField('id compte', max_length=150, blank=True, null=True)
+
+    is_active = models.BooleanField('actif', default=True)
+    is_default = models.BooleanField('compte par défaut', default=False)
+
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de mise à jour', auto_now=True)
+
+    class Meta:
+        verbose_name = 'compte bancaire utilisateur'
+        verbose_name_plural = 'comptes bancaires utilisateurs'
+        ordering = ['-is_default', '-created_at']
+
+    def __str__(self):
+        if self.account_type == 'crypto':
+            return f"{self.crypto_account} - {self.crypto_account_id}"
+        return f"{self.operator_name} - {self.account_holder_name} ({self.account_number})"
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            UserBankAccount.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
 class Withdrawal(models.Model):
     """Demandes de retrait des utilisateurs à traiter par l'administrateur."""
     STATUS_CHOICES = (

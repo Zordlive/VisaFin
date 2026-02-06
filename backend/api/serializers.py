@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
 
 User = get_user_model()
 
@@ -178,6 +178,44 @@ class OperateurSerializer(serializers.ModelSerializer):
     class Meta:
         model = Operateur
         fields = ('id', 'numero_agent', 'nom_agent', 'operateur', 'created_at')
+
+
+class UserBankAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserBankAccount
+        fields = (
+            'id', 'account_type', 'operator_name', 'account_number', 'account_holder_name',
+            'crypto_account', 'crypto_account_id', 'is_active', 'is_default', 'created_at'
+        )
+        read_only_fields = ('created_at',)
+
+    def validate(self, data):
+        if 'operator_name' in data and isinstance(data.get('operator_name'), str):
+            data['operator_name'] = data['operator_name'].strip()
+        if 'account_number' in data and isinstance(data.get('account_number'), str):
+            data['account_number'] = data['account_number'].strip()
+        if 'account_holder_name' in data and isinstance(data.get('account_holder_name'), str):
+            data['account_holder_name'] = data['account_holder_name'].strip()
+        if 'crypto_account' in data and isinstance(data.get('crypto_account'), str):
+            data['crypto_account'] = data['crypto_account'].strip()
+        if 'crypto_account_id' in data and isinstance(data.get('crypto_account_id'), str):
+            data['crypto_account_id'] = data['crypto_account_id'].strip()
+
+        if data.get('account_type') == 'mobile':
+            if not data.get('operator_name'):
+                raise serializers.ValidationError({'operator_name': 'Le nom de l\'opérateur est requis.'})
+            if not data.get('account_number'):
+                raise serializers.ValidationError({'account_number': 'Le numéro de compte est requis.'})
+            if not data.get('account_holder_name'):
+                raise serializers.ValidationError({'account_holder_name': 'Le nom du titulaire est requis.'})
+
+        if data.get('account_type') == 'crypto':
+            if not data.get('crypto_account'):
+                raise serializers.ValidationError({'crypto_account': 'Le compte crypto est requis.'})
+            if not data.get('crypto_account_id'):
+                raise serializers.ValidationError({'crypto_account_id': 'L\'id du compte est requis.'})
+
+        return data
 
 
 class WithdrawalSerializer(serializers.ModelSerializer):

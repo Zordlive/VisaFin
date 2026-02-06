@@ -49,7 +49,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -65,6 +65,7 @@ from .serializers import (
     VIPLevelSerializer,
     UserVIPSubscriptionSerializer,
     OperateurSerializer,
+    UserBankAccountSerializer,
     WithdrawalSerializer,
     AdminNotificationSerializer,
     CryptoAddressSerializer,
@@ -1145,6 +1146,31 @@ class AboutPageViewSet(viewsets.ModelViewSet):
             instance = AboutPage.objects.create()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class UserBankAccountViewSet(viewsets.ModelViewSet):
+    """Manage user bank accounts and crypto accounts."""
+    serializer_class = UserBankAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return UserBankAccount.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        is_default = serializer.validated_data.get('is_default')
+        if is_default is None:
+            has_any = UserBankAccount.objects.filter(user=self.request.user).exists()
+            if not has_any:
+                serializer.validated_data['is_default'] = True
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        account = self.get_object()
+        UserBankAccount.objects.filter(user=request.user, is_default=True).update(is_default=False)
+        account.is_default = True
+        account.save()
+        return Response({'status': 'Compte défini comme défaut'})
 
 
 class UserVIPSubscriptionsView(APIView):

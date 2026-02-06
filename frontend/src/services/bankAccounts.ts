@@ -2,22 +2,24 @@ import api from './api'
 
 export interface BankAccount {
   id: number
-  account_type: 'bank' | 'operator'
-  bank_name?: string
+  account_type: 'crypto' | 'mobile'
   operator_name?: string
-  account_number: string
-  account_holder_name: string
+  account_number?: string
+  account_holder_name?: string
+  crypto_account?: string
+  crypto_account_id?: string
   is_active: boolean
   is_default: boolean
   created_at: string
 }
 
 export interface CreateBankAccountData {
-  account_type: 'bank' | 'operator'
-  bank_name?: string
+  account_type: 'crypto' | 'mobile'
   operator_name?: string
-  account_number: string
-  account_holder_name: string
+  account_number?: string
+  account_holder_name?: string
+  crypto_account?: string
+  crypto_account_id?: string
   is_default?: boolean
 }
 
@@ -37,8 +39,9 @@ export async function createBankAccount(data: CreateBankAccountData): Promise<Ba
     ...data,
     account_number: data.account_number?.trim(),
     account_holder_name: data.account_holder_name?.trim(),
-    bank_name: data.bank_name?.trim(),
-    operator_name: data.operator_name?.trim()
+    operator_name: data.operator_name?.trim(),
+    crypto_account: data.crypto_account?.trim(),
+    crypto_account_id: data.crypto_account_id?.trim()
   }
   const response = await api.post('/bank-accounts/', payload)
   return response.data
