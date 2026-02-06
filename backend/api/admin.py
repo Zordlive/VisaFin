@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.html import format_html
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
 from .models import ReferralCode, Referral, ReferralReward, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
-from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, UserNotification, AboutPage
+from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, UserNotification, AboutPage, SupportTicket, SupportMessage
 
 
 class MarketOfferAdmin(admin.ModelAdmin):
@@ -396,5 +396,23 @@ admin.site.register(UserNotification, UserNotificationAdmin)
 admin.site.register(CryptoAddress, CryptoAddressAdmin)
 admin.site.register(SocialLinks, SocialLinksAdmin)
 admin.site.register(AboutPage, AboutPageAdmin)
+
+
+@admin.register(SupportTicket)
+class SupportTicketAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'subject', 'status', 'updated_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('user__username', 'user__email', 'subject')
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-updated_at',)
+
+
+@admin.register(SupportMessage)
+class SupportMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'ticket', 'sender', 'sender_role', 'created_at')
+    list_filter = ('sender_role', 'created_at')
+    search_fields = ('content', 'sender__username', 'sender__email')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
 admin.site.register(User, UserAdmin)
 admin.site.register(Group, GroupAdmin)

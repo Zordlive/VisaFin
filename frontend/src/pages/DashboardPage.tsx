@@ -58,6 +58,10 @@ export default function DashboardPage() {
   // Chat
   const [chatMessage, setChatMessage] = useState('')
   const [loadingChat, setLoadingChat] = useState(false)
+  const [chatTicket, setChatTicket] = useState<any>(null)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
 
   // PROFIL
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -175,6 +179,19 @@ export default function DashboardPage() {
     }
   }, [showAboutModal])
 
+  useEffect(() => {
+    let poll: number | undefined
+    if (showChatModal) {
+      loadChat().catch(() => {})
+      poll = window.setInterval(() => {
+        loadChat().catch(() => {})
+      }, 8000)
+    }
+    return () => {
+      if (poll) window.clearInterval(poll)
+    }
+  }, [showChatModal])
+
 
   async function loadSocialLinks() {
     try {
@@ -199,6 +216,27 @@ export default function DashboardPage() {
 
   const canHarvest = (date: string) =>
     Date.now() - new Date(date).getTime() >= 24 * 60 * 60 * 1000
+
+  async function loadChat() {
+    setChatLoading(true)
+    setChatError(null)
+    try {
+      const ticketRes = await api.get('/support-tickets/')
+      const tickets = Array.isArray(ticketRes.data) ? ticketRes.data : []
+      const ticket = tickets[0] || null
+      setChatTicket(ticket)
+      if (ticket?.id) {
+        const msgRes = await api.get(`/support-tickets/${ticket.id}/messages/`)
+        setChatMessages(Array.isArray(msgRes.data) ? msgRes.data : [])
+      } else {
+        setChatMessages([])
+      }
+    } catch (e) {
+      setChatError('Impossible de charger la conversation.')
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   async function onCopy() {
     if (!inviteLink) {
@@ -262,10 +300,21 @@ export default function DashboardPage() {
     if (!chatMessage.trim()) return
     setLoadingChat(true)
     try {
-      // Just show success notification without API call
-      notify.success('Message envoyé à l\'administrateur')
+      let ticket = chatTicket
+      if (!ticket) {
+        const created = await api.post('/support-tickets/', {
+          subject: 'Support utilisateur'
+        })
+        ticket = created.data
+        setChatTicket(ticket)
+      }
+
+      const msgRes = await api.post(`/support-tickets/${ticket.id}/messages/`, {
+        content: chatMessage.trim()
+      })
+      setChatMessages((prev) => [...prev, msgRes.data])
       setChatMessage('')
-      setShowChatModal(false)
+      notify.success('Message envoyé à l\'administrateur')
     } catch (e: any) {
       notify.error('Erreur envoi message')
     } finally {
@@ -741,28 +790,77 @@ export default function DashboardPage() {
       {/* MODAL CHAT ADMIN */}
       {showChatModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white p-4 md:p-6 rounded-2xl w-full max-w-sm md:max-w-md">
-            <h3 className="font-semibold text-lg md:text-xl mb-3">Chat avec l'administrateur</h3>
-            <textarea
-              placeholder="Tapez votre message..."
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              className="w-full border p-2 md:p-3 rounded text-sm md:text-base h-24 resize-none"
-            />
-            <div className="flex gap-3 mt-3">
+          <div className="bg-white rounded-2xl w-full max-w-sm md:max-w-md overflow-hidden shadow-2xl flex flex-col">
+            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-lg md:text-xl">Support</h3>
+                <p className="text-xs md:text-sm text-gray-500">
+                  Statut: {chatTicket?.status || 'ouvert'}
+                </p>
+              </div>
               <button
                 onClick={() => setShowChatModal(false)}
-                className="flex-1 border py-2 rounded-lg text-sm md:text-base"
+                className="text-gray-500 hover:text-gray-700 text-xl"
               >
-                Annuler
+                ✕
               </button>
-              <button
-                onClick={handleSendChat}
-                disabled={loadingChat || !chatMessage.trim()}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm md:text-base disabled:opacity-50"
-              >
-                {loadingChat ? 'Envoi...' : 'Envoyer'}
-              </button>
+            </div>
+
+            <div className="flex-1 p-4 md:p-6 space-y-3 overflow-y-auto max-h-[55vh]">
+              {chatLoading && (
+                <div className="text-center text-sm text-gray-400">Chargement...</div>
+              )}
+              {chatError && (
+                <div className="text-center text-sm text-red-500">{chatError}</div>
+              )}
+              {!chatLoading && !chatError && chatMessages.length === 0 && (
+                <div className="text-center text-sm text-gray-400">
+                  Aucun message. Démarrez la conversation.
+                </div>
+              )}
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender_role === 'admin' ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm md:text-base shadow-sm ${
+                      msg.sender_role === 'admin'
+                        ? 'bg-gray-100 text-gray-800'
+                        : 'bg-blue-600 text-white'
+                    }`}
+                  >
+                    <div className="whitespace-pre-line">{msg.content}</div>
+                    <div className={`mt-1 text-[10px] ${msg.sender_role === 'admin' ? 'text-gray-500' : 'text-blue-100'}`}>
+                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t p-3 md:p-4">
+              <textarea
+                placeholder="Tapez votre message..."
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                className="w-full border p-2 md:p-3 rounded-xl text-sm md:text-base h-20 resize-none"
+              />
+              <div className="flex gap-3 mt-3">
+                <button
+                  onClick={() => setShowChatModal(false)}
+                  className="flex-1 border py-2 rounded-lg text-sm md:text-base"
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={handleSendChat}
+                  disabled={loadingChat || !chatMessage.trim()}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm md:text-base disabled:opacity-50"
+                >
+                  {loadingChat ? 'Envoi...' : 'Envoyer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

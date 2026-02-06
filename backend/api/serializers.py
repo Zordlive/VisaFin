@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
 
 User = get_user_model()
 
@@ -242,6 +242,25 @@ class AdminNotificationSerializer(serializers.ModelSerializer):
             return obj.user.investor.phone
         except Exception:
             return None
+
+
+class SupportTicketSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+
+    class Meta:
+        model = SupportTicket
+        fields = ('id', 'user', 'user_username', 'user_email', 'subject', 'status', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user', 'created_at', 'updated_at')
+
+
+class SupportMessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+
+    class Meta:
+        model = SupportMessage
+        fields = ('id', 'ticket', 'sender', 'sender_username', 'sender_role', 'content', 'created_at')
+        read_only_fields = ('id', 'ticket', 'sender', 'sender_role', 'created_at')
 
 
 class CryptoAddressSerializer(serializers.ModelSerializer):

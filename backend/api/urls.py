@@ -14,6 +14,7 @@ router.register(r'admin-notifications', views.AdminNotificationViewSet, basename
 router.register(r'crypto-addresses', views.CryptoAddressViewSet, basename='crypto-address')
 router.register(r'social-links', views.SocialLinksViewSet, basename='social-links')
 router.register(r'about-page', views.AboutPageViewSet, basename='about-page')
+router.register(r'support-tickets', views.SupportTicketViewSet, basename='support-ticket')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -49,7 +49,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -71,6 +71,8 @@ from .serializers import (
     CryptoAddressSerializer,
     SocialLinksSerializer,
     AboutPageSerializer,
+    SupportTicketSerializer,
+    SupportMessageSerializer,
 )
 
 User = get_user_model()
@@ -1183,6 +1185,61 @@ class UserVIPSubscriptionsView(APIView):
         subscriptions = UserVIPSubscription.objects.filter(user=request.user).order_by('-active', 'vip_level__level')
         serializer = UserVIPSubscriptionSerializer(subscriptions, many=True)
         return Response(serializer.data)
+
+
+class SupportTicketViewSet(viewsets.ModelViewSet):
+    """Support tickets for async chat."""
+    serializer_class = SupportTicketSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self.request.user, 'is_staff', False):
+            return SupportTicket.objects.all()
+        return SupportTicket.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, status='open')
+
+    @action(detail=True, methods=['get', 'post'])
+    def messages(self, request, pk=None):
+        ticket = self.get_object()
+        if request.method == 'GET':
+            msgs = SupportMessage.objects.filter(ticket=ticket).order_by('created_at')
+            return Response(SupportMessageSerializer(msgs, many=True).data)
+
+        content = (request.data.get('content') or '').strip()
+        if not content:
+            return Response({'message': 'message requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+        sender_role = 'admin' if request.user.is_staff else 'user'
+        msg = SupportMessage.objects.create(
+            ticket=ticket,
+            sender=request.user,
+            sender_role=sender_role,
+            content=content
+        )
+
+        # Update ticket status based on sender
+        if sender_role == 'admin' and ticket.status == 'open':
+            ticket.status = 'in_progress'
+            ticket.save(update_fields=['status', 'updated_at'])
+        if sender_role == 'user' and ticket.status == 'resolved':
+            ticket.status = 'open'
+            ticket.save(update_fields=['status', 'updated_at'])
+
+        return Response(SupportMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def set_status(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({'message': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        ticket = self.get_object()
+        status_value = request.data.get('status')
+        if status_value not in dict(SupportTicket.STATUS_CHOICES):
+            return Response({'message': 'statut invalide'}, status=status.HTTP_400_BAD_REQUEST)
+        ticket.status = status_value
+        ticket.save(update_fields=['status', 'updated_at'])
+        return Response(SupportTicketSerializer(ticket).data)
 
 
 class PurchaseVIPLevelView(APIView):

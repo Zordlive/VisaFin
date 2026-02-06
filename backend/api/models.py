@@ -501,3 +501,48 @@ class UserNotification(models.Model):
 
     def __str__(self):
         return f"Notification {self.id} - {self.user} - {self.title}"
+
+
+class SupportTicket(models.Model):
+    """Ticket de support pour le chat asynchrone."""
+    STATUS_CHOICES = (
+        ('open', 'Ouvert'),
+        ('in_progress', 'En cours'),
+        ('resolved', 'Résolu'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='support_tickets')
+    subject = models.CharField('sujet', max_length=200, blank=True)
+    status = models.CharField('statut', max_length=20, choices=STATUS_CHOICES, default='open')
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+    updated_at = models.DateTimeField('date de mise à jour', auto_now=True)
+
+    class Meta:
+        verbose_name = 'ticket support'
+        verbose_name_plural = 'tickets support'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Ticket {self.id} - {self.user} ({self.status})"
+
+
+class SupportMessage(models.Model):
+    """Message lié à un ticket de support."""
+    SENDER_CHOICES = (
+        ('user', 'Utilisateur'),
+        ('admin', 'Administrateur'),
+    )
+
+    ticket = models.ForeignKey(SupportTicket, verbose_name='ticket', on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='auteur', on_delete=models.CASCADE, related_name='support_messages')
+    sender_role = models.CharField('rôle', max_length=10, choices=SENDER_CHOICES, default='user')
+    content = models.TextField('message')
+    created_at = models.DateTimeField('date de création', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'message support'
+        verbose_name_plural = 'messages support'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message {self.id} - {self.ticket_id} ({self.sender_role})"
