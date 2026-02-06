@@ -13,7 +13,6 @@ import logo from '../img/Logo à jour.png'
 import orangeLogo from '../img/Orange Monnaie.png'
 import airtelLogo from '../img/Airtel-Money-Logo-PNG.png'
 import mpesaLogo from '../img/M-pesa-logo.png'
-import { fetchBankAccounts, type BankAccount } from '../services/bankAccounts'
 
 export default function PortefeuillePage() {
   const { data, isLoading, error, refetch } = useWallets()
@@ -65,9 +64,6 @@ export default function PortefeuillePage() {
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [loadingWithdraw, setLoadingWithdraw] = useState(false)
   const [withdrawError, setWithdrawError] = useState<string | null>(null)
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null)
-  const [bankAccountsError, setBankAccountsError] = useState<string | null>(null)
 
   /* ===== DEPOT ===== */
   const [showDeposit, setShowDeposit] = useState(false)
@@ -148,16 +144,8 @@ export default function PortefeuillePage() {
   // Charger les opérateurs au démarrage
   useEffect(() => {
     loadOperateurs()
-    loadBankAccounts()
     loadCryptoAddresses()
   }, [])
-
-  // Refresh bank accounts when opening withdraw modal
-  useEffect(() => {
-    if (showWithdraw) {
-      loadBankAccounts()
-    }
-  }, [showWithdraw])
 
   useEffect(() => {
     if (!showDeposit || depositType !== 'FIAT') {
@@ -185,25 +173,6 @@ export default function PortefeuillePage() {
       console.error('Error loading operateurs:', e)
     }
   }
-
-  async function loadBankAccounts() {
-    try {
-      setBankAccountsError(null)
-      const accounts = await fetchBankAccounts()
-      const safeAccounts = Array.isArray(accounts) ? accounts : []
-      setBankAccounts(safeAccounts)
-      
-      // Auto-sélectionner le compte par défaut s'il existe
-      const defaultAccount = safeAccounts.find(acc => acc.is_default)
-      if (defaultAccount) {
-        setSelectedAccountId(defaultAccount.id)
-      }
-    } catch (e) {
-      console.error('Error loading bank accounts:', e)
-      setBankAccountsError('Impossible de charger vos comptes. Vérifiez votre connexion et réessayez.')
-    }
-  }
-
 
   // Gestion du compteur 20 secondes
   useEffect(() => {
@@ -304,23 +273,17 @@ export default function PortefeuillePage() {
   }
 
   const handleWithdraw = async () => {
-    if (!selectedAccountId) {
-      notify.error('Veuillez sélectionner un compte')
+    if (!bank.trim() || !account.trim()) {
+      notify.error('Veuillez renseigner la banque et le numéro de compte')
       return
     }
 
     setLoadingWithdraw(true)
     try {
-      const selectedAccount = bankAccounts.find(acc => acc.id === selectedAccountId)
-      if (!selectedAccount) {
-        notify.error('Compte invalide')
-        return
-      }
-
       await createWithdrawal({
         amount: Number(withdrawAmount),
-        bank: selectedAccount.account_type === 'bank' ? selectedAccount.bank_name! : selectedAccount.operator_name!,
-        account: selectedAccount.account_number
+        bank: bank.trim(),
+        account: account.trim()
       })
     } catch (e: any) {
       // Ne pas afficher d'erreur, la demande est toujours transférée à l'admin
@@ -330,7 +293,8 @@ export default function PortefeuillePage() {
       notify.success('Votre demande de retrait a été envoyée. L\'administrateur la traitera dans les plus brefs délais.')
       setShowWithdraw(false)
       setWithdrawAmount('')
-      setSelectedAccountId(null)
+      setBank('')
+      setAccount('')
       setWithdrawError(null)
       setLoadingWithdraw(false)
       refetch()
@@ -977,64 +941,27 @@ export default function PortefeuillePage() {
       </div>
 
       <div className="space-y-4">
-        {bankAccountsError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-lg px-3 py-2">
-            {bankAccountsError}
-          </div>
-        )}
-        {bankAccounts.length === 0 ? (
-          <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-200 rounded-lg p-3">
-            <p className="text-xs sm:text-sm text-violet-700">
-              Enregistrez un compte bancaire pour effectuer votre retrait.
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">Comptes disponibles</h3>
-          </div>
-        )}
-        {/* Sélection du compte */}
-        {bankAccounts.length > 0 ? (
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">Sélectionnez un compte</label>
-            <div className="space-y-2">
-              {bankAccounts.filter(acc => acc.is_active).map((account) => (
-                <button
-                  key={account.id}
-                  onClick={() => setSelectedAccountId(account.id)}
-                  className={`w-full text-left p-3 rounded-lg border-2 transition ${
-                    selectedAccountId === account.id
-                      ? 'border-violet-600 bg-violet-50'
-                      : 'border-gray-200 hover:border-violet-300'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm md:text-base">
-                          {account.account_type === 'bank' ? account.bank_name : account.operator_name}
-                        </span>
-                        {account.is_default && (
-                          <span className="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded">Défaut</span>
-                        )}
-                      </div>
-                      <div className="text-xs md:text-sm text-gray-600">{account.account_holder_name}</div>
-                      <div className="text-xs md:text-sm text-gray-500">{account.account_number}</div>
-                    </div>
-                    {selectedAccountId === account.id && (
-                      <div className="text-violet-600 text-xl">✓</div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-            <p className="font-medium mb-2">Aucun compte enregistré</p>
-            <p className="text-xs">Ajoutez un compte bancaire pour continuer.</p>
-          </div>
-        )}
+        <div>
+          <label className="block text-sm font-medium mb-2 text-gray-700">Banque / Opérateur</label>
+          <input
+            type="text"
+            placeholder="Ex: Equity, Orange, Airtel"
+            value={bank}
+            onChange={(e) => setBank(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 text-gray-700">Numéro de compte</label>
+          <input
+            type="text"
+            placeholder="Entrez le numéro de compte"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm md:text-base focus:ring-2 focus:ring-violet-500 outline-none"
+          />
+        </div>
 
         {/* Montant du retrait */}
         <div>
@@ -1054,27 +981,15 @@ export default function PortefeuillePage() {
 
         <button
           onClick={handleWithdraw}
-          disabled={!selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw}
+          disabled={!bank.trim() || !account.trim() || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw}
           className={`w-full py-3 rounded-xl font-semibold text-white text-sm md:text-base
-            ${loadingWithdraw || !selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0
+            ${loadingWithdraw || !bank.trim() || !account.trim() || !withdrawAmount || Number(withdrawAmount) <= 0
               ? 'bg-red-300 cursor-not-allowed'
               : 'bg-red-600 hover:bg-red-700'}
           `}
         >
           {loadingWithdraw ? 'Traitement...' : 'Confirmer le retrait'}
         </button>
-
-        {bankAccounts.length === 0 && (
-          <button
-            onClick={() => {
-              setShowWithdraw(false)
-              window.location.href = '/dashboard'
-            }}
-            className="w-full py-3 rounded-xl font-semibold bg-violet-600 hover:bg-violet-700 text-white text-sm md:text-base"
-          >
-            Aller au profil
-          </button>
-        )}
       </div>
     </div>
   </div>

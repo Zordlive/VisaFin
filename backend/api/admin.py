@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.html import format_html
 from .models import MarketOffer, Wallet, Transaction, Deposit, Investor
-from .models import ReferralCode, Referral, ReferralReward, VIPLevel, UserVIPSubscription, Operateur, UserBankAccount
+from .models import ReferralCode, Referral, ReferralReward, VIPLevel, UserVIPSubscription, Operateur
 from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, UserNotification, AboutPage, SupportTicket, SupportMessage
 
 
@@ -123,14 +123,6 @@ class OperateurAdmin(admin.ModelAdmin):
     list_filter = ('operateur',)
     search_fields = ('nom_agent', 'numero_agent')
     ordering = ('operateur', 'nom_agent')
-
-
-class UserBankAccountAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'account_type', 'account_holder_name', 'account_number', 'is_default', 'is_active', 'created_at')
-    list_filter = ('account_type', 'is_active', 'is_default')
-    search_fields = ('user__username', 'user__email', 'account_holder_name', 'account_number', 'bank_name', 'operator_name')
-    raw_id_fields = ('user',)
-    ordering = ('-is_default', '-created_at')
 
 
 class WithdrawalAdmin(admin.ModelAdmin):
@@ -389,7 +381,6 @@ admin.site.register(ReferralReward, ReferralRewardAdmin)
 admin.site.register(VIPLevel, VIPLevelAdmin)
 admin.site.register(UserVIPSubscription, UserVIPSubscriptionAdmin)
 admin.site.register(Operateur, OperateurAdmin)
-admin.site.register(UserBankAccount, UserBankAccountAdmin)
 admin.site.register(Withdrawal, WithdrawalAdmin)
 admin.site.register(AdminNotification, AdminNotificationAdmin)
 admin.site.register(UserNotification, UserNotificationAdmin)

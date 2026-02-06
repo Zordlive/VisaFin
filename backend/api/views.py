@@ -49,7 +49,7 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
 from .serializers import (
@@ -65,7 +65,6 @@ from .serializers import (
     VIPLevelSerializer,
     UserVIPSubscriptionSerializer,
     OperateurSerializer,
-    UserBankAccountSerializer,
     WithdrawalSerializer,
     AdminNotificationSerializer,
     CryptoAddressSerializer,
@@ -1146,35 +1145,6 @@ class AboutPageViewSet(viewsets.ModelViewSet):
             instance = AboutPage.objects.create()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-
-
-class UserBankAccountViewSet(viewsets.ModelViewSet):
-    """Manage user bank accounts and operator accounts."""
-    serializer_class = UserBankAccountSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return UserBankAccount.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        # If user has no accounts yet, set default automatically
-        is_default = serializer.validated_data.get('is_default')
-        if is_default is None:
-            has_any = UserBankAccount.objects.filter(user=self.request.user).exists()
-            if not has_any:
-                serializer.validated_data['is_default'] = True
-        serializer.save(user=self.request.user)
-
-    @action(detail=True, methods=['post'])
-    def set_default(self, request, pk=None):
-        """Set an account as default."""
-        account = self.get_object()
-        # Désactiver tous les autres comptes par défaut
-        UserBankAccount.objects.filter(user=request.user, is_default=True).update(is_default=False)
-        # Activer celui-ci
-        account.is_default = True
-        account.save()
-        return Response({'status': 'Compte défini comme défaut'})
 
 
 class UserVIPSubscriptionsView(APIView):
