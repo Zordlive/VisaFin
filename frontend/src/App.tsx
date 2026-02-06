@@ -13,7 +13,6 @@ import DepositsPage from './pages/DepositsPage'
 import WithdrawPage from './pages/WithdrawPage'
 import NotFoundPage from './pages/NotFoundPage'
 //import Header from './components/HeaderActions'
-import Footer from './components/Footer'
 import LoadingScreen from './components/LoadingScreen'
 import { useAuth } from './hooks/useAuth'
 import { useLoading } from './contexts/LoadingProvider'
@@ -69,8 +68,6 @@ export default function App() {
     }
   }, [initialLoading, appReady, user, location.pathname])
 
-  // Don't show footer on login and register pages
-  const showFooter = !['/login', '/register'].includes(location.pathname)
 
   // Show loading screen on initial app load (always shows first, even with poor connection)
   if (initialLoading) {
@@ -173,7 +170,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      {showFooter && <Footer />}
     </div>
   )
 }

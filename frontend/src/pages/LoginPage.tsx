@@ -305,17 +305,6 @@ export default function LoginPage() {
             ></div>
           </div>
 
-          {/* Footer */}
-          <p className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-gray-500">
-            Vous n'avez pas de compte ?{' '}
-            <button
-              onClick={() => navigate('/register')}
-              disabled={loading}
-              className="text-violet-500 font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              S'inscrire
-            </button>
-          </p>
         </div>
       </div>
     </>

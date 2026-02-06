@@ -347,16 +347,6 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        {/* Footer */}
-        <p className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-gray-500">
-          Déjà un compte ?{' '}
-          <button
-            onClick={() => navigate('/login')}
-            className="text-violet-500 font-medium hover:underline"
-          >
-            Se connecter
-          </button>
-        </p>
       </div>
     </div>
     </>
