@@ -2,8 +2,36 @@ import { defineConfig } from 'vite'
 
 export default defineConfig(async () => {
   const reactPlugin = (await import('@vitejs/plugin-react')).default
+  const { VitePWA } = await import('vite-plugin-pwa')
+
   return {
-    plugins: [reactPlugin()],
+    plugins: [
+      reactPlugin(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        manifest: {
+          name: 'VisaFin Gest',
+          short_name: 'VisaFin',
+          start_url: '/',
+          display: 'standalone',
+          theme_color: '#0f172a',
+          background_color: '#0f172a',
+          orientation: 'portrait',
+          icons: [
+            {
+              src: '/icons/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: '/icons/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        }
+      })
+    ],
     server: {
       port: 5173
     },
