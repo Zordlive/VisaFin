@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import { useNotify } from '../hooks/useNotify'
@@ -41,12 +42,16 @@ export default function WithdrawPage() {
     <div className="min-h-screen pb-24" style={{backgroundColor: '#F4EDDE'}}>
       {/* HEADER */}
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain" />
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Retrait des fonds</h1>
+        <div className="sticky top-0 z-40 mb-6">
+          <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60 rounded-2xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <Link to="/dashboard" className="flex items-center gap-3">
+                <img src={logo} alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain" />
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Retrait des fonds</h1>
+              </Link>
+              <HeaderActions />
+            </div>
           </div>
-          <HeaderActions />
         </div>
 
       <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm space-y-4 mb-6">

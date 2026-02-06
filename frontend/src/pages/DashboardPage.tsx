@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMyReferrals } from '../services/referrals'
@@ -448,10 +449,16 @@ export default function DashboardPage() {
     <div className="relative mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 min-h-screen" style={{backgroundColor: '#F4EDDE'}}>
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <img src={logo} alt="Logo" className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain" />
-        <h1 className="font-semibold text-lg md:text-xl lg:text-2xl">Profil</h1>
-        <HeaderActions />
+      <div className="sticky top-0 z-40 mb-6">
+        <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60 rounded-2xl">
+          <div className="flex justify-between items-center px-4 py-3">
+            <Link to="/dashboard" className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain" />
+              <h1 className="font-semibold text-lg md:text-xl lg:text-2xl">Profil</h1>
+            </Link>
+            <HeaderActions />
+          </div>
+        </div>
       </div>
 
       {/* PROFIL SECTION - REDESIGNED */}

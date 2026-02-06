@@ -3,6 +3,7 @@ import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
 import api from '../services/api'
+import { Link } from 'react-router-dom'
 import logo from '../img/Logo à jour.png'
 
 export default function QuantificationPage() {
@@ -146,13 +147,15 @@ export default function QuantificationPage() {
     <div className="min-h-screen pb-24 sm:pb-28" style={{backgroundColor: '#F4EDDE'}}>
       {/* HEADER */}
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6">
-        <div className="flex items-center justify-between mb-5 sm:mb-6 gap-3">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-32 lg:h-32 object-contain flex-shrink-0" />
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900 truncate">Quantification</h1>
-          </div>
-          <div className="flex-shrink-0">
-            <HeaderActions />
+        <div className="sticky top-0 z-40 mb-5 sm:mb-6">
+          <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60 rounded-2xl">
+            <div className="flex items-center justify-between gap-3 px-3 sm:px-4 py-3">
+              <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <img src={logo} alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain flex-shrink-0" />
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900 truncate">Quantification</h1>
+              </Link>
+              <HeaderActions />
+            </div>
           </div>
         </div>
 

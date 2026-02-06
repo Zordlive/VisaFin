@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useNotify } from '../hooks/useNotify'
 import BottomNav from '../components/BottomNav'
 import HeaderActions from '../components/HeaderActions'
@@ -95,12 +96,16 @@ export default function VIPPage() {
     <div className="min-h-screen pb-20 sm:pb-24" style={{backgroundColor: '#F4EDDE'}}>
       {/* HEADER */}
       <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain" />
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold">Niveaux VIP</h1>
+        <div className="sticky top-0 z-40 mb-4 sm:mb-6">
+          <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60 rounded-2xl">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-3">
+              <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3">
+                <img src={logo} alt="Logo" className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain" />
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold">Niveaux VIP</h1>
+              </Link>
+              <HeaderActions />
+            </div>
           </div>
-          <HeaderActions />
         </div>
 
         {/* INTRO */}

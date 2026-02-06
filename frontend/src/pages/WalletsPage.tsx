@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useWallets } from '../hooks/useWallets'
 import { transferFunds } from '../services/wallets'
 import { useNotify } from '../hooks/useNotify'
@@ -476,17 +477,17 @@ export default function PortefeuillePage() {
       "
     >
       {/* HEADER */}
-      <header className="flex items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <img src={logo} alt="Logo" className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain" />
+      <div className="sticky top-0 z-40 mb-4 sm:mb-6">
+        <div className="bg-[#F4EDDE]/90 backdrop-blur-md border-b border-white/60 rounded-2xl">
+          <header className="flex items-center justify-between gap-3 px-3 sm:px-4 py-3">
+            <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3">
+              <img src={logo} alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain" />
+              <h1 className="font-semibold text-sm sm:text-base md:text-lg">Portefeuille</h1>
+            </Link>
+            <HeaderActions />
+          </header>
         </div>
-        <h1 className="font-bold text-sm sm:text-base md:text-lg flex-1 text-center">
-          Portefeuille
-        </h1>
-        <div className="flex-shrink-0">
-          <HeaderActions />
-        </div>
-      </header>
+      </div>
 
       {/* GRID PRINCIPALE */}
       <div className="space-y-3 sm:space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
