@@ -609,13 +609,13 @@ export default function DashboardPage() {
         <h2 className="font-semibold text-lg md:text-xl mb-3">Téléchargement de l’application</h2>
         <div className="flex flex-row gap-3">
           <a
-            href="https://play.google.com/store/apps/details?id=com.visafinance.app"
+            href="/VisaFin%20-%20Google%20Play%20package/VisaFin-unsigned.apk"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
           >
             <img src={androidIcon} alt="Android" className="w-6 h-6" />
-            Google Play
+            Android
           </a>
           <button
             onClick={() => setShowIOSModal(true)}
