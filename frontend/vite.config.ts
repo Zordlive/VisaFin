@@ -9,10 +9,16 @@ export default defineConfig(async () => {
       reactPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
+        includeAssets: [
+          'favicon.ico',
+          'apple-touch-icon.png'
+        ],
         manifest: {
           name: 'VisaFin Gest',
           short_name: 'VisaFin',
+          description: 'VisaFin Gest – Gestion et suivi financier sécurisé',
           start_url: '/',
+          scope: '/',
           display: 'standalone',
           theme_color: '#0f172a',
           background_color: '#0f172a',

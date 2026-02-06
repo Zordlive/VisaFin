@@ -1,7 +1,9 @@
 {
   "name": "VisaFin Gest",
   "short_name": "VisaFin",
+  "description": "VisaFin Gest – Gestion et suivi financier sécurisé",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
