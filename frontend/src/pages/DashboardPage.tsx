@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [showWhatsAppSubModal, setShowWhatsAppSubModal] = useState(false)
   const [showTelegramSubModal, setShowTelegramSubModal] = useState(false)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null)
+  const [installAvailable, setInstallAvailable] = useState(false)
 
   // Social links data
   const [socialLinks, setSocialLinks] = useState<SocialLinks | null>(null)
@@ -198,13 +199,33 @@ export default function DashboardPage() {
     const handleBeforeInstallPrompt = (event: any) => {
       event.preventDefault()
       setDeferredInstallPrompt(event)
+      setInstallAvailable(true)
+    }
+
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null)
+      setInstallAvailable(false)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
+
+  const handleInstallClick = async () => {
+    if (deferredInstallPrompt?.prompt) {
+      deferredInstallPrompt.prompt()
+      await deferredInstallPrompt.userChoice
+      setDeferredInstallPrompt(null)
+      setInstallAvailable(false)
+      return
+    }
+
+    notify.info('Installation non disponible. Ouvre le menu du navigateur et choisis "Installer l\'application".')
+  }
 
   const buildWhatsAppLink = (link: string, text: string) => {
     const encoded = encodeURIComponent(text)
@@ -622,11 +643,9 @@ export default function DashboardPage() {
         <h2 className="font-semibold text-lg md:text-xl mb-3">Téléchargement de l’application</h2>
         <div className="flex flex-row gap-3">
           <button
-            onClick={async () => {
-              if (deferredInstallPrompt?.prompt) {
-                deferredInstallPrompt.prompt()
-                await deferredInstallPrompt.userChoice
-                setDeferredInstallPrompt(null)
+            onClick={() => {
+              if (installAvailable) {
+                handleInstallClick()
                 return
               }
               window.open('/VisaFin%20-%20Google%20Play%20package/VisaFin-unsigned.apk', '_blank')
@@ -634,7 +653,7 @@ export default function DashboardPage() {
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 rounded-xl text-center text-base md:text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
           >
             <img src={androidIcon} alt="Android" className="w-6 h-6" />
-            Android
+            {installAvailable ? 'Installer' : 'Android'}
           </button>
           <button
             onClick={() => setShowIOSModal(true)}
