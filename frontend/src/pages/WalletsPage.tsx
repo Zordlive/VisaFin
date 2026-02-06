@@ -126,6 +126,8 @@ export default function PortefeuillePage() {
   const [showAllTransactions, setShowAllTransactions] = useState(false)
   const [loadingTransactions, setLoadingTransactions] = useState(false)
   const [clearingHistory, setClearingHistory] = useState(false)
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false)
+  const [clearHistoryError, setClearHistoryError] = useState<string | null>(null)
 
   const [cryptoAddresses, setCryptoAddresses] = useState<CryptoAddress[]>([])
   const [loadingCryptoAddresses, setLoadingCryptoAddresses] = useState(false)
@@ -345,18 +347,23 @@ export default function PortefeuillePage() {
     }
   }
 
-  async function clearHistory() {
-    if (!window.confirm('Êtes-vous sûr de vouloir effacer tout l\'historique des transactions ?')) {
-      return
-    }
-    
+  function clearHistory() {
+    setClearHistoryError(null)
+    setShowClearHistoryModal(true)
+  }
+
+  async function confirmClearHistory() {
     setClearingHistory(true)
+    setClearHistoryError(null)
     try {
       await api.delete('/transactions/clear')
       setTransactions([])
       notify.success('Historique effacé avec succès')
+      setShowClearHistoryModal(false)
     } catch (e: any) {
-      notify.error(e?.response?.data?.message || 'Erreur lors de l\'effacement')
+      const msg = e?.response?.data?.message || 'Échec de connexion. Veuillez réessayer.'
+      setClearHistoryError(msg)
+      notify.error(msg)
     } finally {
       setClearingHistory(false)
     }
@@ -1448,6 +1455,56 @@ export default function PortefeuillePage() {
                   {op.name}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIRMATION - VIDER L'HISTORIQUE */}
+      {showClearHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4 py-6">
+          <div className="bg-white rounded-2xl w-full max-w-sm md:max-w-md overflow-hidden shadow-2xl">
+            <div className="px-5 md:px-6 py-5 border-b bg-gradient-to-r from-red-50 to-orange-50">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-2xl">
+                  🗑️
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg md:text-xl text-gray-900">Confirmer la suppression</h3>
+                  <p className="text-xs md:text-sm text-gray-600">
+                    Cette action est définitive et supprimera tout l’historique.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 md:px-6 py-5 space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm md:text-base text-gray-700">
+                Vous allez supprimer <b>{transactions.length}</b> transaction{transactions.length > 1 ? 's' : ''}.
+              </div>
+
+              {clearHistoryError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-xs md:text-sm">
+                  {clearHistoryError}
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 md:px-6 py-4 border-t flex gap-3">
+              <button
+                onClick={() => setShowClearHistoryModal(false)}
+                disabled={clearingHistory}
+                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm md:text-base hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmClearHistory}
+                disabled={clearingHistory}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm md:text-base transition disabled:opacity-50"
+              >
+                {clearingHistory ? 'Suppression...' : 'Oui, supprimer'}
+              </button>
             </div>
           </div>
         </div>
