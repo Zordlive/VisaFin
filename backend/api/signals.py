@@ -17,8 +17,8 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
     """Gestion des commissions de parrainage multi-générations (3 générations).
     
     Génération 1 (Parent) -> Génération 2 (Enfant): 10% du premier dépôt
-    Génération 2 (Enfant) -> Génération 3 (Petit-enfant): 10% du premier dépôt
     Génération 1 (Parent) -> Génération 3 (Petit-enfant): 3% du premier dépôt
+    Génération 1 (Parent) -> Génération 4 (Arrière-petit-enfant): 1% du premier dépôt
     """
     try:
         status = getattr(instance, 'status', None)
@@ -61,7 +61,7 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
                 reward_type='direct_generation1'
             )
             
-            # Si le parrain direct a lui-même un parrain (génération 2 -> génération 3)
+            # Si le parrain direct a lui-même un parrain (grand-parent)
             parent_referral = direct_referral.parent_referral
             if parent_referral:
                 # Commission pour le grand-parent (3%)
@@ -74,6 +74,19 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
                     deposit=instance,
                     reward_type='indirect_generation2'
                 )
+
+                # Si le grand-parent a lui-même un parrain (arrière-grand-parent)
+                great_grandparent_referral = parent_referral.parent_referral
+                if great_grandparent_referral:
+                    great_grandparent_commission = (instance.amount * Decimal('0.01')).quantize(Decimal('0.01'))
+
+                    _process_referral_reward(
+                        user=great_grandparent_referral.code.referrer,
+                        amount=great_grandparent_commission,
+                        referral=great_grandparent_referral,
+                        deposit=instance,
+                        reward_type='indirect_generation3'
+                    )
             
             # Recompute VIP après le traitement des récompenses
             try:

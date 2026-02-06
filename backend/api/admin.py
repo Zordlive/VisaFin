@@ -317,8 +317,8 @@ class ReferralRewardAdmin(admin.ModelAdmin):
     def reward_type_colored(self, obj):
         colors = {
             'direct_generation1': 'blue',
-            'direct_generation2': 'green',
             'indirect_generation2': 'orange',
+            'indirect_generation3': 'purple',
         }
         color = colors.get(obj.reward_type, 'gray')
         return format_html(

@@ -451,34 +451,23 @@ class RegisterView(APIView):
                 rc = ReferralCode.objects.filter(code__iexact=ref_code).first()
                 if rc and rc.referrer != user:  # Don't create self-referrals
                     from django.utils import timezone as _tz
-                    referral = Referral.objects.create(code=rc, referred_user=user, status='used', used_at=_tz.now())
-                    
-                    # Award referral bonus to referrer
-                    referral_bonus = 10  # 10 USDT bonus for each successful referral
-                    
-                    # Get or create wallet for the referrer in USDT
-                    referrer_wallet = Wallet.objects.filter(user=rc.referrer, currency='USDT').first()
-                    if not referrer_wallet:
-                        referrer_wallet = Wallet.objects.create(user=rc.referrer, currency='USDT')
-                    
-                    # Add bonus to available balance
-                    referrer_wallet.available += referral_bonus
-                    referrer_wallet.save()
-                    
-                    # Create referral transaction for the referrer
-                    Transaction.objects.create(
-                        wallet=referrer_wallet,
-                        amount=referral_bonus,
-                        type='referral'
+                    parent_referral = Referral.objects.filter(
+                        referred_user=rc.referrer,
+                        status='used'
+                    ).order_by('created_at').first()
+
+                    generation = 1
+                    if parent_referral:
+                        generation = min(int(parent_referral.generation or 1) + 1, 3)
+
+                    Referral.objects.create(
+                        code=rc,
+                        referred_user=user,
+                        status='used',
+                        used_at=_tz.now(),
+                        parent_referral=parent_referral,
+                        generation=generation
                     )
-                    
-                    # Create ReferralReward record
-                    txn = Transaction.objects.filter(
-                        wallet=referrer_wallet,
-                        amount=referral_bonus,
-                        type='referral'
-                    ).latest('created_at')
-                    ReferralReward.objects.create(referral=referral, amount=referral_bonus, transaction=txn)
             except Exception as e:
                 # Log error but don't fail registration
                 print(f"Referral processing error: {str(e)}")

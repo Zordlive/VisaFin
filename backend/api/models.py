@@ -177,8 +177,8 @@ class ReferralReward(models.Model):
     """Record of a reward paid to the referrer when a referral meets conditions."""
     REWARD_TYPES = (
         ('direct_generation1', 'Commission directe - Génération 1 (10%)'),
-        ('direct_generation2', 'Commission directe - Génération 2 (10%)'),
         ('indirect_generation2', 'Commission indirecte - Génération 2 (3%)'),
+        ('indirect_generation3', 'Commission indirecte - Génération 3 (1%)'),
     )
     
     referral = models.ForeignKey(Referral, verbose_name='parrainage', on_delete=models.CASCADE, related_name='rewards')
