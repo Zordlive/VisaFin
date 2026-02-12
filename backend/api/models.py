@@ -267,6 +267,8 @@ class UserVIPSubscription(models.Model):
     vip_level = models.ForeignKey(VIPLevel, verbose_name='niveau VIP', on_delete=models.CASCADE)
     purchased_at = models.DateTimeField('acheté le', auto_now_add=True)
     active = models.BooleanField('actif', default=True)
+    contract_start = models.DateTimeField('début du contrat', null=True, blank=True)
+    contract_end = models.DateTimeField('fin du contrat', null=True, blank=True)
 
     class Meta:
         verbose_name = 'souscription VIP'

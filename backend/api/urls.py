@@ -30,6 +30,7 @@ urlpatterns = [
     path('referrals/all/', views.AdminReferralsView.as_view(), name='referrals-all'),
     # investments
     path('investments', views.InvestmentViewSet.as_view({'get': 'list', 'post': 'create'}), name='investments-list'),
+    path('investments/last', views.InvestmentViewSet.as_view({'get': 'last'}), name='investments-last'),
     path('investments/<int:pk>/accrue', views.InvestmentViewSet.as_view({'post': 'accrue'}), name='investments-accrue'),
     path('investments/<int:pk>/encash', views.InvestmentViewSet.as_view({'post': 'encash'}), name='investments-encash'),
 

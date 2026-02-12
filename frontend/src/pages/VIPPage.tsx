@@ -12,12 +12,31 @@ export default function VIPPage() {
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([])
   const [selectedLevel, setSelectedLevel] = useState<any>(null)
   const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loadingId, setLoadingId] = useState<number|null>(null)
   const [pageLoading, setPageLoading] = useState(true)
+  const [showFundsModal, setShowFundsModal] = useState(false)
+  const [missingAmount, setMissingAmount] = useState(0)
+  const [mainWallet, setMainWallet] = useState<any>(null)
+  const [wallets, setWallets] = useState<any[]>([])
+
 
   useEffect(() => {
     loadData()
+    loadWallets()
   }, [])
+
+  async function loadWallets() {
+    try {
+      const { fetchWallets } = await import('../services/wallets')
+      const data = await fetchWallets()
+      let ws = Array.isArray(data?.wallets) ? data.wallets : Array.isArray(data) ? data : []
+      setWallets(ws)
+      setMainWallet(ws[0] || null)
+    } catch (e) {
+      setWallets([])
+      setMainWallet(null)
+    }
+  }
 
   async function loadData() {
     try {
@@ -36,11 +55,14 @@ export default function VIPPage() {
     }
   }
 
+  // Un niveau est accessible si aucun niveau supérieur n'est actif
   function canPurchaseLevel(level: any): boolean {
-    const purchasedLevels = userSubscriptions.map((s: any) => s.vip_level?.level).filter(Boolean)
-    if (purchasedLevels.includes(level.level)) return false
-    if (level.level === 1) return true
-    return purchasedLevels.includes(level.level - 1)
+    // Si déjà acheté, non achetable
+    if (isPurchased(level)) return false
+    // Si un niveau supérieur est actif, non achetable
+    const activeSub = userSubscriptions.find((s: any) => s.active)
+    if (activeSub && activeSub.vip_level?.level > level.level) return false
+    return true
   }
 
   function isPurchased(level: any): boolean {
@@ -56,29 +78,42 @@ export default function VIPPage() {
   }
 
   async function handlePurchase(level: any) {
-    if (loading) return
-    setLoading(true)
+    if (loadingId !== null) return
+    setLoadingId(level.id)
 
-    try {
-      const { purchaseVIPLevel } = await import('../services/vip')
-      
-      await purchaseVIPLevel(level.id)
-      
-      notify.success(`🎉 Niveau ${level.level} acheté avec succès`)
-      setShowModal(false)
-      
-      // Dispatch wallet refresh event to update balances across all pages
-      window.dispatchEvent(new CustomEvent('wallets:refresh'))
-      
-      await loadData()
-    } catch (e: any) {
-      notify.error(
-        e?.response?.data?.message ||
-          'Erreur lors de l\'achat du niveau'
-      )
-    } finally {
-      setLoading(false)
+    // Vérifier le solde principal
+    const price = Number(level.price)
+    const available = Number(mainWallet?.available || 0)
+    const gains = Number(mainWallet?.gains || 0)
+    if (available >= price) {
+      // Achat direct
+      try {
+        const { purchaseVIPLevel } = await import('../services/vip')
+        await purchaseVIPLevel(level.id)
+        notify.success(`🎉 Niveau ${level.level} acheté avec succès`)
+        setShowModal(false)
+        window.dispatchEvent(new CustomEvent('wallets:refresh'))
+        await loadData()
+        await loadWallets()
+      } catch (e: any) {
+        notify.error(e?.response?.data?.message || 'Erreur lors de l\'achat du niveau')
+      } finally {
+        setLoadingId(null)
+      }
+      return
     }
+    // Sinon, proposer transfert gains ou recharge
+    const total = available + gains
+    if (total >= price) {
+      setMissingAmount(price - available)
+      setShowFundsModal(true)
+      setLoadingId(null)
+      return
+    }
+    // Sinon, proposer recharge
+    setMissingAmount(price - total)
+    setShowFundsModal(true)
+    setLoadingId(null)
   }
 
   if (pageLoading) {
@@ -90,6 +125,14 @@ export default function VIPPage() {
         </div>
       </div>
     )
+  }
+
+  // Trouver le contrat VIP actif
+  const activeSub = userSubscriptions.find((s: any) => s.active)
+  let contractEnd = null
+  if (activeSub) {
+    const start = new Date(activeSub.purchased_at)
+    contractEnd = new Date(start.getTime() + 180 * 24 * 60 * 60 * 1000)
   }
 
   return (
@@ -111,9 +154,18 @@ export default function VIPPage() {
         {/* INTRO */}
         <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-sm mb-4 sm:mb-6">
           <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
-            Adhérez progressivement aux niveaux VIP pour débloquer des gains quotidiens supplémentaires. 
-            Achetez les niveaux dans l'ordre.
+            Chaque niveau VIP acheté produit des gains pendant <b>180 jours</b> (6 mois).<br/>
+            Si vous changez de niveau, le contrat repart à zéro avec le nouveau VIP.<br/>
+            Vous pouvez utiliser vos <b>gains</b> pour acheter un niveau VIP.<br/>
+            Tous les niveaux sont accessibles selon votre capital.<br/>
+            <b>Seuls les niveaux inférieurs à votre niveau actif sont bloqués.</b>
           </p>
+          {activeSub && contractEnd && (
+            <div className="mt-2 text-xs text-green-700">
+              Contrat VIP actif&nbsp;: <b>Niveau {activeSub.vip_level?.level}</b> &mdash; Fin le&nbsp;
+              {contractEnd.toLocaleDateString()}
+            </div>
+          )}
         </div>
 
         {/* VIP LEVELS GRID */}
@@ -195,7 +247,7 @@ export default function VIPPage() {
 
                   <button
                     onClick={() => handlePurchase(level)}
-                    disabled={!canPurchase || purchased || loading}
+                    disabled={!canPurchase || purchased || loadingId !== null}
                     className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white transition-all active:scale-95 ${
                       purchased
                         ? 'bg-gray-400 cursor-not-allowed'
@@ -209,8 +261,8 @@ export default function VIPPage() {
                         ? 'Actif'
                         : 'Fermé'
                       : canPurchase
-                      ? loading ? 'Chargement...' : 'Acheter'
-                      : 'Niveau précédent requis'}
+                      ? loadingId === level.id ? 'Chargement...' : 'Acheter'
+                      : 'Niveau bloqué'}
                   </button>
                 </div>
               </div>
@@ -284,15 +336,38 @@ export default function VIPPage() {
               onClick={() => {
                 handlePurchase(selectedLevel)
               }}
-              disabled={loading || isPurchased(selectedLevel)}
+              disabled={loadingId !== null || isPurchased(selectedLevel)}
               className={`w-full py-2.5 sm:py-3 md:py-3.5 rounded-lg sm:rounded-xl text-white font-bold text-sm sm:text-base md:text-lg transition active:scale-95 ${
                 isPurchased(selectedLevel)
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg'
               }`}
             >
-              {loading ? 'Traitement en cours...' : isPurchased(selectedLevel) ? (isActive(selectedLevel) ? 'Actif ✓' : 'Fermé ✓') : `Acheter pour ${Number(selectedLevel.price).toLocaleString()} USDT`}
+              {loadingId === selectedLevel.id ? 'Traitement en cours...' : isPurchased(selectedLevel) ? (isActive(selectedLevel) ? 'Actif ✓' : 'Fermé ✓') : `Acheter pour ${Number(selectedLevel.price).toLocaleString()} USDT`}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FONDS INSUFFISANTS */}
+      {showFundsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-3 sm:px-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 w-full max-w-[90%] sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="mb-3 text-center">
+              <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 mb-2">Fonds insuffisants</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                Votre solde principal est insuffisant pour acheter ce niveau VIP.<br/>
+                <b>Montant manquant&nbsp;: {missingAmount.toLocaleString()} USDT</b>
+              </p>
+              <ul className="text-xs sm:text-sm text-gray-600 mb-2 text-left list-disc pl-5">
+                <li>Vous pouvez transférer vos gains vers le solde principal depuis la page Wallets.</li>
+                <li>Si cela ne suffit pas, rechargez la somme manquante.</li>
+              </ul>
+              <Link to="/wallets">
+                <button className="mt-2 w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm">Aller à la page Wallets</button>
+              </Link>
+            </div>
+            <button onClick={() => setShowFundsModal(false)} className="w-full py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold text-sm mt-2">Fermer</button>
           </div>
         </div>
       )}

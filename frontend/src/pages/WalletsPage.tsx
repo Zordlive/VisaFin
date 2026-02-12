@@ -57,6 +57,7 @@ export default function PortefeuillePage() {
 
   const [amount, setAmount] = useState('')
   const [source, setSource] = useState<'gains' | 'sale'>('gains')
+  const [investedLockInfo, setInvestedLockInfo] = useState<{locked: boolean, unlockDate?: string} | null>(null)
 
   /* ===== RETRAIT ===== */
   const [showWithdraw, setShowWithdraw] = useState(false)
@@ -261,6 +262,7 @@ export default function PortefeuillePage() {
   }
 
   /* ===================== DATA ===================== */
+
   const wallets = Array.isArray(data?.wallets)
     ? data.wallets
     : Array.isArray(data)
@@ -271,6 +273,32 @@ export default function PortefeuillePage() {
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
   const totalInvested = wallets.reduce((sum: number, w: any) => sum + Number(w.invested || 0), 0)
+
+  // Gestion du blocage du solde investi (180 jours)
+  useEffect(() => {
+    async function checkInvestedLock() {
+      try {
+        // Appel API pour récupérer la date du dernier investissement actif
+        const resp = await api.get('/investments/last');
+        if (resp.data && resp.data.created_at) {
+          const investDate = new Date(resp.data.created_at)
+          const unlockDate = new Date(investDate.getTime() + 180 * 24 * 60 * 60 * 1000)
+          const now = new Date()
+          if (now < unlockDate) {
+            setInvestedLockInfo({locked: true, unlockDate: unlockDate.toLocaleDateString()})
+            setSource('gains') // Forcer gains comme source
+          } else {
+            setInvestedLockInfo({locked: false})
+          }
+        } else {
+          setInvestedLockInfo(null)
+        }
+      } catch {
+        setInvestedLockInfo(null)
+      }
+    }
+    checkInvestedLock()
+  }, [])
 
   if (isLoading)
     return (
@@ -619,14 +647,21 @@ export default function PortefeuillePage() {
         <div className="flex flex-col gap-2 sm:gap-3">
           <select
             value={source}
-            onChange={(e) =>
-              setSource(e.target.value as 'gains' | 'sale')
-            }
+            onChange={(e) => setSource(e.target.value as 'gains' | 'sale')}
             className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            disabled={investedLockInfo?.locked}
           >
-            <option value="gains">Gains</option>
-            <option value="sale">Solde investi</option>
+            <option value="gains">Gains (transférable)</option>
+            <option value="sale" disabled={investedLockInfo?.locked}>Solde investi (bloqué 180j)</option>
           </select>
+
+          {source === 'sale' && investedLockInfo?.locked && (
+            <div className="text-xs text-red-600 mb-1">
+              Le solde investi est bloqué pendant 180 jours après chaque investissement.<br/>
+              Déblocage prévu le : <b>{investedLockInfo.unlockDate}</b><br/>
+              Vous ne pouvez transférer que vos gains pour l'instant.
+            </div>
+          )}
 
           <input
             type="number"
@@ -634,14 +669,19 @@ export default function PortefeuillePage() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 sm:py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            disabled={source === 'sale' && investedLockInfo?.locked}
           />
 
           <button
             onClick={handleTransfer}
-            disabled={loadingTransfer}
+            disabled={loadingTransfer || (source === 'sale' && investedLockInfo?.locked)}
             className="w-full px-4 py-2.5 sm:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-xs sm:text-sm font-medium transition"
           >
-            {loadingTransfer ? 'Transfert...' : 'Transférer'}
+            {loadingTransfer
+              ? 'Transfert...'
+              : source === 'gains'
+                ? 'Transférer mes gains'
+                : 'Transférer solde investi'}
           </button>
         </div>
       </section>

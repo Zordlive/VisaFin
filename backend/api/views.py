@@ -1,3 +1,47 @@
+# Import de APIView pour AdminReferralsView
+from rest_framework.views import APIView
+# Vue pour /referrals/all/ : retourne tous les parrainages (admin only)
+from rest_framework.permissions import IsAdminUser
+
+class AdminReferralsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        from .models import Referral
+        from .serializers import ReferralSerializer
+        referrals = Referral.objects.all()
+        serializer = ReferralSerializer(referrals, many=True)
+        return Response(serializer.data)
+# Vue pour /referrals/me : retourne les parrainages de l'utilisateur connecté
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+class ReferralsMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Referral
+        from .serializers import ReferralSerializer
+        referrals = Referral.objects.filter(code__referrer=request.user)
+        serializer = ReferralSerializer(referrals, many=True)
+        return Response(serializer.data)
+# Import de AllowAny pour le ViewSet
+from rest_framework.permissions import AllowAny
+# Import du serializer CryptoAddressSerializer pour le ViewSet
+from .serializers import CryptoAddressSerializer
+# Import du modèle CryptoAddress pour le ViewSet
+from .models import CryptoAddress
+# Assure l'import de viewsets avant tout ViewSet custom
+from rest_framework import viewsets
+# CryptoAddressViewSet (lecture seule)
+class CryptoAddressViewSet(viewsets.ReadOnlyModelViewSet):
+    """Permet de lister les adresses crypto actives (lecture seule)."""
+    queryset = CryptoAddress.objects.filter(is_active=True).order_by('-created_at')
+    serializer_class = CryptoAddressSerializer
+    permission_classes = [AllowAny]
+
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status
@@ -49,9 +93,10 @@ def compute_vip_level(total_invested):
         threshold = threshold * Decimal(2)
     return level
 
-from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage
+from .models import MarketOffer, Wallet, Transaction, Deposit, Investor, Trade, HiddenOffer, VIPLevel, UserVIPSubscription, Investment, Operateur, UserBankAccount, Withdrawal, AdminNotification, CryptoAddress, SocialLinks, AboutPage, SupportTicket, SupportMessage, ReferralReward
 from .utils import recompute_vip_for_user
 from .models import ReferralCode, Referral
+
 from .serializers import (
     MarketOfferSerializer,
     TradeSerializer,
@@ -74,6 +119,23 @@ from .serializers import (
     SupportTicketSerializer,
     SupportMessageSerializer,
 )
+
+
+
+from rest_framework.permissions import AllowAny
+
+# --- ViewSets lecture seule regroupés après tous les imports ---
+class VIPLevelViewSet(viewsets.ReadOnlyModelViewSet):
+    """Permet de lister les niveaux VIP (lecture seule)."""
+    queryset = VIPLevel.objects.all().order_by('level')
+    serializer_class = VIPLevelSerializer
+    permission_classes = [AllowAny]
+
+class OperateurViewSet(viewsets.ReadOnlyModelViewSet):
+    """Permet de lister les opérateurs (lecture seule)."""
+    queryset = Operateur.objects.all().order_by('id')
+    serializer_class = OperateurSerializer
+    permission_classes = [AllowAny]
 
 User = get_user_model()
 
@@ -123,9 +185,11 @@ class WalletViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def transfer_gains(self, request, pk=None):
-        """Transfer amount from wallet.gains to wallet.available for the owner."""
+        """Transfer amount from wallet.gains to wallet.available for the owner. Invested funds are locked for 180 days."""
         from decimal import Decimal, ROUND_DOWN
         from django.db import transaction
+        from django.utils import timezone as _tz
+        from datetime import timedelta
 
         amount = request.data.get('amount')
         source = request.data.get('source', 'gains')
@@ -153,7 +217,7 @@ class WalletViewSet(viewsets.ModelViewSet):
                     w.available = (w.available + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                 elif source == 'sale':
                     # transfer from sale_balance (mapped to invested). Only allow transferring
-                    # amounts that are withdrawable (investments older than 30 days).
+                    # amounts that are withdrawable (investments older than 180 days).
                     try:
                         sb = w.sale_balance
                     except Exception:
@@ -162,15 +226,13 @@ class WalletViewSet(viewsets.ModelViewSet):
                         return Response({'message': "Solde investi insuffisant"}, status=status.HTTP_400_BAD_REQUEST)
 
                     # compute withdrawable amount from investments tied to this wallet
-                    from django.utils import timezone as _tz
-                    from datetime import timedelta
-                    cutoff = _tz.now() - timedelta(days=30)
+                    cutoff = _tz.now() - timedelta(days=180)
                     Investment = __import__('api.models', fromlist=['Investment']).Investment
                     withdrawable_agg = Investment.objects.filter(wallet=w, active=True, created_at__lte=cutoff).aggregate(total=Sum('amount'))
                     withdrawable = withdrawable_agg.get('total') or Decimal('0')
 
                     if withdrawable < amt:
-                        return Response({'message': 'Fonds investis verrouillés : seuls les investissements âgés de 30 jours peuvent être retirés'}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({'message': 'Fonds investis verrouillés : seuls les investissements âgés de 180 jours peuvent être retirés'}, status=status.HTTP_400_BAD_REQUEST)
 
                     w.sale_balance = (w.sale_balance - amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                     w.available = (w.available + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
@@ -749,6 +811,20 @@ class InvestmentViewSet(viewsets.ViewSet):
     """Simple ViewSet to create/list investments and trigger accrual for a single investment."""
     permission_classes = [IsAuthenticated]
 
+    @action(detail=False, methods=['get'], url_path='last', permission_classes=[IsAuthenticated])
+    def last(self, request):
+        """Retourne le dernier investissement actif de l'utilisateur connecté (ou null)."""
+        Investment = __import__('api.models', fromlist=['Investment']).Investment
+        inv = Investment.objects.filter(user=request.user, active=True).order_by('-created_at').first()
+        if inv:
+            return Response({
+                'id': inv.id,
+                'amount': str(inv.amount),
+                'created_at': inv.created_at,
+                'active': inv.active,
+            })
+        return Response({}, status=200)
+
     def list(self, request):
         invs = __import__('api.models', fromlist=['Investment']).Investment.objects.filter(user=request.user).order_by('-created_at')
         serializer = InvestmentSerializer(invs, many=True)
@@ -988,125 +1064,379 @@ class InvestmentViewSet(viewsets.ViewSet):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'message': 'encashed', 'amount': str(interest), 'wallet': WalletSerializer(w).data})
-
-
-class ReferralsMeView(APIView):
+        def last(self, request):
+            """Retourne le dernier investissement actif de l'utilisateur connecté (ou null)."""
+            Investment = __import__('api.models', fromlist=['Investment']).Investment
+            inv = Investment.objects.filter(user=request.user, active=True).order_by('-created_at').first()
+            if inv:
+                return Response({
+                    'id': inv.id,
+                    'amount': str(inv.amount),
+                    'created_at': inv.created_at,
+                    'active': inv.active,
+                })
+            return Response({}, status=200)
+    """Simple ViewSet to create/list investments and trigger accrual for a single investment."""
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        # ensure the user has a referral code (may have been created at registration)
-        rc = ReferralCode.objects.filter(referrer=request.user).first()
-        code_data = None
-        if not rc:
-            # create a referral code on-demand for existing users who registered before
-            import secrets
-            base = None
-            # attempt to create a unique code a few times
-            for _ in range(5):
-                candidate = secrets.token_urlsafe(6)
-                if not ReferralCode.objects.filter(code=candidate).exists():
-                    base = candidate
-                    break
-            if base is None:
-                # fallback to timestamp-based code
-                from django.utils import timezone
-                base = f"ref{int(timezone.now().timestamp())}"
-            rc = ReferralCode.objects.create(code=base, referrer=request.user)
+    def list(self, request):
+        invs = __import__('api.models', fromlist=['Investment']).Investment.objects.filter(user=request.user).order_by('-created_at')
+        serializer = InvestmentSerializer(invs, many=True)
+        return Response(serializer.data)
 
-        if rc:
-            code_data = ReferralCodeSerializer(rc).data
+    def create(self, request):
+        from decimal import Decimal, ROUND_DOWN
+        from django.db import transaction
+        data = request.data
+        amount = data.get('amount')
+        if amount is None:
+            return Response({'message': 'amount required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # list referrals where this user's code was used
-        referrals = Referral.objects.filter(code__referrer=request.user).order_by('-created_at')
-        referrals_data = ReferralSerializer(referrals, many=True).data
+        try:
+            amt = Decimal(str(amount))
+        except Exception:
+            return Response({'message': 'invalid amount'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Statistiques de parrainage avec niveaux VIP
-        total_referred = referrals.count()
-        used = referrals.filter(status='used').count()
-        pending = referrals.filter(status='pending').count()
+        if amt <= Decimal('0'):
+            return Response({'message': 'amount must be positive'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Compter les filleuls par niveau VIP
-        vip_breakdown = {}
-        for referral in referrals.filter(status='used', referred_user__isnull=False):
-            user = referral.referred_user
-            # Récupérer les subscriptions VIP de l'utilisateur
-            subscriptions = UserVIPSubscription.objects.filter(user=user, active=True)
-            if subscriptions.exists():
-                max_level = subscriptions.aggregate(max_level=Max('vip_level__level')).get('max_level')
-                vip_key = f"niveau_{max_level}"
-                vip_breakdown[vip_key] = vip_breakdown.get(vip_key, 0) + 1
-            else:
-                vip_breakdown['niveau_0'] = vip_breakdown.get('niveau_0', 0) + 1
+        # use the user's first wallet (frontend uses single wallet concept)
+        w = Wallet.objects.filter(user=request.user).first()
+        if not w:
+            return Response({'message': 'wallet not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        stats = {
-            'total_referred': total_referred,
-            'used': used,
-            'pending': pending,
-            'vip_breakdown': vip_breakdown,
-        }
+        offer_id = data.get('offer_id') or data.get('offer')
 
-        return Response({'code': code_data, 'referrals': referrals_data, 'stats': stats})
+        try:
+            with transaction.atomic():
+                w = Wallet.objects.select_for_update().get(pk=w.pk)
+                if w.available < amt:
+                    return Response({'message': 'insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+                w.available = (w.available - amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                # increment invested balance
+                try:
+                    w.invested = (w.invested + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                except Exception:
+                    w.invested = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                # also keep sale_balance in sync for frontend that shows sale balance
+                try:
+                    w.sale_balance = (w.sale_balance + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                except Exception:
+                    w.sale_balance = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                w.save()
 
+                Investment = __import__('api.models', fromlist=['Investment']).Investment
+                # determine daily rate based on user's VIP level
+                try:
+                    vip_level = int(getattr(request.user.investor, 'vip_level', 0) or 0)
+                except Exception:
+                    vip_level = 0
 
-class AdminReferralsView(APIView):
-    """Admin view for managing all referrals."""
-    permission_classes = [IsAuthenticated]
+                if vip_level <= 0:
+                    daily = Decimal('0')
+                else:
+                    # 2.5% per VIP level (0.025 * vip_level)
+                    daily = (Decimal('0.025') * Decimal(vip_level)).quantize(Decimal('0.000001'))
 
-    def get(self, request):
-        # Only allow staff/admin users
-        if not request.user.is_staff:
-            return Response({'message': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        # Get all referrals with related data
-        referrals = Referral.objects.select_related(
-            'code__referrer',
-            'referred_user'
-        ).order_by('-created_at')
-        
-        referrals_data = ReferralSerializer(referrals, many=True).data
-        
-        # Add statistics
-        total_referrals = referrals.count()
-        used_referrals = referrals.filter(status='used').count()
-        pending_referrals = referrals.filter(status='pending').count()
-        
-        # Calculate total bonuses distributed
-        total_bonuses = ReferralReward.objects.aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-        
-        stats = {
-            'total_referrals': total_referrals,
-            'used_referrals': used_referrals,
-            'pending_referrals': pending_referrals,
-            'total_bonuses': float(total_bonuses)
-        }
-        
-        return Response({
-            'results': referrals_data,
-            'stats': stats
-        })
+                inv = Investment.objects.create(user=request.user, wallet=w, amount=amt, last_accrual=None, daily_rate=daily)
 
+                # If this investment is tied to a MarketOffer, mark the offer accepted
+                if offer_id:
+                    try:
+                        mo = MarketOffer.objects.select_for_update().get(pk=int(offer_id))
+                        if mo.status != 'open':
+                            return Response({'message': 'offer not available'}, status=status.HTTP_400_BAD_REQUEST)
+                        mo.status = 'accepted'
+                        mo.expires_at = timezone.now()
+                        mo.save()
 
-class VIPLevelViewSet(viewsets.ReadOnlyModelViewSet):
-    """List and retrieve VIP levels."""
-    queryset = VIPLevel.objects.all()
-    serializer_class = VIPLevelSerializer
-    permission_classes = [AllowAny]
+                        # create a Trade record to record the acceptance
+                        buyer_info = {'id': request.user.id, 'username': getattr(request.user, 'username', None)}
+                        seller = mo.seller if mo.seller is not None else request.user
+                        Trade.objects.create(
+                            offer_id=str(mo.pk),
+                            seller=seller,
+                            amount=amt,
+                            price=getattr(mo, 'price_offered', 0) or 0,
+                            surplus=getattr(mo, 'surplus', 0) or 0,
+                            buyer_info=buyer_info,
+                        )
+                    except MarketOffer.DoesNotExist:
+                        return Response({'message': 'offer not found'}, status=status.HTTP_404_NOT_FOUND)
 
+                # record transaction for the investment
+                Transaction.objects.create(wallet=w, amount=amt, type='trade')
+                # recompute VIP from current wallet invested sums (preferred behavior)
+                try:
+                    recompute_vip_for_user(request.user)
+                except Exception:
+                    # best-effort: do not break the investment flow on VIP recompute errors
+                    pass
 
-class OperateurViewSet(viewsets.ReadOnlyModelViewSet):
-    """List and retrieve operators."""
-    queryset = Operateur.objects.all()
-    serializer_class = OperateurSerializer
-    permission_classes = [AllowAny]
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        serializer = InvestmentSerializer(inv)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class CryptoAddressViewSet(viewsets.ReadOnlyModelViewSet):
-    """List and retrieve crypto addresses for deposits."""
-    queryset = CryptoAddress.objects.filter(is_active=True)
-    serializer_class = CryptoAddressSerializer
-    permission_classes = [AllowAny]
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    class InvestmentViewSet(viewsets.ViewSet):
+        """Simple ViewSet to create/list investments and trigger accrual for a single investment."""
+        permission_classes = [IsAuthenticated]
+
+        def list(self, request):
+            invs = __import__('api.models', fromlist=['Investment']).Investment.objects.filter(user=request.user).order_by('-created_at')
+            serializer = InvestmentSerializer(invs, many=True)
+            return Response(serializer.data)
+
+        def create(self, request):
+            from decimal import Decimal, ROUND_DOWN
+            from django.db import transaction
+            data = request.data
+            amount = data.get('amount')
+            if amount is None:
+                return Response({'message': 'amount required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                amt = Decimal(str(amount))
+            except Exception:
+                return Response({'message': 'invalid amount'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if amt <= Decimal('0'):
+                return Response({'message': 'amount must be positive'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # use the user's first wallet (frontend uses single wallet concept)
+            w = Wallet.objects.filter(user=request.user).first()
+            if not w:
+                return Response({'message': 'wallet not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            offer_id = data.get('offer_id') or data.get('offer')
+
+            try:
+                with transaction.atomic():
+                    w = Wallet.objects.select_for_update().get(pk=w.pk)
+                    if w.available < amt:
+                        return Response({'message': 'insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
+                    w.available = (w.available - amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    # increment invested balance
+                    try:
+                        w.invested = (w.invested + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    except Exception:
+                        w.invested = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    # also keep sale_balance in sync for frontend that shows sale balance
+                    try:
+                        w.sale_balance = (w.sale_balance + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    except Exception:
+                        w.sale_balance = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    w.save()
+
+                    Investment = __import__('api.models', fromlist=['Investment']).Investment
+                    # determine daily rate based on user's VIP level
+                    try:
+                        vip_level = int(getattr(request.user.investor, 'vip_level', 0) or 0)
+                    except Exception:
+                        vip_level = 0
+
+                    if vip_level <= 0:
+                        daily = Decimal('0')
+                    else:
+                        # 2.5% per VIP level (0.025 * vip_level)
+                        daily = (Decimal('0.025') * Decimal(vip_level)).quantize(Decimal('0.000001'))
+
+                    inv = Investment.objects.create(user=request.user, wallet=w, amount=amt, last_accrual=None, daily_rate=daily)
+
+                    # If this investment is tied to a MarketOffer, mark the offer accepted
+                    if offer_id:
+                        try:
+                            mo = MarketOffer.objects.select_for_update().get(pk=int(offer_id))
+                            if mo.status != 'open':
+                                return Response({'message': 'offer not available'}, status=status.HTTP_400_BAD_REQUEST)
+                            mo.status = 'accepted'
+                            mo.expires_at = timezone.now()
+                            mo.save()
+
+                            # create a Trade record to record the acceptance
+                            buyer_info = {'id': request.user.id, 'username': getattr(request.user, 'username', None)}
+                            seller = mo.seller if mo.seller is not None else request.user
+                            Trade.objects.create(
+                                offer_id=str(mo.pk),
+                                seller=seller,
+                                amount=amt,
+                                price=getattr(mo, 'price_offered', 0) or 0,
+                                surplus=getattr(mo, 'surplus', 0) or 0,
+                                buyer_info=buyer_info,
+                            )
+                        except MarketOffer.DoesNotExist:
+                            return Response({'message': 'offer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+                    # record transaction for the investment
+                    Transaction.objects.create(wallet=w, amount=amt, type='trade')
+                    # recompute VIP from current wallet invested sums (preferred behavior)
+                    try:
+                        recompute_vip_for_user(request.user)
+                    except Exception:
+                        # best-effort: do not break the investment flow on VIP recompute errors
+                        pass
+
+            except Exception as e:
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = InvestmentSerializer(inv)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+        def accrue(self, request, pk=None):
+            """Accrue interest for a single investment (useful for testing/manual run)."""
+            from decimal import Decimal, ROUND_DOWN
+            from django.db import transaction
+            from django.utils import timezone
+
+            try:
+                Investment = __import__('api.models', fromlist=['Investment']).Investment
+                inv = Investment.objects.select_for_update().get(pk=pk, user=request.user)
+            except Investment.DoesNotExist:
+                return Response({'message': 'investment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            if not inv.active:
+                return Response({'message': 'investment not active'}, status=status.HTTP_400_BAD_REQUEST)
+
+            now = timezone.now()
+            last = inv.last_accrual or inv.created_at
+            # compute full days elapsed
+            delta = now - last
+            days = delta.days
+            if days < 1:
+                return Response({'message': 'no days elapsed since last accrual'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                with transaction.atomic():
+                    w = Wallet.objects.select_for_update().get(pk=inv.wallet.pk)
+                    daily = Decimal(str(inv.daily_rate))
+                    principal = Decimal(str(inv.amount))
+                    # simple interest for elapsed days
+                    interest = (principal * daily * Decimal(days)).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    if interest > 0:
+                        try:
+                            w.gains = (w.gains + interest).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                        except Exception:
+                            w.gains = interest
+                        w.save()
+                        # record as a deposit-like transaction
+                        Transaction.objects.create(wallet=w, amount=interest, type='deposit')
+
+                    inv.last_accrual = now
+                    inv.save()
+            except Exception as e:
+                logger.exception('accrue failed for inv %s user %s', pk, request.user)
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'interest': str(interest), 'new_gains': str(w.gains)})
+
+        @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+        def withdraw(self, request, pk=None):
+            """Withdraw invested principal back to available after 30 days from creation."""
+            from decimal import Decimal, ROUND_DOWN
+            from django.db import transaction
+            from django.utils import timezone
+
+            try:
+                Investment = __import__('api.models', fromlist=['Investment']).Investment
+                inv = Investment.objects.select_for_update().get(pk=pk, user=request.user)
+            except Investment.DoesNotExist:
+                return Response({'message': 'investment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            if not inv.active:
+                return Response({'message': 'investment not active or already withdrawn'}, status=status.HTTP_400_BAD_REQUEST)
+
+            now = timezone.now()
+            age = now - inv.created_at
+            if age.days < 30:
+                return Response({'message': 'funds locked for 30 days'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                with transaction.atomic():
+                    w = Wallet.objects.select_for_update().get(pk=inv.wallet.pk)
+                    principal = Decimal(str(inv.amount))
+                    if w.invested < principal:
+                        return Response({'message': 'invested balance inconsistent'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    w.invested = (w.invested - principal).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    w.available = (w.available + principal).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    w.save()
+
+                    # mark investment inactive
+                    inv.active = False
+                    inv.save()
+
+                    Transaction.objects.create(wallet=w, amount=principal, type='withdraw')
+            except Exception as e:
+                logger.exception('withdraw failed for inv %s user %s', pk, request.user)
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'message': 'withdrawn', 'amount': str(principal), 'wallet': WalletSerializer(w).data})
+
+        @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+        def encash(self, request, pk=None):
+            """Encash accrued interest for a single investment and move it to available."""
+            from decimal import Decimal, ROUND_DOWN
+            from django.db import transaction
+            from django.utils import timezone
+
+            try:
+                Investment = __import__('api.models', fromlist=['Investment']).Investment
+                inv = Investment.objects.select_for_update().get(pk=pk, user=request.user)
+            except Investment.DoesNotExist:
+                return Response({'message': 'investment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            now = timezone.now()
+            last = inv.last_accrual or inv.created_at
+            delta = now - last
+            days = delta.days
+            if days < 1:
+                return Response({'message': 'no accrued days to encash'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                with transaction.atomic():
+                    w = Wallet.objects.select_for_update().get(pk=inv.wallet.pk)
+                    daily = Decimal(str(inv.daily_rate))
+                    principal = Decimal(str(inv.amount))
+                    interest = (principal * daily * Decimal(days)).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    if interest <= Decimal('0'):
+                        return Response({'message': 'no interest to encash'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    # credit available directly (encash to available balance)
+                    try:
+                        w.available = (w.available + interest).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                    except Exception:
+                        w.available = interest
+                    w.save()
+
+                    # record transaction
+                    Transaction.objects.create(wallet=w, amount=interest, type='deposit')
+
+                    # update investment last_accrual
+                    inv.last_accrual = now
+                    inv.save()
+
+            except Exception as e:
+                logger.exception('encash failed for inv %s user %s', pk, request.user)
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'message': 'encashed', 'amount': str(interest), 'wallet': WalletSerializer(w).data})
+
+        @action(detail=False, methods=['get'], url_path='last', permission_classes=[IsAuthenticated])
+        def last(self, request):
+            """Retourne le dernier investissement actif de l'utilisateur connecté (ou null)."""
+            Investment = __import__('api.models', fromlist=['Investment']).Investment
+            inv = Investment.objects.filter(user=request.user, active=True).order_by('-created_at').first()
+            if inv:
+                return Response({
+                    'id': inv.id,
+                    'amount': str(inv.amount),
+                    'created_at': inv.created_at,
+                    'active': inv.active,
+                })
+            return Response({}, status=200)
 
     def get_queryset(self):
         """Return only active crypto addresses."""
@@ -1243,6 +1573,8 @@ class PurchaseVIPLevelView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        from datetime import timedelta
+        from django.utils import timezone as _tz
         level_id = request.data.get('level_id')
         
         if not level_id:
@@ -1291,10 +1623,15 @@ class PurchaseVIPLevelView(APIView):
                     type='transfer'
                 )
 
-                # Create VIP subscription
+                # Create VIP subscription with 180-day contract
+                contract_start = _tz.now()
+                contract_end = contract_start + timedelta(days=180)
                 subscription = UserVIPSubscription.objects.create(
                     user=request.user,
-                    vip_level=vip_level
+                    vip_level=vip_level,
+                    contract_start=contract_start,
+                    contract_end=contract_end,
+                    active=True
                 )
 
             serializer = UserVIPSubscriptionSerializer(subscription)
