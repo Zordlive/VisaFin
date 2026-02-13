@@ -15,6 +15,12 @@ class MarketOffer(models.Model):
     expires_at = models.DateTimeField('expire à', null=True, blank=True)
     created_at = models.DateTimeField('date de création', auto_now_add=True)
 
+
+    # Nouveau : gains générés par l'offre (par jour)
+    gains = models.DecimalField('gains quotidiens', max_digits=20, decimal_places=2, default=0)
+    # Nouveau : durée du contrat en jours
+    contrat_duree = models.PositiveIntegerField('durée du contrat (jours)', default=30)
+
     class Meta:
         verbose_name = 'offre de marché'
         verbose_name_plural = 'offres de marché'
@@ -205,6 +211,7 @@ class Investment(models.Model):
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='utilisateur', on_delete=models.CASCADE, related_name='investments')
     wallet = models.ForeignKey(Wallet, verbose_name='portefeuille', on_delete=models.CASCADE, related_name='investments')
+    market_offer = models.ForeignKey(MarketOffer, verbose_name='offre du marché', on_delete=models.SET_NULL, null=True, blank=True, related_name='investments')
     amount = models.DecimalField('montant investi', max_digits=20, decimal_places=2)
     daily_rate = models.DecimalField('taux journalier', max_digits=10, decimal_places=6, default=0.025)
     last_accrual = models.DateTimeField('dernière capitalisation', null=True, blank=True)

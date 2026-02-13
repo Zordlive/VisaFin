@@ -272,6 +272,7 @@ export default function PortefeuillePage() {
 
   const totalAvailable = wallets.reduce((a: number, w: any) => a + Number(w.available || 0), 0)
   const totalGains = wallets.reduce((a: number, w: any) => a + Number(w.gains || 0), 0)
+  const canWithdraw = totalGains >= 5;
   const totalInvested = wallets.reduce((sum: number, w: any) => sum + Number(w.invested || 0), 0)
 
   // Gestion du blocage du solde investi (180 jours)
@@ -337,6 +338,10 @@ export default function PortefeuillePage() {
   }
 
   const handleWithdraw = async () => {
+    if (!canWithdraw) {
+      notify.error('Vous devez avoir au moins 5 USDT de gains pour retirer.')
+      return
+    }
     if (!selectedAccountId) {
       notify.error('Veuillez sélectionner un compte')
       return
@@ -624,7 +629,8 @@ export default function PortefeuillePage() {
           <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => setShowWithdraw(true)}
-              className="flex-1 py-2.5 sm:py-3 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm font-medium transition"
+              disabled={!canWithdraw}
+              className={`flex-1 py-2.5 sm:py-3 rounded-full text-white text-xs sm:text-sm font-medium transition ${canWithdraw ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-300 cursor-not-allowed'}`}
             >
               Retrait
             </button>
@@ -1229,7 +1235,15 @@ export default function PortefeuillePage() {
         <h2 className="font-semibold text-base sm:text-lg md:text-xl">Retrait</h2>
         <button onClick={() => setShowWithdraw(false)} className="text-xl md:text-2xl">✕</button>
       </div>
-
+      <div className="mb-3 text-center">
+        <p className="text-xs sm:text-sm text-gray-600 mb-2">
+          Vous ne pouvez retirer vos gains que si le montant total de vos gains est supérieur ou égal à <b>5 USDT</b>.<br/>
+          Actuellement&nbsp;: <b>{totalGains.toLocaleString()} USDT</b>
+        </p>
+        {!canWithdraw && (
+          <div className="text-xs text-red-600 font-semibold mb-2">Retrait indisponible : gains insuffisants.</div>
+        )}
+      </div>
       <div className="space-y-4">
         {bankAccountsError && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm rounded-lg px-3 py-2">
@@ -1312,9 +1326,9 @@ export default function PortefeuillePage() {
 
         <button
           onClick={handleWithdraw}
-          disabled={!selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw}
+          disabled={!selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0 || loadingWithdraw || !canWithdraw}
           className={`w-full py-3 rounded-xl font-semibold text-white text-sm md:text-base
-            ${loadingWithdraw || !selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0
+            ${loadingWithdraw || !selectedAccountId || !withdrawAmount || Number(withdrawAmount) <= 0 || !canWithdraw
               ? 'bg-red-300 cursor-not-allowed'
               : 'bg-red-600 hover:bg-red-700'}
           `}

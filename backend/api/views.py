@@ -21,11 +21,38 @@ class ReferralsMeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from .models import Referral
-        from .serializers import ReferralSerializer
+        from .models import Referral, ReferralCode
+        from .serializers import ReferralSerializer, ReferralCodeSerializer
+        # Récupérer le code de parrainage de l'utilisateur
+        code_obj = ReferralCode.objects.filter(referrer=request.user).first()
+        code_data = ReferralCodeSerializer(code_obj).data if code_obj else None
+
+        # Récupérer les filleuls
         referrals = Referral.objects.filter(code__referrer=request.user)
         serializer = ReferralSerializer(referrals, many=True)
-        return Response(serializer.data)
+
+        # Statistiques simples
+        stats = {
+            'total_referred': referrals.count(),
+            'used': referrals.filter(status='used').count(),
+            'pending': referrals.filter(status='pending').count(),
+            'vip_breakdown': {},
+        }
+        # Répartition par niveau VIP (si possible)
+        try:
+            from django.db.models import Count
+            vip_counts = referrals.values('referred_user__investor__vip_level').annotate(count=Count('id'))
+            for entry in vip_counts:
+                level = entry['referred_user__investor__vip_level'] or 0
+                stats['vip_breakdown'][f'niveau_{level}'] = entry['count']
+        except Exception:
+            pass
+
+        return Response({
+            'code': code_data,
+            'referrals': serializer.data,
+            'stats': stats,
+        })
 # Import de AllowAny pour le ViewSet
 from rest_framework.permissions import AllowAny
 # Import du serializer CryptoAddressSerializer pour le ViewSet
@@ -153,13 +180,26 @@ class MarketOfferViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = MarketOffer.objects.all().order_by('-created_at')
+        # Restriction VIP >= 3
+        user = getattr(self.request, 'user', None)
+        if user and user.is_authenticated:
+            try:
+                vip_level = getattr(user, 'investor', None)
+                vip_level = getattr(vip_level, 'vip_level', 0) if vip_level else 0
+            except Exception:
+                vip_level = 0
+            if vip_level < 3:
+                return MarketOffer.objects.none()
+        else:
+            # Non connecté : aucune offre
+            return MarketOffer.objects.none()
+
         # optional filters via query params
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
         # exclude offers hidden for this user or globally until a future time
         try:
-            user = getattr(self.request, 'user', None)
             now = timezone.now()
             hidden_qs = HiddenOffer.objects.filter(hidden_until__gt=now).filter(
                 Q(user__isnull=True) | Q(user=user)
@@ -168,7 +208,6 @@ class MarketOfferViewSet(viewsets.ModelViewSet):
             if hidden_ids:
                 qs = qs.exclude(id__in=hidden_ids)
         except Exception:
-            # best-effort: if anything goes wrong, don't restrict results
             pass
         return qs
 
@@ -851,7 +890,21 @@ class InvestmentViewSet(viewsets.ViewSet):
         if not w:
             return Response({'message': 'wallet not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
         offer_id = data.get('offer_id') or data.get('offer')
+        market_offer = None
+        daily = None
+        contrat_duree = None
+        if offer_id:
+            try:
+                market_offer = MarketOffer.objects.select_for_update().get(pk=int(offer_id))
+                if market_offer.status != 'open':
+                    return Response({'message': 'offer not available'}, status=status.HTTP_400_BAD_REQUEST)
+                # Utiliser les paramètres de l'offre
+                daily = market_offer.gains
+                contrat_duree = market_offer.contrat_duree
+            except MarketOffer.DoesNotExist:
+                return Response({'message': 'offer not found'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             with transaction.atomic():
@@ -860,63 +913,38 @@ class InvestmentViewSet(viewsets.ViewSet):
                     return Response({'message': 'insufficient balance'}, status=status.HTTP_400_BAD_REQUEST)
                 w.available = (w.available - amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                 # increment invested balance
-                try:
-                    w.invested = (w.invested + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
-                except Exception:
-                    w.invested = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
-                # also keep sale_balance in sync for frontend that shows sale balance
-                try:
-                    w.sale_balance = (w.sale_balance + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
-                except Exception:
-                    w.sale_balance = amt.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                w.invested = (w.invested + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                w.sale_balance = (w.sale_balance + amt).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                 w.save()
 
                 Investment = __import__('api.models', fromlist=['Investment']).Investment
-                # determine daily rate based on user's VIP level
-                try:
-                    vip_level = int(getattr(request.user.investor, 'vip_level', 0) or 0)
-                except Exception:
-                    vip_level = 0
-
-                if vip_level <= 0:
-                    daily = Decimal('0')
-                else:
-                    # 2.5% per VIP level (0.025 * vip_level)
-                    daily = (Decimal('0.025') * Decimal(vip_level)).quantize(Decimal('0.000001'))
-
-                inv = Investment.objects.create(user=request.user, wallet=w, amount=amt, last_accrual=None, daily_rate=daily)
-
-                # If this investment is tied to a MarketOffer, mark the offer accepted
-                if offer_id:
+                # Si pas d'offre, fallback sur VIP classique
+                if not daily:
                     try:
-                        mo = MarketOffer.objects.select_for_update().get(pk=int(offer_id))
-                        if mo.status != 'open':
-                            return Response({'message': 'offer not available'}, status=status.HTTP_400_BAD_REQUEST)
-                        mo.status = 'accepted'
-                        mo.expires_at = timezone.now()
-                        mo.save()
+                        vip_level = int(getattr(request.user.investor, 'vip_level', 0) or 0)
+                    except Exception:
+                        vip_level = 0
+                    daily = (Decimal('0.025') * Decimal(vip_level)).quantize(Decimal('0.000001')) if vip_level > 0 else Decimal('0')
 
-                        # create a Trade record to record the acceptance
-                        buyer_info = {'id': request.user.id, 'username': getattr(request.user, 'username', None)}
-                        seller = mo.seller if mo.seller is not None else request.user
-                        Trade.objects.create(
-                            offer_id=str(mo.pk),
-                            seller=seller,
-                            amount=amt,
-                            price=getattr(mo, 'price_offered', 0) or 0,
-                            surplus=getattr(mo, 'surplus', 0) or 0,
-                            buyer_info=buyer_info,
-                        )
-                    except MarketOffer.DoesNotExist:
-                        return Response({'message': 'offer not found'}, status=status.HTTP_404_NOT_FOUND)
+                inv = Investment.objects.create(
+                    user=request.user,
+                    wallet=w,
+                    market_offer=market_offer,
+                    amount=amt,
+                    last_accrual=None,
+                    daily_rate=daily
+                )
 
-                # record transaction for the investment
+                # Si offre du marché, la marquer comme acceptée
+                if market_offer:
+                    market_offer.status = 'accepted'
+                    market_offer.expires_at = timezone.now()
+                    market_offer.save()
+
                 Transaction.objects.create(wallet=w, amount=amt, type='trade')
-                # recompute VIP from current wallet invested sums (preferred behavior)
                 try:
                     recompute_vip_for_user(request.user)
                 except Exception:
-                    # best-effort: do not break the investment flow on VIP recompute errors
                     pass
 
         except Exception as e:
@@ -1018,7 +1046,7 @@ class InvestmentViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def encash(self, request, pk=None):
-        """Encash accrued interest for a single investment and move it to available."""
+        """Encaisse les gains d'un investissement. Pour les offres du marché, seulement à la fin du contrat."""
         from decimal import Decimal, ROUND_DOWN
         from django.db import transaction
         from django.utils import timezone
@@ -1033,6 +1061,14 @@ class InvestmentViewSet(viewsets.ViewSet):
         last = inv.last_accrual or inv.created_at
         delta = now - last
         days = delta.days
+
+        # Si lié à une offre du marché, gains réclamables uniquement à la fin du contrat
+        if inv.market_offer:
+            contrat_duree = inv.market_offer.contrat_duree or 0
+            age_total = (now - inv.created_at).days
+            if age_total < contrat_duree:
+                return Response({'message': f'Gains réclamables uniquement à la fin du contrat ({contrat_duree} jours). Il reste {contrat_duree - age_total} jour(s).'}, status=status.HTTP_400_BAD_REQUEST)
+
         if days < 1:
             return Response({'message': 'no accrued days to encash'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1041,22 +1077,24 @@ class InvestmentViewSet(viewsets.ViewSet):
                 w = Wallet.objects.select_for_update().get(pk=inv.wallet.pk)
                 daily = Decimal(str(inv.daily_rate))
                 principal = Decimal(str(inv.amount))
-                interest = (principal * daily * Decimal(days)).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                # Pour les offres du marché, gains = daily * contrat_duree
+                if inv.market_offer:
+                    contrat_duree = inv.market_offer.contrat_duree or 0
+                    interest = (principal * daily * Decimal(contrat_duree)).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+                else:
+                    interest = (principal * daily * Decimal(days)).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                 if interest <= Decimal('0'):
                     return Response({'message': 'no interest to encash'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # credit available directly (encash to available balance)
-                try:
-                    w.available = (w.available + interest).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
-                except Exception:
-                    w.available = interest
+                # créditer le solde disponible
+                w.available = (w.available + interest).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
                 w.save()
-
-                # record transaction
                 Transaction.objects.create(wallet=w, amount=interest, type='deposit')
 
-                # update investment last_accrual
+                # update investment last_accrual et désactiver l'investissement si offre du marché
                 inv.last_accrual = now
+                if inv.market_offer:
+                    inv.active = False
                 inv.save()
 
         except Exception as e:

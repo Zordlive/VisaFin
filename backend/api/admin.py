@@ -8,7 +8,8 @@ from .models import Withdrawal, AdminNotification, CryptoAddress, SocialLinks, U
 
 
 class MarketOfferAdmin(admin.ModelAdmin):
-    list_display = ('title', 'price_offered', 'status', 'created_at')
+    list_display = ('title', 'price_offered', 'gains', 'contrat_duree', 'status', 'created_at')
+    fields = ('title', 'description', 'price_offered', 'gains', 'contrat_duree', 'status', 'expires_at')
 
 
 class WalletAdmin(admin.ModelAdmin):

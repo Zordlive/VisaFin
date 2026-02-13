@@ -20,21 +20,58 @@ import whatsappIcon from '../img/icons-whatsapp.png'
 import telegramIcon from '../img/icons-télégramme.png'
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-  const notify = useNotify()
+    // Récupération des offres du marché
+    const [marketOffers, setMarketOffers] = useState<any[]>([]);
+    // Notification nouvelle offre
+    const [showNewOfferModal, setShowNewOfferModal] = useState(false);
+    const [newOffer, setNewOffer] = useState<any>(null);
+    const [lastSeenOfferId, setLastSeenOfferId] = useState<number | null>(null);
 
-  const [wallet, setWallet] = useState<any>(null)
-  const [investments, setInvestments] = useState<any[]>([])
-  const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [pageLoading, setPageLoading] = useState(true)
-  const [referrals, setReferrals] = useState<any[]>([])
-  const [showReferralsModal, setShowReferralsModal] = useState(false)
-  const safeVipSubscriptions = Array.isArray(vipSubscriptions) ? vipSubscriptions : []
-  const safeReferrals = Array.isArray(referrals) ? referrals : []
-  const maxVIPLevel = safeVipSubscriptions.length > 0 
-    ? Math.max(...safeVipSubscriptions.map((s: any) => s.vip_level?.level || 0))
-    : 0
+    const [wallet, setWallet] = useState<any>(null)
+    const [investments, setInvestments] = useState<any[]>([])
+    const [vipSubscriptions, setVipSubscriptions] = useState<any[]>([])
+    const [transactions, setTransactions] = useState<any[]>([])
+    const [pageLoading, setPageLoading] = useState(true)
+    const [referrals, setReferrals] = useState<any[]>([])
+    const [showReferralsModal, setShowReferralsModal] = useState(false)
+    const safeVipSubscriptions = Array.isArray(vipSubscriptions) ? vipSubscriptions : []
+    const safeReferrals = Array.isArray(referrals) ? referrals : []
+    const maxVIPLevel = safeVipSubscriptions.length > 0 
+      ? Math.max(...safeVipSubscriptions.map((s: any) => s.vip_level?.level || 0))
+      : 0;
+
+    // Modal VIP notification
+    const [showVipNotification, setShowVipNotification] = useState(false);
+    const [vipNotified, setVipNotified] = useState(false);
+
+    useEffect(() => {
+      // Charger les offres du marché
+      api.get('/market/offers').then(res => {
+        if (Array.isArray(res.data)) setMarketOffers(res.data);
+      });
+    }, []);
+
+    useEffect(() => {
+      // Détecter une nouvelle offre
+      if (maxVIPLevel >= 3 && marketOffers.length > 0) {
+        const latestOffer = marketOffers[0];
+        if (latestOffer && latestOffer.id !== lastSeenOfferId) {
+          setNewOffer(latestOffer);
+          setShowNewOfferModal(true);
+          setLastSeenOfferId(latestOffer.id);
+        }
+      }
+    }, [marketOffers, maxVIPLevel]);
+
+    useEffect(() => {
+      // Affiche la notification si l'utilisateur atteint VIP >= 3 et n'a pas été notifié
+      if (!vipNotified && maxVIPLevel >= 3) {
+        setShowVipNotification(true);
+        setVipNotified(true);
+      }
+    }, [maxVIPLevel, vipNotified]);
+    const { user } = useAuth()
+    const notify = useNotify()
 
   const [showOfferDetails, setShowOfferDetails] = useState<any>(null)
   const [showWhatsappModal, setShowWhatsappModal] = useState(false)
@@ -416,10 +453,45 @@ export default function DashboardPage() {
         </div>
       </div>
     )
+      {/* MODAL NOUVELLE OFFRE DU MARCHE */}
+      {showNewOfferModal && newOffer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm md:max-w-md shadow-xl text-center">
+            <h3 className="font-bold text-lg md:text-xl mb-4 text-green-700">Nouvelle offre du marché disponible !</h3>
+            <div className="mb-3">
+              <div className="font-semibold text-base md:text-lg mb-1">{newOffer.title}</div>
+              <div className="text-sm text-gray-600 mb-2">{newOffer.description}</div>
+              <div className="text-sm text-gray-700 mb-1">Gains : <span className="font-bold text-green-700">{newOffer.gains} USDT</span></div>
+              <div className="text-sm text-gray-700 mb-1">Durée du contrat : <span className="font-bold">{newOffer.contrat_duree} jours</span></div>
+            </div>
+            <button
+              onClick={() => setShowNewOfferModal(false)}
+              className="w-full py-2 bg-green-600 text-white rounded-lg text-base md:text-lg mt-2"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
   }
 
   return (
     <div className="relative mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 lg:px-8 py-6 min-h-screen" style={{backgroundColor: '#F4EDDE'}}>
+      {/* MODAL NOTIFICATION VIP */}
+      {showVipNotification && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm md:max-w-md shadow-xl text-center">
+            <h3 className="font-bold text-lg md:text-xl mb-4 text-violet-700">Félicitations !</h3>
+            <p className="text-base md:text-lg mb-4">Vous êtes désormais VIP niveau {maxVIPLevel} et éligible aux offres du marché !</p>
+            <button
+              onClick={() => setShowVipNotification(false)}
+              className="w-full py-2 bg-violet-600 text-white rounded-lg text-base md:text-lg mt-2"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* HEADER */}
       <div className="sticky top-0 z-40 mb-6">

@@ -11,6 +11,7 @@ export default function QuantificationPage() {
   const quantificationEnabled = true
 
   const [gains, setGains] = useState<any>(null)
+  const [investments, setInvestments] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [showModal, setShowModal] = useState(false)
@@ -41,6 +42,7 @@ export default function QuantificationPage() {
       return
     }
     loadGains()
+    loadInvestments()
     checkClaimAvailability()
     setPageLoading(false)
     // Update timer every second
@@ -49,6 +51,15 @@ export default function QuantificationPage() {
     }, 1000)
     return () => clearInterval(timer)
   }, [])
+
+  async function loadInvestments() {
+    try {
+      const res = await api.get('/investments')
+      setInvestments(Array.isArray(res.data) ? res.data : [])
+    } catch (e) {
+      setInvestments([])
+    }
+  }
 
   function checkClaimAvailability() {
     try {
@@ -129,6 +140,17 @@ export default function QuantificationPage() {
       )
     } finally {
       setClaimingGains(false)
+    }
+  }
+
+  // Handler pour réclamer un investissement
+  async function handleClaimInvestment(investmentId: number) {
+    try {
+      await api.post(`/investments/${investmentId}/encash`)
+      notify.success('Gains réclamés avec succès !')
+      await loadInvestments()
+    } catch (e: any) {
+      notify.error(e?.response?.data?.message || 'Erreur lors de la réclamation')
     }
   }
 
@@ -252,6 +274,63 @@ export default function QuantificationPage() {
                 À partir de tes investissements actifs
               </p>
             </div>
+          </div>
+
+          {/* GAINS DES OFFRES DU MARCHÉ */}
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-5">
+            <h2 className="font-semibold text-lg md:text-xl mb-2">Gains des offres du marché</h2>
+            {investments.filter((inv: any) => inv.market_offer).length === 0 ? (
+              <div className="text-gray-400 text-sm py-4">Aucun investissement sur les offres du marché.</div>
+            ) : (
+              <div className="space-y-3 mt-2">
+                {investments.filter((inv: any) => inv.market_offer).map((inv: any, idx: number) => {
+                  const offer = inv.market_offer
+                  const contratDuree = offer?.contrat_duree || 0
+                  const daily = Number(inv.daily_rate || 0)
+                  const principal = Number(inv.amount || 0)
+                  const createdAt = inv.created_at ? new Date(inv.created_at) : null
+                  const endDate = createdAt && contratDuree ? new Date(createdAt.getTime() + contratDuree * 24 * 60 * 60 * 1000) : null
+                  const now = new Date()
+                  const daysElapsed = createdAt ? Math.floor((now.getTime() - createdAt.getTime()) / (24 * 60 * 60 * 1000)) : 0
+                  const gainsCumul = daily * contratDuree * principal
+                  const canClaim = daysElapsed >= contratDuree && inv.active
+                  return (
+                    <div key={inv.id || idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm md:text-base text-violet-700">
+                          {offer.title}
+                        </div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          Début : {createdAt ? createdAt.toLocaleDateString() : '—'}
+                          {endDate && (
+                            <> &nbsp;|&nbsp; Fin : {endDate.toLocaleDateString()}</>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          Gains cumulés : <span className="font-bold text-green-700">{gainsCumul.toLocaleString()} USDT</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-1">
+                          {canClaim ? (
+                            <span className="text-green-700 font-semibold">Réclamable</span>
+                          ) : (
+                            <span className="text-orange-600 font-semibold">Verrouillé jusqu'au {endDate?.toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 items-end">
+                        <button
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition ${canClaim ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                          disabled={!canClaim}
+                          onClick={() => canClaim && handleClaimInvestment(inv.id)}
+                        >
+                          Réclamer
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* HELP */}

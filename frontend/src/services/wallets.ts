@@ -6,6 +6,6 @@ export async function fetchWallets() {
 }
 
 export async function transferFunds(walletId: number | string, amount: number | string, source: 'gains' | 'sale' = 'gains') {
-  const res = await api.post(`/wallets/${walletId}/transfer_gains`, { amount, source })
+  const res = await api.post(`/wallets/${walletId}/transfer_gains/`, { amount, source })
   return res.data
 }

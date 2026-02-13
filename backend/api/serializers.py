@@ -46,7 +46,7 @@ class MarketOfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketOffer
         fields = (
-            'id', 'title', 'description', 'price_offered', 'status', 'expires_at', 'created_at'
+            'id', 'title', 'description', 'price_offered', 'gains', 'contrat_duree', 'status', 'expires_at', 'created_at'
         )
 
 
