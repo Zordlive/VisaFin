@@ -102,9 +102,9 @@ export default function PortefeuillePage() {
 
   // Réseaux crypto avec leurs adresses
   const cryptoNetworks = [
-    { id: 'usdt-bep20', name: 'USDT BEP20', address: '0x7ee2ebefab063aac29f9a941bbf924cbd448ad3a' },
-    { id: 'bnb-bep20', name: 'BNB BEP20', address: '0x7ee2ebefab063aac29f9a941bbf924cbd448ad3a' },
-    { id: 'trx-tronc20', name: 'TRX Tronc20', address: 'TUUCK4H63D9bz1S4e1EVbJHKHxEwsYNDzM' }
+    { id: 'usdt-bep20', name: 'USDT BEP20', address: '0x72525c29d4300fddf4e6c0a19a7df60c89ceb3f7' },
+    { id: 'bnb-bep20', name: 'BNB BEP20', address: '0x72525c29d4300fddf4e6c0a19a7df60c89ceb3f7' },
+    { id: 'trx-tronc20', name: 'TRX Tronc20', address: 'TGkgXT5irkTFXyawgxSAWiFVds577M8iT8' }
   ]
 
   /* ===== TRANSACTIONS ===== */
