@@ -931,10 +931,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  const link = socialLinks?.whatsapp_channel || socialLinks?.whatsapp_group
-                  if (!link) return notify.error('Aucun lien WhatsApp disponible')
-                  const url = buildWhatsAppLink(link, 'Bonjour, j\'ai besoin d\'assistance.')
-                  window.open(url, '_blank')
+                  window.open('https://wa.me/message/XF32IP4RV3L7M1', '_blank')
                 }}
                 className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl text-sm md:text-base font-semibold flex items-center justify-center gap-3 shadow-lg"
               >
