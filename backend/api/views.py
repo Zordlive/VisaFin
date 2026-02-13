@@ -446,7 +446,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        identifier = request.data.get('identifier') or request.data.get('email') or request.data.get('username')
+        identifier = request.data.get('identifier') or request.data.get('email') or request.data.get('username') or request.data.get('phone')
         password = request.data.get('password')
         if not identifier or not password:
             return Response({'message': 'identifier and password required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -457,6 +457,7 @@ class LoginView(APIView):
             or User.objects.filter(email=identifier).first()
         )
         if user is None:
+            # Essayer de trouver par numéro de téléphone (Investor.phone)
             inv = Investor.objects.filter(phone=identifier).select_related('user').first()
             user = inv.user if inv else None
 
