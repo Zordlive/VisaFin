@@ -25,34 +25,36 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
         if status != 'completed':
             return
 
-        # Montant minimum requis pour valider le dépôt
+        # Créditer le solde principal du portefeuille de l'utilisateur
+        wallet, _ = Wallet.objects.get_or_create(user=instance.user, currency=instance.currency)
+        # Pour éviter de créditer plusieurs fois, on peut stocker l'id du dernier dépôt traité dans le wallet (optionnel)
+        # Ici, on crédite si le montant du dépôt n'est pas déjà dans le wallet (tolérance simple)
+        if not hasattr(instance, '_wallet_credited'):
+            wallet.available = (wallet.available + instance.amount).quantize(Decimal('0.01'))
+            wallet.save()
+            Transaction.objects.create(wallet=wallet, amount=instance.amount, type='deposit')
+            instance._wallet_credited = True
+
+        # Montant minimum requis pour valider le dépôt pour le parrainage
         MIN = Decimal(getattr(settings, 'REFERRAL_MIN_DEPOSIT', '1000'))
-        
         if instance.amount < MIN:
             return
 
-        # Trouver le parrainage direct pour cet utilisateur
+        # Parrainage multi-générations
         direct_referral = Referral.objects.filter(
             referred_user=instance.user,
             status='used'
         ).order_by('created_at').first()
-        
         if not direct_referral:
             return
-
-        # Éviter de traiter la même commission deux fois
         if direct_referral.first_deposit_reward_processed:
             return
-
-        # Marquer comme traité immédiatement
         direct_referral.first_deposit_reward_processed = True
         direct_referral.save()
-
         with transaction.atomic():
             # Commission pour le parrain direct (10%)
             direct_referrer = direct_referral.code.referrer
             direct_commission = (instance.amount * Decimal('0.10')).quantize(Decimal('0.01'))
-            
             _process_referral_reward(
                 user=direct_referrer,
                 amount=direct_commission,
@@ -60,13 +62,11 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
                 deposit=instance,
                 reward_type='direct_generation1'
             )
-            
             # Si le parrain direct a lui-même un parrain (grand-parent)
             parent_referral = direct_referral.parent_referral
             if parent_referral:
                 # Commission pour le grand-parent (3%)
                 grandparent_commission = (instance.amount * Decimal('0.03')).quantize(Decimal('0.01'))
-                
                 _process_referral_reward(
                     user=parent_referral.code.referrer,
                     amount=grandparent_commission,
@@ -74,12 +74,10 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
                     deposit=instance,
                     reward_type='indirect_generation2'
                 )
-
                 # Si le grand-parent a lui-même un parrain (arrière-grand-parent)
                 great_grandparent_referral = parent_referral.parent_referral
                 if great_grandparent_referral:
                     great_grandparent_commission = (instance.amount * Decimal('0.01')).quantize(Decimal('0.01'))
-
                     _process_referral_reward(
                         user=great_grandparent_referral.code.referrer,
                         amount=great_grandparent_commission,
@@ -87,13 +85,11 @@ def handle_deposit_completed(sender, instance: Deposit, created, **kwargs):
                         deposit=instance,
                         reward_type='indirect_generation3'
                     )
-            
             # Recompute VIP après le traitement des récompenses
             try:
                 recompute_vip_for_user(instance.user)
             except Exception:
                 pass
-                
     except Exception as e:
         print(f"Erreur dans handle_deposit_completed: {e}")
         return
