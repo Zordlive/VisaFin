@@ -81,12 +81,23 @@ export default function VIPPage() {
     if (loadingId !== null) return
     setLoadingId(level.id)
 
-    // Vérifier le solde principal
+    // Calculer la somme manquante à prélever
     const price = Number(level.price)
     const available = Number(mainWallet?.available || 0)
     const gains = Number(mainWallet?.gains || 0)
-    if (available >= price) {
-      // Achat direct
+    // Trouver le niveau VIP actuel
+    const activeSub = userSubscriptions.find((s: any) => s.active)
+    const previousPrice = Number(activeSub?.vip_level?.price || 0)
+    const missing = price - previousPrice
+
+    if (missing <= 0) {
+      notify.error('Aucun paiement requis ou niveau déjà atteint')
+      setLoadingId(null)
+      return
+    }
+
+    if (available >= missing) {
+      // Achat direct (prélève la différence)
       try {
         const { purchaseVIPLevel } = await import('../services/vip')
         await purchaseVIPLevel(level.id)
@@ -104,14 +115,14 @@ export default function VIPPage() {
     }
     // Sinon, proposer transfert gains ou recharge
     const total = available + gains
-    if (total >= price) {
-      setMissingAmount(price - available)
+    if (total >= missing) {
+      setMissingAmount(missing - available)
       setShowFundsModal(true)
       setLoadingId(null)
       return
     }
     // Sinon, proposer recharge
-    setMissingAmount(price - total)
+    setMissingAmount(missing - total)
     setShowFundsModal(true)
     setLoadingId(null)
   }
