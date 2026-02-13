@@ -622,13 +622,38 @@ class GoogleLoginView(APIView):
                     pass
 
                 # Create referral code for new Google user if not exists
-                from .models import ReferralCode
+                from .models import ReferralCode, Referral
                 import secrets
                 if not ReferralCode.objects.filter(referrer=user).exists():
                     code = secrets.token_urlsafe(6)
                     while ReferralCode.objects.filter(code=code).exists():
                         code = secrets.token_urlsafe(6)
                     ReferralCode.objects.create(code=code, referrer=user)
+
+                # Enregistrer le parrainage si un code est présent dans la requête
+                ref_code = request.data.get('ref') or request.data.get('referralCode')
+                if ref_code:
+                    try:
+                        rc = ReferralCode.objects.filter(code__iexact=ref_code).first()
+                        if rc and rc.referrer != user:
+                            from django.utils import timezone as _tz
+                            parent_referral = Referral.objects.filter(
+                                referred_user=rc.referrer,
+                                status='used'
+                            ).order_by('created_at').first()
+                            generation = 1
+                            if parent_referral:
+                                generation = min(int(parent_referral.generation or 1) + 1, 3)
+                            Referral.objects.create(
+                                code=rc,
+                                referred_user=user,
+                                status='used',
+                                used_at=_tz.now(),
+                                parent_referral=parent_referral,
+                                generation=generation
+                            )
+                    except Exception:
+                        pass
             
             # Generate tokens
             refresh = RefreshToken.for_user(user)
