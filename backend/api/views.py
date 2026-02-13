@@ -1647,8 +1647,8 @@ class PurchaseVIPLevelView(APIView):
     def post(self, request):
         from datetime import timedelta
         from django.utils import timezone as _tz
+        from decimal import Decimal
         level_id = request.data.get('level_id')
-        
         if not level_id:
             return Response({'message': 'level_id requis'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1666,36 +1666,52 @@ class PurchaseVIPLevelView(APIView):
         if not wallet:
             return Response({'message': 'Portefeuille non trouvé'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if user has enough balance
-        if wallet.available < vip_level.price:
-            return Response({'message': 'Solde insuffisant'}, status=status.HTTP_400_BAD_REQUEST)
+        # Trouver le VIP actif le plus élevé déjà acheté
+        previous_sub = UserVIPSubscription.objects.filter(user=request.user, active=True).select_related('vip_level').order_by('-vip_level__level').first()
+        previous_price = Decimal('0')
+        if previous_sub:
+            previous_price = previous_sub.vip_level.price
+
+        # Calculer la différence à payer
+        to_pay = vip_level.price - previous_price
+        if to_pay <= 0:
+            return Response({'message': 'Aucun paiement requis ou niveau déjà atteint'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Rembourser l'ancien VIP (créditer le solde principal)
+        if previous_price > 0:
+            wallet.available = (wallet.available + previous_price).quantize(Decimal('0.01'))
+            # On désactive l'ancien abonnement juste après
+
+        # Vérifier le solde principal
+        if wallet.available < to_pay:
+            return Response({'message': 'Solde insuffisant pour la mise à niveau', 'missing': float(to_pay - wallet.available)}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             from django.db import transaction as db_transaction
             with db_transaction.atomic():
-                # Deactivate previous VIP subscriptions (close prior levels)
+                # Désactiver les anciens abonnements VIP
                 UserVIPSubscription.objects.filter(user=request.user, active=True).update(active=False)
 
-                # Deduct from wallet and track invested amount
-                wallet.available -= vip_level.price
+                # Débiter la différence à payer
+                wallet.available = (wallet.available - to_pay).quantize(Decimal('0.01'))
                 try:
-                    wallet.invested = (wallet.invested + vip_level.price)
+                    wallet.invested = (wallet.invested + to_pay)
                 except Exception:
-                    wallet.invested = vip_level.price
+                    wallet.invested = to_pay
                 try:
-                    wallet.sale_balance = (wallet.sale_balance + vip_level.price)
+                    wallet.sale_balance = (wallet.sale_balance + to_pay)
                 except Exception:
-                    wallet.sale_balance = vip_level.price
+                    wallet.sale_balance = to_pay
                 wallet.save()
 
-                # Create transaction
+                # Créer la transaction
                 Transaction.objects.create(
                     wallet=wallet,
-                    amount=vip_level.price,
+                    amount=to_pay,
                     type='transfer'
                 )
 
-                # Create VIP subscription with 180-day contract
+                # Créer la nouvelle souscription VIP (contrat 180 jours)
                 contract_start = _tz.now()
                 contract_end = contract_start + timedelta(days=180)
                 subscription = UserVIPSubscription.objects.create(
