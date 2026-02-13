@@ -1672,11 +1672,7 @@ class PurchaseVIPLevelView(APIView):
         if previous_sub:
             previous_price = previous_sub.vip_level.price
 
-        # Rembourser l'ancien VIP (créditer le solde principal)
-        if previous_price > 0:
-            wallet.available = (wallet.available + previous_price).quantize(Decimal('0.01'))
-
-        # Calculer la différence à payer
+        # Calculer la différence à payer (sans remboursement)
         to_pay = vip_level.price - previous_price
         if to_pay <= 0:
             return Response({'message': 'Aucun paiement requis ou niveau déjà atteint'}, status=status.HTTP_400_BAD_REQUEST)
