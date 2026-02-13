@@ -1676,9 +1676,14 @@ class PurchaseVIPLevelView(APIView):
         if previous_price > 0:
             wallet.available = (wallet.available + previous_price).quantize(Decimal('0.01'))
 
-        # Vérifier que le solde principal permet de payer le prix total du nouveau VIP
-        if wallet.available < vip_level.price:
-            return Response({'message': 'Solde insuffisant pour la mise à niveau', 'missing': float(vip_level.price - wallet.available)}, status=status.HTTP_400_BAD_REQUEST)
+        # Calculer la différence à payer
+        to_pay = vip_level.price - previous_price
+        if to_pay <= 0:
+            return Response({'message': 'Aucun paiement requis ou niveau déjà atteint'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Vérifier que le solde principal permet de payer la différence
+        if wallet.available < to_pay:
+            return Response({'message': 'Solde insuffisant pour la mise à niveau', 'missing': float(to_pay - wallet.available)}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             from django.db import transaction as db_transaction
@@ -1686,22 +1691,20 @@ class PurchaseVIPLevelView(APIView):
                 # Désactiver les anciens abonnements VIP
                 UserVIPSubscription.objects.filter(user=request.user, active=True).update(active=False)
 
-                # Débiter le prix total du nouveau VIP
-                wallet.available = (wallet.available - vip_level.price).quantize(Decimal('0.01'))
+                # Débiter uniquement la différence à payer
+                wallet.available = (wallet.available - to_pay).quantize(Decimal('0.01'))
+                # Le solde investi doit refléter le montant total du nouveau VIP
+                wallet.invested = vip_level.price
                 try:
-                    wallet.invested = (wallet.invested + vip_level.price)
+                    wallet.sale_balance = (wallet.sale_balance + to_pay)
                 except Exception:
-                    wallet.invested = vip_level.price
-                try:
-                    wallet.sale_balance = (wallet.sale_balance + vip_level.price)
-                except Exception:
-                    wallet.sale_balance = vip_level.price
+                    wallet.sale_balance = to_pay
                 wallet.save()
 
                 # Créer la transaction
                 Transaction.objects.create(
                     wallet=wallet,
-                    amount=vip_level.price,
+                    amount=to_pay,
                     type='transfer'
                 )
 
