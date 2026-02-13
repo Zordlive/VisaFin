@@ -620,6 +620,15 @@ class GoogleLoginView(APIView):
                     Investor.objects.create(user=user)
                 except Exception:
                     pass
+
+                # Create referral code for new Google user if not exists
+                from .models import ReferralCode
+                import secrets
+                if not ReferralCode.objects.filter(referrer=user).exists():
+                    code = secrets.token_urlsafe(6)
+                    while ReferralCode.objects.filter(code=code).exists():
+                        code = secrets.token_urlsafe(6)
+                    ReferralCode.objects.create(code=code, referrer=user)
             
             # Generate tokens
             refresh = RefreshToken.for_user(user)
