@@ -1156,59 +1156,55 @@ export default function PortefeuillePage() {
       {depositType === 'CRYPTO' && (
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-0">
           <div className="space-y-4 pb-4">
-          <select
-            value={selectedCryptoNetwork}
-            onChange={(e) => setSelectedCryptoNetwork(e.target.value)}
-            className="w-full bg-gray-100 rounded-xl px-3 py-3 sm:px-3 sm:py-2 text-sm sm:text-sm min-h-[44px] sm:min-h-[40px]"
-            style={selectStyle}
-          >
-            <option value="">Sélectionner le réseau</option>
-            {cryptoNetworks.map((network) => (
-              <option key={network.id} value={network.id}>
-                {network.name}
-              </option>
-            ))}
-          </select>
+            <select
+              value={selectedCryptoNetwork}
+              onChange={(e) => setSelectedCryptoNetwork(e.target.value)}
+              className="w-full bg-gray-100 rounded-xl px-3 py-3 sm:px-3 sm:py-2 text-sm sm:text-sm min-h-[44px] sm:min-h-[40px]"
+              style={selectStyle}
+            >
+              <option value="">Sélectionner le réseau</option>
+              {cryptoNetworks.map((network) => (
+                <option key={network.id} value={network.id}>
+                  {network.name}
+                </option>
+              ))}
+            </select>
 
-          {selectedCryptoNetwork && (
-            <div className="space-y-2">
-              <div className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-3 text-xs sm:text-sm md:text-base break-all font-mono">
-                <div className="text-gray-600 text-xs mb-1">Adresse de dépôt:</div>
-                {cryptoNetworks.find(n => n.id === selectedCryptoNetwork)?.address}
+            {selectedCryptoNetwork && (
+              <div className="space-y-2">
+                <div className="bg-gray-50 border border-gray-300 rounded-xl px-3 py-3 text-xs sm:text-sm md:text-base break-all font-mono">
+                  <div className="text-gray-600 text-xs mb-1">Adresse de dépôt:</div>
+                  {cryptoNetworks.find(n => n.id === selectedCryptoNetwork)?.address}
+                </div>
+                <button
+                  onClick={handleCopyCryptoAddress}
+                  className="w-full py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
+                >
+                  📋 Copier l'adresse
+                </button>
               </div>
-              <button
-                onClick={handleCopyCryptoAddress}
-                className="w-full py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition"
-              >
-                📋 Copier l'adresse
-              </button>
-            </div>
-          )}
+            )}
 
-          <input
-            placeholder="TXID / Hash (min 15 caractères)"
-            value={txid}
-            onChange={(e) => setTxid(e.target.value)}
-            className="w-full bg-gray-100 rounded-xl px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm md:text-base"
-            minLength={15}
-          />
-          {txid && txid.trim().length < 15 && (
-            <p className="text-xs text-red-500 mt-1">Le TXID doit contenir au minimum 15 caractères</p>
-          )}
+            <input
+              placeholder="TXID / Hash"
+              value={txid}
+              onChange={(e) => setTxid(e.target.value)}
+              className="w-full bg-gray-100 rounded-xl px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm md:text-base"
+            />
 
-          <button
-            onClick={handleDeposit}
-            disabled={!isValidDeposit || txid.trim().length < 15 || loadingDeposit}
-            className={`w-full py-3 rounded-xl text-white font-semibold transition
-              ${!isValidDeposit || txid.trim().length < 15 || loadingDeposit ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}
-            `}
-          >
-            {loadingDeposit ? '...' : 'Valider'}
-          </button>
+            <button
+              onClick={handleDeposit}
+              disabled={!isValidDeposit || loadingDeposit}
+              className={`w-full py-3 rounded-xl text-white font-semibold transition
+                ${!isValidDeposit || loadingDeposit ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}
+              `}
+            >
+              {loadingDeposit ? '...' : 'Valider'}
+            </button>
 
-          {depositError && (
-            <p className="text-red-600 text-sm">{depositError}</p>
-          )}
+            {depositError && (
+              <p className="text-red-600 text-sm">{depositError}</p>
+            )}
           </div>
         </div>
       )}
