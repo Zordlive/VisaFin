@@ -387,12 +387,6 @@ export default function PortefeuillePage() {
   }
 
   const handleDeposit = async () => {
-    // Validation TXID: minimum 15 caractères
-    if (txid.trim().length < 15) {
-      notify.error('Le TXID doit contenir au minimum 15 caractères')
-      return
-    }
-    
     setLoadingDeposit(true)
     try {
       await createCryptoDeposit({ amount: Number(depositAmount), channel: cryptoChannel, txid })
