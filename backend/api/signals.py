@@ -166,18 +166,17 @@ def handle_withdrawal_notification(sender, instance: Withdrawal, created, **kwar
                 if old_instance.status != instance.status and instance.status in ['completed', 'rejected']:
                     # Débiter le solde principal et créer la transaction si completed
                     if instance.status == 'completed':
-                        # Débiter le solde principal (wallet.available)
+                        # Débiter le solde des gains (wallet.gains)
                         try:
                             wallet = Wallet.objects.get(user=instance.user, currency='USDT')
-                            if wallet.available >= instance.amount:
-                                wallet.available = (wallet.available - instance.amount).quantize(Decimal('0.01'))
+                            if wallet.gains >= instance.amount:
+                                wallet.gains = (wallet.gains - instance.amount).quantize(Decimal('0.01'))
                                 wallet.save()
                                 Transaction.objects.create(wallet=wallet, amount=instance.amount, type='withdraw')
                             else:
-                                # Optionnel: notifier l'admin d'un problème de solde insuffisant
-                                print(f"[Retrait] Solde insuffisant pour l'utilisateur {instance.user}")
+                                print(f"[Retrait] Gains insuffisants pour l'utilisateur {instance.user}")
                         except Exception as e:
-                            print(f"Erreur lors du débit du wallet pour le retrait: {e}")
+                            print(f"Erreur lors du débit des gains pour le retrait: {e}")
                         # Notification utilisateur
                         UserNotification.objects.create(
                             user=instance.user,
