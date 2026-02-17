@@ -168,8 +168,19 @@ def handle_withdrawal_notification(sender, instance: Withdrawal, created, **kwar
                     if instance.status == 'completed':
                         # Débiter le solde des gains (wallet.gains)
                         try:
-                            # Trouver le wallet correspondant à l'utilisateur et à la devise du retrait
-                            wallet = Wallet.objects.filter(user=instance.user).first()
+                            # Trouver le wallet correspondant à la devise du retrait (par défaut USDT, sinon le premier wallet)
+                            wallet = None
+                            # Si le retrait a une devise, la retrouver (par défaut USDT)
+                            currency = getattr(instance, 'currency', None)
+                            if not currency:
+                                # Si le modèle Withdrawal n'a pas de champ currency, prendre le wallet principal (USDT)
+                                wallet = Wallet.objects.filter(user=instance.user, currency='USDT').first()
+                                if not wallet:
+                                    wallet = Wallet.objects.filter(user=instance.user).first()
+                            else:
+                                wallet = Wallet.objects.filter(user=instance.user, currency=currency).first()
+                                if not wallet:
+                                    wallet = Wallet.objects.filter(user=instance.user).first()
                             if not wallet:
                                 print(f"[Retrait] Aucun wallet trouvé pour l'utilisateur {instance.user}")
                             else:
@@ -177,9 +188,9 @@ def handle_withdrawal_notification(sender, instance: Withdrawal, created, **kwar
                                     wallet.gains = (wallet.gains - instance.amount).quantize(Decimal('0.01'))
                                     wallet.save()
                                     Transaction.objects.create(wallet=wallet, amount=instance.amount, type='withdraw')
-                                    print(f"[Retrait] {instance.amount} retiré des gains de {instance.user} (wallet {wallet.id})")
+                                    print(f"[Retrait] {instance.amount} retiré des gains de {instance.user} (wallet {wallet.id}, devise {wallet.currency})")
                                 else:
-                                    print(f"[Retrait] Gains insuffisants pour l'utilisateur {instance.user} (wallet {wallet.id})")
+                                    print(f"[Retrait] Gains insuffisants pour l'utilisateur {instance.user} (wallet {wallet.id}, devise {wallet.currency})")
                         except Exception as e:
                             print(f"Erreur lors du débit des gains pour le retrait: {e}")
                         # Notification utilisateur
