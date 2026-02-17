@@ -143,6 +143,7 @@ def _process_referral_reward(user, amount, referral, deposit, reward_type):
 def handle_withdrawal_notification(sender, instance: Withdrawal, created, **kwargs):
     """Créer une notification admin lors d'une nouvelle demande de retrait et notifier l'utilisateur lors d'un changement de statut."""
     try:
+        print(f"[DEBUG SIGNAL] Signal handle_withdrawal_notification appelé pour Withdrawal id={instance.pk}, status={instance.status}, created={created}")
         if created:
             # Nouvelle demande de retrait - notifier tous les admins
             admin_users = User.objects.filter(is_staff=True, is_active=True)
