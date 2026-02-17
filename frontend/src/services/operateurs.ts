@@ -2,7 +2,7 @@ import api from './api'
 
 export async function fetchOperateurs() {
   try {
-    const response = await api.get('/operateurs')
+    const response = await api.get('/operateurs/')
     return response.data
   } catch (e) {
     return []

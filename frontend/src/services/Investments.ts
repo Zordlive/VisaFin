@@ -8,7 +8,7 @@ export async function createInvestment(amount: number, offerId?: number) {
 }
 
 export async function fetchWallets() {
-  const res = await api.get('/wallets')
+  const res = await api.get('/wallets/')
   return res.data
 }
 
