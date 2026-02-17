@@ -230,7 +230,7 @@ export default function PortefeuillePage() {
   async function loadTransactions() {
     setLoadingTransactions(true)
     try {
-      const response = await api.get('/transactions')
+      const response = await api.get('/transactions/')
       setTransactions(Array.isArray(response.data) ? response.data : [])
     } catch (e) {
       console.error('Error loading transactions:', e)
