@@ -166,12 +166,14 @@ class WithdrawalAdmin(admin.ModelAdmin):
     
     def approve_withdrawals(self, request, queryset):
         from django.utils import timezone
-        updated = queryset.filter(status='pending').update(
-            status='completed',
-            processed_by=request.user,
-            processed_at=timezone.now()
-        )
-        self.message_user(request, f'{updated} demande(s) de retrait approuvée(s) avec succès.')
+        count = 0
+        for withdrawal in queryset.filter(status='pending'):
+            withdrawal.status = 'completed'
+            withdrawal.processed_by = request.user
+            withdrawal.processed_at = timezone.now()
+            withdrawal.save()  # Déclenche le signal et la logique métier
+            count += 1
+        self.message_user(request, f'{count} demande(s) de retrait approuvée(s) avec succès.')
     approve_withdrawals.short_description = '✅ Approuver les retraits sélectionnés'
     
     def reject_withdrawals(self, request, queryset):
